@@ -14,15 +14,15 @@ namespace LuaSharpVM
         public byte Stack;
         public List<LuaInstruction> Instructions;
         public List<string> Constants;
-        public List<string> Prototypes;
-        public List<string> DebugLines;
+        public List<Chunk> Prototypes;
+        public List<int> DebugLines;
 
         public Chunk()
         {
             this.Instructions = new List<LuaInstruction>();
             this.Constants = new List<string>();
-            this.Prototypes = new List<string>();
-            this.DebugLines = new List<string>();
+            this.Prototypes = new List<Chunk>();
+            this.DebugLines = new List<int>();
         }
     }
 
@@ -103,22 +103,24 @@ namespace LuaSharpVM
         }
 
         // decode the metadata and what not from the LuaC file
-        private void Decode()
+        private Chunk Decode()
         {
+            Chunk Chunk = new Chunk();
+
             int count = 0;
-            this.Chunk.Name = GetString();     // Function name
-            this.Chunk.FirstLine = GetInt();   // First line
-            this.Chunk.LastLine = GetInt();    // Last line
+            Chunk.Name = GetString();     // Function name
+            Chunk.FirstLine = GetInt();   // First line
+            Chunk.LastLine = GetInt();    // Last line
 
             // TODO: skip first 2 bytes of this.Chunk.Name
-            if(this.Chunk.Name != "")
-                this.Chunk.Name = this.Chunk.Name.Substring(2);
+            if(Chunk.Name != "")
+                Chunk.Name = Chunk.Name.Substring(2);
 
             // point around
-            this.Chunk.Upvalues = GetByte();
-            this.Chunk.Arguments = GetByte();
-            this.Chunk.Vargs = GetByte();
-            this.Chunk.Stack = GetByte();
+            Chunk.Upvalues = GetByte();
+            Chunk.Arguments = GetByte();
+            Chunk.Vargs = GetByte();
+            Chunk.Stack = GetByte();
 
             // Decode Instructions
             count = GetInt();
@@ -144,14 +146,14 @@ namespace LuaSharpVM
                         instr.sBx = GetBits(data, 15, 32) - 0x1FFFF;
                         break;
                 }
-                this.Chunk.Instructions.Add(instr);
+                Chunk.Instructions.Add(instr);
             }
 
             // Decode constants
             count = GetInt();
             for(int i = 0; i < count; i++)
             {
-                LuaConstant constant = new LuaConstant();
+                var constant = new LuaConstant();
                 constant.Type = (ConstantType)GetByte();
 
                 switch(constant.Type)
@@ -174,8 +176,35 @@ namespace LuaSharpVM
             count = GetInt();
             for (int i = 0; i < count; i++)
             {
-                //this.Chunk.Prototypes.Add(Decode());
+                Chunk.Prototypes.Add(Decode());
             }
+
+            // Decode debuginfo: Line Numbers
+            count = GetInt();
+            for(int i = 0; i < count; i++)
+            {
+                Chunk.DebugLines.Add(GetInt());
+            }
+
+            // Decode debuginfo: Locals
+            count = GetInt();
+            for (int i = 0; i < count; i++)
+            {
+                GetString(); // Local name
+                GetInt();   // Start PC
+                GetInt();   // End PC
+                // TODO: store this info?
+            }
+
+            // Decode debuginfo: Upvalues
+            count = GetInt();
+            for (int i = 0; i < count; i++)
+            {
+                GetString(); // Upvalue name
+                // TODO: Store this
+            }
+
+            return Chunk;
         }
 
         private void loop()
@@ -231,7 +260,7 @@ namespace LuaSharpVM
 
         private void GETGLOBAL()
         {
-            int k = (int)this.Constants[this.Registers.Bx];
+            int k = (int)this.Constants[this.Registers.Bx].Data;
             this.Stack[this.Registers.A] = this.Environment[k];
             this.Registers.IP++;
         }
@@ -243,7 +272,7 @@ namespace LuaSharpVM
 
         private void SETGLOBAL()
         {
-            var k = (int)this.Constants[this.Registers.Bx];
+            var k = (int)this.Constants[this.Registers.Bx].Data;
             this.Environment[k] = this.Stack[this.Registers.A];
             this.Registers.IP++;
         }
