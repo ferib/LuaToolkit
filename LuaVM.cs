@@ -32,11 +32,11 @@ namespace LuaSharpVM
         private Chunk Chunk;
         private LuaRegisters Registers;
         private Dictionary<int, object> Stack;
-        private Dictionary<int, object> Constants;
+        private new List<LuaConstant> Constants;
         private Dictionary<int, object> Upvalues;
         private Dictionary<int, object> Environment;
         private Dictionary<OpcodeName, Action> InstructionTable;
-        
+
 
         public LuaVM(byte[] LuaC)
         {
@@ -44,7 +44,7 @@ namespace LuaSharpVM
             this.Chunk = new Chunk();
             this.Registers = new LuaRegisters();
             this.Stack = new Dictionary<int, object>();
-            this.Constants = new Dictionary<int, object>();
+            this.Constants = new List<LuaConstant>();
             this.Upvalues = new Dictionary<int, object>();
             this.Environment = new Dictionary<int, object>();
             this.InstructionTable = new Dictionary<OpcodeName, Action>()
@@ -96,15 +96,86 @@ namespace LuaSharpVM
             for(int i = 0; i < 0xFF; i++)
             {
                 this.Stack[i] = 0;
-                this.Constants[i] = 0;
                 this.Environment[i] = 0;
             }
-            loop();
+            //Decode(); // init the Lua stuff
+            loop(); // execute the bytecode
         }
 
+        // decode the metadata and what not from the LuaC file
         private void Decode()
         {
-            int num = 0;
+            int count = 0;
+            this.Chunk.Name = GetString();     // Function name
+            this.Chunk.FirstLine = GetInt();   // First line
+            this.Chunk.LastLine = GetInt();    // Last line
+
+            // TODO: skip first 2 bytes of this.Chunk.Name
+            if(this.Chunk.Name != "")
+                this.Chunk.Name = this.Chunk.Name.Substring(2);
+
+            // point around
+            this.Chunk.Upvalues = GetByte();
+            this.Chunk.Arguments = GetByte();
+            this.Chunk.Vargs = GetByte();
+            this.Chunk.Stack = GetByte();
+
+            // Decode Instructions
+            count = GetInt();
+            for (int i = 0; i < count; i++)
+            {
+                LuaInstruction instr = new LuaInstruction();
+                int data = GetInt();
+                instr.Opcode = (OpcodeName)GetBits(data, 1, 6);
+                instr.Type = LuaInstructions.Table[(int)instr.Opcode].Type;
+                instr.A = GetBits(data, 7, 14);
+
+                // convert
+                switch(instr.Type)
+                {
+                    case OpcodeType.ABC:
+                        instr.B = GetBits(data, 24, 32);
+                        instr.C = GetBits(data, 15, 23);
+                        break;
+                    case OpcodeType.ABx:
+                        instr.Bx = GetBits(data, 15, 32);
+                        break;
+                    case OpcodeType.AsBx:
+                        instr.sBx = GetBits(data, 15, 32) - 0x1FFFF;
+                        break;
+                }
+                this.Chunk.Instructions.Add(instr);
+            }
+
+            // Decode constants
+            count = GetInt();
+            for(int i = 0; i < count; i++)
+            {
+                LuaConstant constant = new LuaConstant();
+                constant.Type = (ConstantType)GetByte();
+
+                switch(constant.Type)
+                {
+                    case ConstantType.BOOL: // bool
+                        constant.Data = GetByte() != 0;
+                        break;
+                    case ConstantType.FLOAT: // float
+                        constant.Data = GetFloat();
+                        break;
+                    case ConstantType.STRING: // string
+                        constant.Data = GetString().Substring(2);
+                        break;
+                }
+
+                this.Constants.Add(constant);
+            }
+
+            // Decode prototypes
+            count = GetInt();
+            for (int i = 0; i < count; i++)
+            {
+                //this.Chunk.Prototypes.Add(Decode());
+            }
         }
 
         private void loop()
@@ -336,34 +407,57 @@ namespace LuaSharpVM
         // Helpers
 
         #region Helpers
-        private byte get_byte()
+        private int GetBits(int input, int n, int n2 = -1)
+        {
+            if (n2 != -1)
+            {
+                int total = 0;
+                int digitn = 0;
+                for(int i = n; i < n2; i++)
+                {
+                    total += 2 ^ digitn * GetBits(input, i);
+                }
+                return total;
+            }
+            else
+            {
+                int pn = 2 ^ (n - 1);
+                bool res = ((input % (pn + pn) >= pn));
+                //bool res = ((input % (pn + pn) >= pn) && 1 || 0);
+                if (res)
+                    return 1;
+                return 0;
+            }
+
+        }
+        private byte GetByte()
         {
             this.Registers.IP++;
             return this.Buffer[this.Registers.IP - 1];
         }
 
-        private int get_int()
+        private int GetInt()
         {
             this.Registers.IP += 4;
             return BitConverter.ToInt32(this.Buffer, this.Registers.IP - 4);
         }
 
-        private float get_float()
+        private float GetFloat()
         {
             this.Registers.IP += 4;
             return BitConverter.ToSingle(this.Buffer, this.Registers.IP - 4);
         }
 
-        private long get_long()
+        private long GetLong()
         {
             this.Registers.IP += 8;
             return BitConverter.ToInt64(this.Buffer, this.Registers.IP - 8);
         }
 
-        private string get_string(byte len = 0)
+        private string GetString(byte len = 0)
         {
             if(len == 0)
-                len = get_byte();
+                len = GetByte();
             string str = "";
             for(int i = 0; i < len; i++)
                 str += (char)this.Buffer[i];

@@ -4,20 +4,29 @@ using System.Text;
 
 namespace LuaSharpVM
 {
-    //public enum OpcodeTypes 
-    //{
-    //    ABC,
-    //    ABx,
-    //    ABC,
-    //    ABC,
-    //    ABC,
-    //    ABx,
-    //    ABC,
-    //    ABx,
-    //    ABC,
-    //    ABX,
+    public struct LuaInstruction
+    {
+        public OpcodeName Opcode;
+        public OpcodeType Type; // ABC, ABx, AsBx
+        public int A;
+        public int B;
+        public int Bx;
+        public int C;
+        public int sBx;
+    }
 
-    //}
+    public struct LuaConstant
+    {
+        public ConstantType Type;
+        public object Data;
+    }
+
+    public enum ConstantType
+    {
+        BOOL = 1,
+        FLOAT = 3,
+        STRING = 4
+    }
 
     public enum OpcodeName
     {
@@ -60,50 +69,11 @@ namespace LuaSharpVM
         CLOSURE,
         VARARG
     }
+
     public enum OpcodeType
     {
         ABC,
         ABx,
         AsBx
     }
-
-    public struct LuaInstruction
-    {
-        public OpcodeType Opcode;
-        public int Type; // ABC, ABx, AsBx
-        public int A;
-        public int B;
-        public int Bx;
-        public int C;
-        public int sBx;
-    }
-
-    public class LuaRegisters
-    {
-        public byte A;  // 8 bits
-        public ushort B;  // 9 bits
-        public ushort C;  // 9 buts
-        public int Ax  // 26 nits (A, B and C)
-        {
-            get { return A + B + C; }
-            //set { A = value; }
-        }
-        public int Bx;  // 18 bits (B and C)
-        public int sBx // signed Bx
-        {
-            get { return (short)Bx; }
-            set { Bx = value; }
-        }
-        public int IP;
-
-        public LuaRegisters()
-        {
-            this.A = 0;
-            this.B = 0;
-            this.C = 0;
-            this.sBx = 0;
-            this.IP = 0;
-        }
-    }
-
 }
