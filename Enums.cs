@@ -94,6 +94,16 @@ namespace LuaSharpVM
             get { return (short)Bx; }
             set { Bx = value; }
         }
+        public int IP;
+
+        public LuaRegisters()
+        {
+            this.A = 0;
+            this.B = 0;
+            this.C = 0;
+            this.sBx = 0;
+            this.IP = 0;
+        }
     }
 
 }
