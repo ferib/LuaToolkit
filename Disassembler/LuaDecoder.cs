@@ -5,7 +5,7 @@ using LuaSharpVM.Core;
 using LuaSharpVM.Disassembler;
 using LuaSharpVM.Emulator;
 
-namespace LuaSharpVM
+namespace LuaSharpVM.Disassembler
 {
     public class LuaDecoder
     {
@@ -14,13 +14,15 @@ namespace LuaSharpVM
         private int SizeT;
         private int Index;
         private byte[] Buffer;
-        private LuaFunction Functions;
+        public LuaFunction Function;
         private LuaRegisters Registers;
         private Dictionary<int, object> Stack;
         //private new List<LuaConstant> Constants;
         private Dictionary<int, object> Upvalues;
         private Dictionary<int, object> Environment;
         private Dictionary<LuaOpcode, Action> InstructionTable;
+
+        private int hits = 0;
 
         public LuaDecoder(byte[] LuaC)
         {
@@ -33,7 +35,7 @@ namespace LuaSharpVM
             this.Environment = new Dictionary<int, object>();
             
             if(Verify())
-                this.Functions = DecodeFunctionblock(); // init the Lua stuff
+                this.Function = DecodeFunctionblock(); // init the Lua stuff
         }
 
         public void Execute()
