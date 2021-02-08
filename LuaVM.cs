@@ -16,6 +16,8 @@ namespace LuaSharpVM
         public List<LuaConstant> Constants;
         public List<LuaFunction> Prototypes;
         public List<int> DebugLines;
+        public List<LuaLocal> DebugLocals;
+        public List<string> DebugUpvalues;
 
         public LuaFunction()
         {
@@ -140,10 +142,10 @@ namespace LuaSharpVM
             Function.DebugLines = ReadDebugLines();
 
             // Decode debuginfo: Locals
-            ReadDebugLocals();
+            Function.DebugLocals = ReadDebugLocals();
             
             // Decode debuginfo: Upvalues
-            ReadDebugUpvalues();
+            Function.DebugUpvalues = ReadDebugUpvalues();
 
             return Function;
         }
@@ -209,26 +211,26 @@ namespace LuaSharpVM
             return debuglines;
         }
 
-        private void ReadDebugLocals()
+        private List<LuaLocal> ReadDebugLocals()
         {
+            List<LuaLocal> locals = new List<LuaLocal>();
             int count = GetInt();
             for (int i = 0; i < count; i++)
             {
-                GetString(); // Local name
-                GetInt();   // Start PC
-                GetInt();   // End PC
-                            // TODO: store this info?
+                locals.Add(new LuaLocal(GetString(), GetInt(), GetInt()));
             }
+            return locals;
         }
 
-        private void ReadDebugUpvalues()
+        private List<string> ReadDebugUpvalues()
         {
+            List<string> upvalues = new List<string>();
             int count = GetInt();
             for (int i = 0; i < count; i++)
             {
-                GetString(); // Upvalue name
-                             // TODO: Store this
+                upvalues.Add(GetString()); // Upvalue name
             }
+            return upvalues;
         }
 
         // check if input is as expected
