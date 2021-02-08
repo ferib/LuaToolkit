@@ -28,6 +28,10 @@ namespace LuaSharpVM
 
     public class LuaVM
     {
+        private bool BigEndian;
+        private int IntSize;
+        private int SizeT;
+        private int Index;
         private byte[] Buffer;
         private Chunk Chunk;
         private LuaRegisters Registers;
@@ -40,6 +44,7 @@ namespace LuaSharpVM
 
         public LuaVM(byte[] LuaC)
         {
+            this.Index = 0;
             this.Buffer = LuaC;
             this.Chunk = new Chunk();
             this.Registers = new LuaRegisters();
@@ -88,17 +93,16 @@ namespace LuaSharpVM
                 {OpcodeName.CLOSURE, () => {CLOSURE(); } },
                 {OpcodeName.VARARG, () => {VARARG(); } },
             };
+
+            if(Verify())
+                Decode(); // init the Lua stuff
         }
 
         public void Execute()
         {
-            // fill with 0's
-            for(int i = 0; i < 0xFF; i++)
-            {
-                this.Stack[i] = 0;
-                this.Environment[i] = 0;
-            }
-            //Decode(); // init the Lua stuff
+            List<int> localStack = new List<int>();
+            List<int> ghostStack = new List<int>();
+
             loop(); // execute the bytecode
         }
 
@@ -205,6 +209,40 @@ namespace LuaSharpVM
             }
 
             return Chunk;
+        }
+
+
+        // check if input is as expected
+        private bool Verify()
+        {
+            // check magic bytes
+            if (GetString(4) != "\x1BLua")
+            {
+                Console.WriteLine("Error, LuaC File Expected!");
+                return false;
+            }
+
+            // check version
+            if (GetByte() != 0x51)
+            {
+                Console.WriteLine("Error, Only Lua with version 5.1 is supported!");
+                return false;
+            }
+
+            GetByte(); // another bytecode
+            this.BigEndian = GetByte() == 0;
+            this.IntSize = GetByte();
+            this.SizeT = GetByte();
+
+            // TODO: figure out what size_t and so are used for
+
+            string bytecodeTarget = GetString(3);
+            if (bytecodeTarget != "\x04\x08\x00")
+                return false;
+
+            // Index = 11 after this
+
+            return true;
         }
 
         private void loop()
@@ -459,41 +497,47 @@ namespace LuaSharpVM
             }
 
         }
+
         private byte GetByte()
         {
-            this.Registers.IP++;
-            return this.Buffer[this.Registers.IP - 1];
+            this.Index++;
+            return this.Buffer[this.Index - 1];
         }
 
         private int GetInt()
         {
-            this.Registers.IP += 4;
-            return BitConverter.ToInt32(this.Buffer, this.Registers.IP - 4);
+            this.Index += 4;
+            return BitConverter.ToInt32(this.Buffer, this.Index - 4);
         }
 
         private float GetFloat()
         {
-            this.Registers.IP += 4;
-            return BitConverter.ToSingle(this.Buffer, this.Registers.IP - 4);
+            this.Index += 4;
+            return BitConverter.ToSingle(this.Buffer, this.Index - 4);
         }
 
         private long GetLong()
         {
-            this.Registers.IP += 8;
-            return BitConverter.ToInt64(this.Buffer, this.Registers.IP - 8);
+            this.Index += 8;
+            return BitConverter.ToInt64(this.Buffer, this.Index - 8);
         }
 
-        private string GetString(byte len = 0)
+        private string GetString(long len = 0)
         {
             if(len == 0)
-                len = GetByte();
+            {
+                if(this.SizeT == 4)
+                    len = GetInt(); // get_size_t (4 byte?)
+                else if (this.SizeT == 8)
+                    len = GetLong(); // get_size_t (8 byte?)
+            }
+                
             string str = "";
             for(int i = 0; i < len; i++)
-                str += (char)this.Buffer[i];
-            this.Registers.IP += len;
+                str += (char)this.Buffer[this.Index+i];
+            this.Index += (int)len;
             return str;
         }
         #endregion
-
     }
 }
