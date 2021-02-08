@@ -4,9 +4,9 @@ using System.Text;
 
 namespace LuaSharpVM
 {
-    public struct LuaInstruction
+    public struct LuaInstructionOLD
     {
-        public OpcodeName Opcode;
+        public LuaOpcode Opcode;
         public OpcodeType Type; // ABC, ABx, AsBx
         public int A;
         public int B;
@@ -15,59 +15,25 @@ namespace LuaSharpVM
         public int sBx;
     }
 
-    public struct LuaConstant
-    {
-        public ConstantType Type;
-        public object Data;
-    }
+    //public struct LuaConstant
+    //{
+    //    public ConstantType Type;
+    //    public object Data;
+    //}
 
-    public enum ConstantType
-    {
-        BOOL = 1,
-        FLOAT = 3,
-        STRING = 4
-    }
+    //public enum ConstantType
+    //{
+    //    NIL = 0,
+    //    BOOL = 1,
+    //    NUMBER = 3,
+    //    STRING = 4
+    //}
 
-    public enum OpcodeName
+    public enum VarArg
     {
-        MOVE = 0,
-        LOADK,
-        LOADBOOL,
-        LOADNIL,
-        GETUPVAL,
-        GETGLOBAL,
-        GETTABLE,
-        SETGLOBAL,
-        SETUPVAL,
-        SETTABLE,
-        NEWTABLE,
-        SELF,
-        ADD,
-        SUB,
-        MUL,
-        DIV,
-        MOD,
-        POW,
-        UNM,
-        NOT,
-        LEN,
-        CONCAT,
-        JMP,
-        EQ,
-        LT,
-        LE,
-        TEST,
-        TESTSET,
-        CALL,
-        TAILCALL,
-        RETURN,
-        FORLOOP,
-        FORPREP,
-        TFORLOOP,
-        SETLIST,
-        CLOSE,
-        CLOSURE,
-        VARARG
+        Has = 1,
+        Is = 2,
+        Needs = 4,
     }
 
     public enum OpcodeType

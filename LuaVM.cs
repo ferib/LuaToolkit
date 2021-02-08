@@ -3,25 +3,26 @@ using System.Collections.Generic;
 
 namespace LuaSharpVM
 {
-    public class Chunk
+    public class LuaFunction
     {
         public string Name;
-        public int FirstLine;
-        public int LastLine;
-        public byte Upvalues;
-        public byte Arguments;
-        public byte Vargs;
-        public byte Stack;
+        public int FirstLineNr;
+        public int LastLineNr;
+        public byte UpvaluesCount;
+        public byte ArgsCount;
+        public VarArg Vargs;
+        public byte MaxStackSize;
         public List<LuaInstruction> Instructions;
-        public List<string> Constants;
-        public List<Chunk> Prototypes;
+        public List<LuaConstant> Constants;
+        public List<LuaFunction> Prototypes;
         public List<int> DebugLines;
 
-        public Chunk()
+        public LuaFunction()
         {
+            // NOTE: remove?
             this.Instructions = new List<LuaInstruction>();
-            this.Constants = new List<string>();
-            this.Prototypes = new List<Chunk>();
+            this.Constants = new List<LuaConstant>();
+            this.Prototypes = new List<LuaFunction>();
             this.DebugLines = new List<int>();
         }
     }
@@ -33,65 +34,65 @@ namespace LuaSharpVM
         private int SizeT;
         private int Index;
         private byte[] Buffer;
-        private Chunk Chunk;
+        private LuaFunction Chunk;
         private LuaRegisters Registers;
         private Dictionary<int, object> Stack;
         private new List<LuaConstant> Constants;
         private Dictionary<int, object> Upvalues;
         private Dictionary<int, object> Environment;
-        private Dictionary<OpcodeName, Action> InstructionTable;
+        private Dictionary<LuaOpcode, Action> InstructionTable;
 
 
         public LuaVM(byte[] LuaC)
         {
             this.Index = 0;
             this.Buffer = LuaC;
-            this.Chunk = new Chunk();
+            this.Chunk = new LuaFunction();
             this.Registers = new LuaRegisters();
             this.Stack = new Dictionary<int, object>();
             this.Constants = new List<LuaConstant>();
             this.Upvalues = new Dictionary<int, object>();
             this.Environment = new Dictionary<int, object>();
-            this.InstructionTable = new Dictionary<OpcodeName, Action>()
+            this.InstructionTable = new Dictionary<LuaOpcode, Action>()
             {
-                {OpcodeName.MOVE, () => {MOVE(); } },
-                {OpcodeName.LOADK, () => {LOADK(); } },
-                {OpcodeName.LOADBOOL, () => {LOADBOOL(); } },
-                {OpcodeName.LOADNIL, () => {LOADNIL(); } },
-                {OpcodeName.GETUPVAL, () => {GETUPVAL(); } },
-                {OpcodeName.GETGLOBAL, () => {GETGLOBAL(); } },
-                {OpcodeName.GETTABLE, () => {GETTABLE(); } },
-                {OpcodeName.SETGLOBAL, () => {SETGLOBAL(); } },
-                {OpcodeName.SETUPVAL, () => {SETUPVAL(); } },
-                {OpcodeName.SETTABLE, () => {SETTABLE(); } },
-                {OpcodeName.NEWTABLE, () => {NEWTABLE(); } },
-                {OpcodeName.SELF, () => {SELF(); } },
-                {OpcodeName.ADD, () => {ADD(); } },
-                {OpcodeName.SUB, () => {SUB(); } },
-                {OpcodeName.MUL, () => {MUL(); } },
-                {OpcodeName.DIV, () => {DIV(); } },
-                {OpcodeName.MOD, () => {MOD(); } },
-                {OpcodeName.POW, () => {POW(); } },
-                {OpcodeName.UNM, () => {UNM(); } },
-                {OpcodeName.NOT, () => {NOT(); } },
-                {OpcodeName.LEN, () => {LEN(); } },
-                {OpcodeName.CONCAT, () => {CONCAT(); } },
-                {OpcodeName.JMP, () => {JUMP(); } },
-                {OpcodeName.EQ, () => {EQ(); } },
-                {OpcodeName.LT, () => {LT(); } },
-                {OpcodeName.LE, () => {LE(); } },
-                {OpcodeName.TEST, () => {TEST(); } },
-                {OpcodeName.TESTSET, () => {TESTSET(); } },
-                {OpcodeName.CALL, () => {CALL(); } },
-                {OpcodeName.TAILCALL, () => {TAILCALL(); } },
-                {OpcodeName.RETURN, () => {RETURN(); } },
-                {OpcodeName.FORLOOP, () => {FORLOOP(); } },
-                {OpcodeName.FORPREP, () => {FORPREP(); } },
-                {OpcodeName.TFORLOOP, () => {TFORLOOP(); } },
-                {OpcodeName.SETLIST, () => {SETLIST(); } },
-                {OpcodeName.CLOSE, () => {CLOSE(); } },
-                {OpcodeName.CLOSURE, () => {CLOSURE(); } },
-                {OpcodeName.VARARG, () => {VARARG(); } },
+                {LuaOpcode.MOVE, () => {MOVE(); } },
+                {LuaOpcode.LOADK, () => {LOADK(); } },
+                {LuaOpcode.LOADBOOL, () => {LOADBOOL(); } },
+                {LuaOpcode.LOADNIL, () => {LOADNIL(); } },
+                {LuaOpcode.GETUPVAL, () => {GETUPVAL(); } },
+                {LuaOpcode.GETGLOBAL, () => {GETGLOBAL(); } },
+                {LuaOpcode.GETTABLE, () => {GETTABLE(); } },
+                {LuaOpcode.SETGLOBAL, () => {SETGLOBAL(); } },
+                {LuaOpcode.SETUPVAL, () => {SETUPVAL(); } },
+                {LuaOpcode.SETTABLE, () => {SETTABLE(); } },
+                {LuaOpcode.NEWTABLE, () => {NEWTABLE(); } },
+                {LuaOpcode.SELF, () => {SELF(); } },
+                {LuaOpcode.ADD, () => {ADD(); } },
+                {LuaOpcode.SUB, () => {SUB(); } },
+                {LuaOpcode.MUL, () => {MUL(); } },
+                {LuaOpcode.DIV, () => {DIV(); } },
+                {LuaOpcode.MOD, () => {MOD(); } },
+                {LuaOpcode.POW, () => {POW(); } },
+                {LuaOpcode.UNM, () => {UNM(); } },
+                {LuaOpcode.NOT, () => {NOT(); } },
+                {LuaOpcode.LEN, () => {LEN(); } },
+                {LuaOpcode.CONCAT, () => {CONCAT(); } },
+                {LuaOpcode.JMP, () => {JUMP(); } },
+                {LuaOpcode.EQ, () => {EQ(); } },
+                {LuaOpcode.LT, () => {LT(); } },
+                {LuaOpcode.LE, () => {LE(); } },
+                {LuaOpcode.TEST, () => {TEST(); } },
+                {LuaOpcode.TESTSET, () => {TESTSET(); } },
+                {LuaOpcode.CALL, () => {CALL(); } },
+                {LuaOpcode.TAILCALL, () => {TAILCALL(); } },
+                {LuaOpcode.RETURN, () => {RETURN(); } },
+                {LuaOpcode.FORLOOP, () => {FORLOOP(); } },
+                {LuaOpcode.FORPREP, () => {FORPREP(); } },
+                {LuaOpcode.TFORLOOP, () => {TFORLOOP(); } },
+                {LuaOpcode.SETLIST, () => {SETLIST(); } },
+                {LuaOpcode.CLOSE, () => {CLOSE(); } },
+                {LuaOpcode.CLOSURE, () => {CLOSURE(); } },
+                {LuaOpcode.VARARG, () => {VARARG(); } },
             };
 
             if(Verify())
@@ -107,110 +108,128 @@ namespace LuaSharpVM
         }
 
         // decode the metadata and what not from the LuaC file
-        private Chunk Decode()
+        private LuaFunction Decode()
         {
-            Chunk Chunk = new Chunk();
+            LuaFunction Function = new LuaFunction();
 
             int count = 0;
-            Chunk.Name = GetString();     // Function name
-            Chunk.FirstLine = GetInt();   // First line
-            Chunk.LastLine = GetInt();    // Last line
+            Function.Name = GetString();     // Function name
+            Function.FirstLineNr = GetInt();   // First line // 4 or 8?
+            Function.LastLineNr = GetInt();    // Last line // 4 or 8?
 
             // TODO: skip first 2 bytes of this.Chunk.Name
-            if(Chunk.Name != "")
-                Chunk.Name = Chunk.Name.Substring(2);
+            if (Function.Name != "")
+                Function.Name = Function.Name.Substring(0, Function.Name.Length-1);
 
             // point around
-            Chunk.Upvalues = GetByte();
-            Chunk.Arguments = GetByte();
-            Chunk.Vargs = GetByte();
-            Chunk.Stack = GetByte();
+            Function.UpvaluesCount = GetByte();
+            Function.ArgsCount = GetByte();
+            Function.Vargs = (VarArg)GetByte();
+            Function.MaxStackSize = GetByte();
 
             // Decode Instructions
-            count = GetInt();
-            for (int i = 0; i < count; i++)
-            {
-                LuaInstruction instr = new LuaInstruction();
-                int data = GetInt();
-                instr.Opcode = (OpcodeName)GetBits(data, 1, 6);
-                instr.Type = LuaInstructions.Table[(int)instr.Opcode].Type;
-                instr.A = GetBits(data, 7, 14);
-
-                // convert
-                switch(instr.Type)
-                {
-                    case OpcodeType.ABC:
-                        instr.B = GetBits(data, 24, 32);
-                        instr.C = GetBits(data, 15, 23);
-                        break;
-                    case OpcodeType.ABx:
-                        instr.Bx = GetBits(data, 15, 32);
-                        break;
-                    case OpcodeType.AsBx:
-                        instr.sBx = GetBits(data, 15, 32) - 0x1FFFF;
-                        break;
-                }
-                Chunk.Instructions.Add(instr);
-            }
+            Function.Instructions = ReadInstructions();
 
             // Decode constants
-            count = GetInt();
-            for(int i = 0; i < count; i++)
-            {
-                var constant = new LuaConstant();
-                constant.Type = (ConstantType)GetByte();
-
-                switch(constant.Type)
-                {
-                    case ConstantType.BOOL: // bool
-                        constant.Data = GetByte() != 0;
-                        break;
-                    case ConstantType.FLOAT: // float
-                        constant.Data = GetFloat();
-                        break;
-                    case ConstantType.STRING: // string
-                        constant.Data = GetString().Substring(2);
-                        break;
-                }
-
-                this.Constants.Add(constant);
-            }
+            Function.Constants = ReadConstants();
 
             // Decode prototypes
-            count = GetInt();
-            for (int i = 0; i < count; i++)
-            {
-                Chunk.Prototypes.Add(Decode());
-            }
+            Function.Prototypes = ReadPrototypes();
 
             // Decode debuginfo: Line Numbers
-            count = GetInt();
-            for(int i = 0; i < count; i++)
-            {
-                Chunk.DebugLines.Add(GetInt());
-            }
+            Function.DebugLines = ReadDebugLines();
 
             // Decode debuginfo: Locals
-            count = GetInt();
+            ReadDebugLocals();
+            
+            // Decode debuginfo: Upvalues
+            ReadDebugUpvalues();
+
+            return Function;
+        }
+
+        private List<LuaInstruction> ReadInstructions()
+        {
+            List<LuaInstruction> Instructions = new List<LuaInstruction>();
+            int count = GetInt(); // 4 or 8?
+            for (int i = 0; i < count; i++)
+            {
+                LuaInstruction instr = new LuaInstruction(GetInt());
+                Instructions.Add(instr);
+            }
+            return Instructions;
+        }
+
+        private List<LuaConstant> ReadConstants()
+        {
+            List<LuaConstant> Constants = new List<LuaConstant>();
+            int count = GetInt();
+            for (int i = 0; i < count; i++)
+            {
+                byte type = GetByte();
+
+                switch ((LuaType)type)
+                {
+                    case LuaType.Nil:
+                        Constants.Add(new NilConstant());
+                        break;
+                    case LuaType.Bool:
+                        Constants.Add(new BoolConstant(GetByte() != 0));
+                        break;
+                    case LuaType.Number:
+                        Constants.Add(new NumberConstant(GetInt()));
+                        break;
+                    case LuaType.String:
+                        Constants.Add(new StringConstant(GetString()));
+                        break;
+                }
+            }
+            return Constants;
+        }
+
+        private List<LuaFunction> ReadPrototypes()
+        {
+            List<LuaFunction> functions = new List<LuaFunction>();
+            int count = GetInt();
+            for (int i = 0; i < count; i++)
+            {
+                functions.Add(Decode());
+            }
+            return functions;
+        }
+
+        private List<int> ReadDebugLines()
+        {
+            List<int> debuglines = new List<int>();
+            int count = GetInt();
+            for (int i = 0; i < count; i++)
+            {
+                debuglines.Add(GetInt());
+            }
+            return debuglines;
+        }
+
+        private void ReadDebugLocals()
+        {
+            int count = GetInt();
             for (int i = 0; i < count; i++)
             {
                 GetString(); // Local name
                 GetInt();   // Start PC
                 GetInt();   // End PC
-                // TODO: store this info?
+                            // TODO: store this info?
             }
+        }
 
-            // Decode debuginfo: Upvalues
-            count = GetInt();
+        private void ReadDebugUpvalues()
+        {
+            int count = GetInt();
             for (int i = 0; i < count; i++)
             {
                 GetString(); // Upvalue name
-                // TODO: Store this
+                             // TODO: Store this
             }
-
-            return Chunk;
         }
-
 
         // check if input is as expected
         private bool Verify()
@@ -249,8 +268,8 @@ namespace LuaSharpVM
         {
             while(this.Registers.IP < this.Buffer.Length)
             {
-                Console.WriteLine($"{this.Registers.IP.ToString("X4")}: {((OpcodeName)this.Buffer[this.Registers.IP]).ToString().PadLeft(8)} ...");
-                this.InstructionTable[(OpcodeName)this.Buffer[this.Registers.IP]]();
+                Console.WriteLine($"{this.Registers.IP.ToString("X4")}: {((LuaOpcode)this.Buffer[this.Registers.IP]).ToString().PadLeft(8)} ...");
+                this.InstructionTable[(LuaOpcode)this.Buffer[this.Registers.IP]]();
             }
         }
 
@@ -298,9 +317,9 @@ namespace LuaSharpVM
 
         private void GETGLOBAL()
         {
-            int k = (int)this.Constants[this.Registers.Bx].Data;
-            this.Stack[this.Registers.A] = this.Environment[k];
-            this.Registers.IP++;
+            //int k = (int)this.Constants[this.Registers.Bx].Data;
+            //this.Stack[this.Registers.A] = this.Environment[k];
+            //this.Registers.IP++;
         }
 
         private void GETTABLE()
@@ -310,9 +329,9 @@ namespace LuaSharpVM
 
         private void SETGLOBAL()
         {
-            var k = (int)this.Constants[this.Registers.Bx].Data;
-            this.Environment[k] = this.Stack[this.Registers.A];
-            this.Registers.IP++;
+            //var k = (int)this.Constants[this.Registers.Bx];
+            //this.Environment[k] = this.Stack[this.Registers.A];
+            //this.Registers.IP++;
         }
 
         private void SETUPVAL()
@@ -489,7 +508,9 @@ namespace LuaSharpVM
             else
             {
                 int pn = 2 ^ (n - 1);
-                bool res = ((input % (pn + pn) >= pn));
+                bool res = false;
+                if(pn != 0)
+                    res = ((input % (pn + pn) >= pn));
                 //bool res = ((input % (pn + pn) >= pn) && 1 || 0);
                 if (res)
                     return 1;
