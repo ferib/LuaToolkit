@@ -156,7 +156,7 @@ namespace LuaSharpVM.Disassembler
                         Constants.Add(new BoolConstant(GetByte() != 0));
                         break;
                     case LuaType.Number:
-                        Constants.Add(new NumberConstant(GetInt()));
+                        Constants.Add(new NumberConstant(GetFloat2()));
                         break;
                     case LuaType.String:
                         Constants.Add(new StringConstant(GetString()));
@@ -250,10 +250,37 @@ namespace LuaSharpVM.Disassembler
             return BitConverter.ToInt32(this.Buffer, this.Index - 4);
         }
 
+        //private double ReadNumber(byte numSize)
+        //{
+        //    byte[] bytes = this.Buffer.Co(numSize);
+        //    double ret = 0;
+
+        //    if (numSize == 8)
+        //    {
+        //        ret = BitConverter.ToDouble(bytes, 0);
+        //    }
+        //    else if (numSize == 4)
+        //    {
+        //        ret = BitConverter.ToSingle(bytes, 0);
+        //    }
+        //    else
+        //    {
+        //        throw new NotImplementedException("Uhm...");
+        //    }
+
+        //    return ret;
+        //}
+
         private float GetFloat()
         {
             this.Index += 4;
             return BitConverter.ToSingle(this.Buffer, this.Index - 4);
+        }
+
+        private double GetFloat2()
+        {
+            this.Index += 8;
+            return BitConverter.ToDouble(this.Buffer, this.Index - 8);
         }
 
         private long GetLong()

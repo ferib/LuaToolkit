@@ -11,7 +11,7 @@ namespace LuaSharpVM.Decompiler
     public class LuaDecompiler
     {
         private uint FunctionsCount;
-        private string Result;
+        public string Result;
         private byte[] Buffer;
 
         public LuaDecompiler(byte[] Buffer)
@@ -38,7 +38,7 @@ namespace LuaSharpVM.Decompiler
 					functionHeader += "arg" + i + (i + 1 != function.ArgsCount ? ", " : ")");
 				}
 
-				this.Result += functionHeader;
+				this.Result += functionHeader + "\r\n";
 				//writer.Write(functionHeader);
 				++FunctionsCount;
 
@@ -58,7 +58,7 @@ namespace LuaSharpVM.Decompiler
 
 			foreach (var c in function.Constants)
 			{
-				this.Result += "{indents}const{constCount} = {c.ToString()}";
+				this.Result += "{indents}const{constCount} = {c.ToString()}\r\n";
 				++constCount;
 			}
 		}
@@ -73,7 +73,7 @@ namespace LuaSharpVM.Decompiler
 
 		private void WriteInstructions(LuaFunction function, int indentLevel = 0)
 		{
-			string indents = new string('\t', indentLevel);
+			string tabs = new string('\t', indentLevel);
 
 			foreach (var i in function.Instructions)
 			{
@@ -84,119 +84,125 @@ namespace LuaSharpVM.Decompiler
 						break;
 
 					case LuaOpcode.LOADK:
-						this.Result += $"{indents}var{GetConstant(i.Bx, function)} = {i.A}";
+						this.Result += $"{tabs}var{i.A} = {GetConstant(i.Bx, function)}\r\n";
 						//writer.WriteLine("{2}var{0} = {1}", i.A, GetConstant(i.Bx, function), indents);
 						break;
 
 					case LuaOpcode.LOADBOOL:
+						this.Result += $"{tabs}var{i.A} = {(i.B != 0 ? "true" : "false")}\r\n";
 						//writer.WriteLine("{2}var{0} = {1}", i.A, (i.B != 0 ? "true" : "false"), indents);
 						break;
 
 					case LuaOpcode.LOADNIL:
-						//for (int x = i.A; x < i.B + 1; ++x)
-						//	writer.WriteLine("{1}var{0} = nil", x, indents);
-						break;
+						for (int x = i.A; x < i.B + 1; ++x)
+							this.Result += $"{tabs}var{x} = nil\r\n";
+                            //writer.WriteLine("{1}var{0} = nil", x, indents);
+                        break;
 
 					case LuaOpcode.GETUPVAL:
+						this.Result += $"{tabs}var{i.A} = upvalue[{i.B}]\r\n";
 						//writer.WriteLine("{2}var{0} = upvalue[{1}]", i.A, i.B, indents);
 						break;
 
 					case LuaOpcode.GETGLOBAL:
+						this.Result += $"{tabs}var{i.A} = _G[{GetConstant(i.Bx, function)}]\r\n";
 						//writer.WriteLine("{2}var{0} = _G[{1}]", i.A, GetConstant(i.Bx, function), indents);
 						break;
 
-					//case LuaOpcode.GETTABLE:
-					//	writer.WriteLine("{3}var{0} = var{1}[{2}]", i.A, i.B, WriteIndex(i.C, function), indents);
-					//	break;
+                    case LuaOpcode.GETTABLE:
+						this.Result += $"{tabs}var{i.A} = var{i.B}[{WriteIndex(i.C, function)}]\r\n";
+                        //writer.WriteLine("{3}var{0} = var{1}[{2}]", i.A, i.B, WriteIndex(i.C, function), indents);
+                        break;
 
-					//case LuaOpcode.SETGLOBAL:
-					//	writer.WriteLine("{2}_G[{0}] = var{1}", GetConstant(i.Bx, function), i.A, indents);
-					//	break;
+                    case LuaOpcode.SETGLOBAL:
+						this.Result += $"{tabs}_G[{GetConstant(i.Bx, function)}] = var{i.A}\r\n";
+                        break;
 
-					//case LuaOpcode.SETUPVAL:
-					//	writer.WriteLine("{2}upvalue[{0}] = var{1}", i.B, i.A, indents);
-					//	break;
+                    case LuaOpcode.SETUPVAL:
+						this.Result += $"{tabs}upvalue[{i.B}] = var{i.A}\r\n";
+                        break;
 
-					//case LuaOpcode.SETTABLE:
-					//	writer.WriteLine("{3}var{0}[{1}] = {2}", i.A, WriteIndex(i.B, function), WriteIndex(i.C, function), indents);
-					//	break;
+                    case LuaOpcode.SETTABLE:
+						this.Result += $"{tabs}var{i.A}[{WriteIndex(i.B, function)}] = {WriteIndex(i.C, function)}\r\n";
+                        break;
 
-					//case LuaOpcode.NEWTABLE:
-					//	writer.WriteLine("{1}var{0} = {{}}", i.A, indents);
-					//	break;
+                    case LuaOpcode.NEWTABLE:
+						this.Result += $"{tabs}var{i.A} = {{}}\r\n";
+                        break;
 
-					//case LuaOpcode.SELF:
-					//	writer.WriteLine("{2}var{0} = var{1}", i.A + 1, i.B, indents);
-					//	writer.WriteLine("{3}var{0} = var{1}[{2}]", i.A, i.B, WriteIndex(i.C, function), indents);
-					//	break;
+                    case LuaOpcode.SELF:
+						this.Result += $"{tabs}var{i.A} = var{i.B}\r\n";
+						this.Result += $"{tabs}var{i.A} = var{i.B}[{WriteIndex(i.C, function)}]\r\n";
+                        break;
 
-					//case LuaOpcode.ADD:
-					//	writer.WriteLine("{3}var{0} = var{1} + var{2}", i.A, i.B, i.C, indents);
-					//	break;
+                    case LuaOpcode.ADD:
+						this.Result += $"{tabs}var{i.A} = var{i.B} + var{i.C}\r\n";
+                        break;
 
-					//case LuaOpcode.SUB:
-					//	writer.WriteLine("{3}var{0} = var{1} - var{2}", i.A, i.B, i.C, indents);
-					//	break;
+                    case LuaOpcode.SUB:
+						this.Result += $"{tabs}var{i.A} = var{i.B} - var{i.C}\r\n";
+                        break;
 
-					//case LuaOpcode.MUL:
-					//	writer.WriteLine("{3}var{0} = var{1} * var{2}", i.A, i.B, i.C, indents);
-					//	break;
+                    case LuaOpcode.MUL:
+						this.Result += $"{tabs}var{i.A} = var{i.B} * var{i.C}\r\n";
+                        break;
 
-					//case LuaOpcode.DIV:
-					//	writer.WriteLine("{3}var{0} = var{1} / var{2}", i.A, i.B, i.C, indents);
-					//	break;
+                    case LuaOpcode.DIV:
+						this.Result += $"{tabs}var{i.A} = var{i.B} / var{i.C}\r\n";
+                        break;
 
-					//case LuaOpcode.MOD:
-					//	writer.WriteLine("{3}var{0} = var{1} % var{2}", i.A, i.B, i.C, indents);
-					//	break;
+                    case LuaOpcode.MOD:
+						this.Result += $"{tabs}var{i.A} = var{i.B} % var{i.C}\r\n";
+                        break;
 
-					//case LuaOpcode.POW:
-					//	writer.WriteLine("{3}var{0} = var{1} ^ var{2}", i.A, i.B, i.C, indents);
-					//	break;
+                    case LuaOpcode.POW:
+						this.Result += $"{tabs}var{i.A} = var{i.B} ^ var{i.C}\r\n";
+                        break;
 
-					//case LuaOpcode.UNM:
-					//	writer.WriteLine("{2}var{0} = -var{1}", i.A, i.B, indents);
-					//	break;
+                    case LuaOpcode.UNM:
+						this.Result += $"{tabs}var{i.A} = -var{i.B}\r\n";
+                        break;
 
-					//case LuaOpcode.NOT:
-					//	writer.WriteLine("{2}var{0} = not var{1}", i.A, i.B, indents);
-					//	break;
+                    case LuaOpcode.NOT:
+						this.Result += $"{tabs}var{i.A} = not var{i.B}\r\n";
+                        break;
 
-					//case LuaOpcode.LEN:
-					//	writer.WriteLine("{2}var{0} = #var{1}", i.A, i.B, indents);
-					//	break;
+                    case LuaOpcode.LEN:
+						this.Result += $"{tabs}var{i.A} = #var{i.B}\r\n";
+                        break;
 
-					//case LuaOpcode.CONCAT:
-					//	writer.Write("{1}var{0} = ", i.A, indents);
+                    case LuaOpcode.CONCAT:
+						this.Result += $"{tabs}var{i.A} = ";
 
-					//	for (int x = i.B; x < i.C; ++x)
-					//		writer.Write("var{0} .. ", x);
+                        for (int x = i.B; x < i.C; ++x)
+							this.Result += $"var{x} .. \r\n";
 
-					//	writer.WriteLine("var{0}", i.C);
-					//	break;
+						this.Result += $"var{i.C}\r\n";
+                        break;
 
-					//case LuaOpcode.JMP:
-					//	throw new NotImplementedException("Jmp");
+                    case LuaOpcode.JMP:
+						this.Result += $"{tabs}JMP\r\n";
+						//throw new NotImplementedException("Jmp");
+						break;
+                    case LuaOpcode.EQ:
+						this.Result += $"{tabs}if ({WriteIndex(i.B, function)} == {WriteIndex(i.C, function)}) ~= {i.A} then\r\n";
+                        break;
 
-					//case LuaOpcode.EQ:
-					//	writer.WriteLine("{3}if ({0} == {1}) ~= {2} then", WriteIndex(i.B, function), WriteIndex(i.C, function), i.A, indents);
-					//	break;
+                    case LuaOpcode.LT:
+						this.Result += $"{tabs}if ({WriteIndex(i.B, function)} < {WriteIndex(i.C, function)}) ~= {i.A} then\r\n";
+                        break;
 
-					//case LuaOpcode.LT:
-					//	writer.WriteLine("{3}if ({0} < {1}) ~= {2} then", WriteIndex(i.B, function), WriteIndex(i.C, function), i.A, indents);
-					//	break;
+                    case LuaOpcode.LE:
+						this.Result += $"{tabs}if ({WriteIndex(i.B, function)} <= {WriteIndex(i.C, function)}) ~= {i.A} then\r\n";
+                        break;
 
-					//case LuaOpcode.LE:
-					//	writer.WriteLine("{3}if ({0} <= {1}) ~= {2} then", WriteIndex(i.B, function), WriteIndex(i.C, function), i.A, indents);
-					//	break;
+                    case LuaOpcode.TEST:
+						this.Result += $"{tabs}if not var{i.A} <=> {i.C} then\r\n";
+                        break;
 
-					//case LuaOpcode.TEST:
-					//	writer.WriteLine("{2}if not var{0} <=> {1} then", i.A, i.C, indents);
-					//	break;
-
-					case LuaOpcode.TESTSET:
-						this.Result += $"{indents}if var{i.B} <=> {i.C} then\n";
-						this.Result += $"{indents}\tvar{i.A} = var{i.B}\n";
+                    case LuaOpcode.TESTSET:
+						this.Result += $"{tabs}if var{i.B} <=> {i.C} then\n";
+						this.Result += $"{tabs}\tvar{i.A} = var{i.B}\n";
 						this.Result += $"end\n";
 						//writer.WriteLine("{2}if var{0} <=> {1} then", i.B, i.C, indents);
 						//writer.WriteLine("{2}\tvar{0} = var{1}", i.A, i.B, indents);
@@ -208,7 +214,7 @@ namespace LuaSharpVM.Decompiler
 
 						if (i.C != 0)
 						{
-							sb.Append(indents);
+							sb.Append(tabs);
 							var indentLen = sb.Length;
 
 							// return values
@@ -246,39 +252,39 @@ namespace LuaSharpVM.Decompiler
 						else
 						{
 							//throw new NotImplementedException("i.B == 0");
-							this.Result += "i.B == 0\n";
+							this.Result += $"{tabs}i.B == 0\r\n";
 						}
 
-						this.Result += sb.ToString() + "\n";
+						this.Result += sb.ToString() + "\r\n";
 						break;
 
 					case LuaOpcode.TAILCALL:
-						this.Result += "TAILCALL\n"; // TODO: implement
+						this.Result += $"{tabs}TAILCALL\r\n"; // TODO: implement
 						break;
 					case LuaOpcode.RETURN:
-						this.Result += "return\n";
+						this.Result += $"{tabs}return\r\n";
 						break;
 
 					case LuaOpcode.FORLOOP:
-						this.Result += "FORLOOP\n"; // TODO: implement
+						this.Result += $"{tabs}FORLOOP\r\n"; // TODO: implement
 						break;
 					case LuaOpcode.FORPREP:
-						this.Result += "FORPREP\n"; // TODO: implement
+						this.Result += $"{tabs}FORPREP\r\n"; // TODO: implement
 						break;
 					case LuaOpcode.TFORLOOP:
-						this.Result += "TFORLOOP\n"; // TODO: implement
+						this.Result += $"{tabs}TFORLOOP\r\n"; // TODO: implement
 						break;
 					case LuaOpcode.SETLIST:
-						this.Result += "SETLIST\n"; // TODO: implement
+						this.Result += $"{tabs}SETLIST\r\n"; // TODO: implement
 						break;
 					case LuaOpcode.CLOSE:
-						this.Result += "CLOSE\n"; // TODO: implement
+						this.Result += $"{tabs}CLOSE\r\n"; // TODO: implement
 						break;
 					case LuaOpcode.CLOSURE:
-						this.Result += "CLOSURE\n"; // TODO: implement
+						this.Result += $"{tabs}CLOSURE\r\n"; // TODO: implement
 						break;
 					case LuaOpcode.VARARG:
-						this.Result += "VARARG\n"; // TODO: implement
+						this.Result += $"{tabs}VARARG\r\n"; // TODO: implement
 						break;
 				}
 			}
