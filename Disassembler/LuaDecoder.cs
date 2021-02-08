@@ -9,41 +9,17 @@ namespace LuaSharpVM.Disassembler
 {
     public class LuaDecoder
     {
-        private bool BigEndian;
-        private int IntSize;
-        private int SizeT;
+        public LuaCFile File;
         private int Index;
-        private byte[] Buffer;
-        public LuaFunction Function;
-        private LuaRegisters Registers;
-        private Dictionary<int, object> Stack;
-        //private new List<LuaConstant> Constants;
-        private Dictionary<int, object> Upvalues;
-        private Dictionary<int, object> Environment;
-        private Dictionary<LuaOpcode, Action> InstructionTable;
 
-        private int hits = 0;
-
-        public LuaDecoder(byte[] LuaC)
+        // NOTE: read the LuaCFILE and create stuff
+        public LuaDecoder(LuaCFile file)
         {
+            this.File = file;
             this.Index = 0;
-            this.Buffer = LuaC;
-            this.Registers = new LuaRegisters();
-            this.Stack = new Dictionary<int, object>();
-            //this.Constants = new List<LuaConstant>();
-            this.Upvalues = new Dictionary<int, object>();
-            this.Environment = new Dictionary<int, object>();
             
             if(Verify())
-                this.Function = DecodeFunctionblock(); // init the Lua stuff
-        }
-
-        public void Execute()
-        {
-            List<int> localStack = new List<int>();
-            List<int> ghostStack = new List<int>();
-
-            loop(); // execute the bytecode
+                this.File.Function = DecodeFunctionblock(); // init the Lua stuff
         }
 
         // check if input is as expected
@@ -64,9 +40,9 @@ namespace LuaSharpVM.Disassembler
             }
 
             GetByte(); // another bytecode
-            this.BigEndian = GetByte() == 0;
-            this.IntSize = GetByte();
-            this.SizeT = GetByte();
+            this.File.BigEndian = GetByte() == 0;
+            this.File.IntSize = GetByte();
+            this.File.SizeT = GetByte();
 
             // TODO: figure out what size_t and so are used for
 
@@ -116,15 +92,6 @@ namespace LuaSharpVM.Disassembler
             Function.DebugUpvalues = ReadDebugUpvalues();
 
             return Function;
-        }
-
-        private void loop()
-        {
-            while (this.Registers.IP < this.Buffer.Length)
-            {
-                Console.WriteLine($"{this.Registers.IP.ToString("X4")}: {((LuaOpcode)this.Buffer[this.Registers.IP]).ToString().PadLeft(8)} ...");
-                this.InstructionTable[(LuaOpcode)this.Buffer[this.Registers.IP]]();
-            }
         }
 
         private List<LuaInstruction> ReadInstructions()
@@ -241,13 +208,13 @@ namespace LuaSharpVM.Disassembler
         private byte GetByte()
         {
             this.Index++;
-            return this.Buffer[this.Index - 1];
+            return this.File.Buffer[this.Index - 1];
         }
 
         private int GetInt()
         {
             this.Index += 4;
-            return BitConverter.ToInt32(this.Buffer, this.Index - 4);
+            return BitConverter.ToInt32(this.File.Buffer, this.Index - 4);
         }
 
         //private double ReadNumber(byte numSize)
@@ -274,34 +241,34 @@ namespace LuaSharpVM.Disassembler
         private float GetFloat()
         {
             this.Index += 4;
-            return BitConverter.ToSingle(this.Buffer, this.Index - 4);
+            return BitConverter.ToSingle(this.File.Buffer, this.Index - 4);
         }
 
         private double GetFloat2()
         {
             this.Index += 8;
-            return BitConverter.ToDouble(this.Buffer, this.Index - 8);
+            return BitConverter.ToDouble(this.File.Buffer, this.Index - 8);
         }
 
         private long GetLong()
         {
             this.Index += 8;
-            return BitConverter.ToInt64(this.Buffer, this.Index - 8);
+            return BitConverter.ToInt64(this.File.Buffer, this.Index - 8);
         }
 
         private string GetString(long len = 0)
         {
             if(len == 0)
             {
-                if(this.SizeT == 4)
+                if(this.File.SizeT == 4)
                     len = GetInt(); // get_size_t (4 byte?)
-                else if (this.SizeT == 8)
+                else if (this.File.SizeT == 8)
                     len = GetLong(); // get_size_t (8 byte?)
             }
                 
             string str = "";
-            for(int i = 0; i < len && this.Index + i < this.Buffer.Length; i++)
-                str += (char)this.Buffer[this.Index+i];
+            for(int i = 0; i < len && this.Index + i < this.File.Buffer.Length; i++)
+                str += (char)this.File.Buffer[this.Index+i];
             this.Index += (int)len;
             return str;
         }

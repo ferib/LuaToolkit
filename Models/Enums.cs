@@ -1,13 +1,5 @@
 ﻿namespace LuaSharpVM.Models
 {
-    //public enum ConstantType
-    //{
-    //    NIL = 0,
-    //    BOOL = 1,
-    //    NUMBER = 3,
-    //    STRING = 4
-    //}
-
     public enum VarArg
     {
         Has = 1,
