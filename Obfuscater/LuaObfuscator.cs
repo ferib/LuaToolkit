@@ -20,7 +20,7 @@ namespace LuaSharpVM.Obfuscater
         public LuaObfuscator(byte[] originalLuaC)
         {
             this.OriginalLuaC = originalLuaC;
-            this.OriginalDecoder = new LuaDecoder(this.OriginalLuaC);
+            this.OriginalDecoder = new LuaDecoder(new LuaCFile(this.OriginalLuaC));
             this.OriginalDecompiler = new LuaDecompiler(this.OriginalLuaC);
             if(originalLuaC != null)
                 Obfuscate();
@@ -35,7 +35,7 @@ namespace LuaSharpVM.Obfuscater
         {
             if(this.OriginalDecompiler.Result == null)
             {
-                this.OriginalDecompiler.Write(this.OriginalDecoder.Function);
+                this.OriginalDecompiler.Write(this.OriginalDecoder.File.Function);
             }
             return this.OriginalDecompiler.Result;
         }
@@ -44,8 +44,8 @@ namespace LuaSharpVM.Obfuscater
         {
             if(this.ObfuscatedDecoder == null && this.ObfuscatedLuaC != null && this.ObfuscatedDecompiler == null)
             {
-                this.ObfuscatedDecoder = new LuaDecoder(this.ObfuscatedLuaC);
-                this.ObfuscatedDecompiler.Write(this.ObfuscatedDecoder.Function);
+                this.ObfuscatedDecoder = new LuaDecoder(new LuaCFile(this.ObfuscatedLuaC));
+                this.ObfuscatedDecompiler.Write(this.ObfuscatedDecoder.File.Function);
             }
             
             if(this.ObfuscatedDecompiler != null)
