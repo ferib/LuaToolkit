@@ -1,148 +1,103 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using LuaSharpVM.Models;
 
-namespace LuaSharpVM
+namespace LuaSharpVM.Disassembler
 {
-    public enum LuaOpcode
-    {
-        MOVE = 0,
-        LOADK,
-        LOADBOOL,
-        LOADNIL,
-        GETUPVAL,
-        GETGLOBAL,
-        GETTABLE,
-        SETGLOBAL,
-        SETUPVAL,
-        SETTABLE,
-        NEWTABLE,
-        SELF,
-        ADD,
-        SUB,
-        MUL,
-        DIV,
-        MOD,
-        POW,
-        UNM,
-        NOT,
-        LEN,
-        CONCAT,
-        JMP,
-        EQ,
-        LT,
-        LE,
-        TEST,
-        TESTSET,
-        CALL,
-        TAILCALL,
-        RETURN,
-        FORLOOP,
-        FORPREP,
-        TFORLOOP,
-        SETLIST,
-        CLOSE,
-        CLOSURE,
-        VARARG
-    }
-
-
     public class LuaInstruction
     {
-        
+
         private const int HalfMax18Bit = 2 << 17;	// == 2^18 / 2 == 131071
 
         public int Data
-		{
-			get;
-			private set;
-		}
+        {
+            get;
+            private set;
+        }
 
-		public LuaOpcode OpCode
-		{
-			get;
-			private set;
-		}
+        public LuaOpcode OpCode
+        {
+            get;
+            private set;
+        }
 
-		public int A
-		{
-			get;
-			private set;
-		}
+        public int A
+        {
+            get;
+            private set;
+        }
 
-		public int B
-		{
-			get;
-			private set;
-		}
+        public int B
+        {
+            get;
+            private set;
+        }
 
-		public int C
-		{
-			get;
-			private set;
-		}
+        public int C
+        {
+            get;
+            private set;
+        }
 
-		public int Bx
-		{
-			get { return ((B << 9) & 0xFFE00 | C) & 0x3FFFF; }
-		}
+        public int Bx
+        {
+            get { return ((B << 9) & 0xFFE00 | C) & 0x3FFFF; }
+        }
 
-		public int sBx
-		{
-			get { return Bx - HalfMax18Bit; }
-		}
+        public int sBx
+        {
+            get { return Bx - HalfMax18Bit; }
+        }
 
-		public bool HasBx
-		{
-			get;
-			private set;
-		}
+        public bool HasBx
+        {
+            get;
+            private set;
+        }
 
-		public bool Signed
-		{
-			get;
-			private set;
-		}
+        public bool Signed
+        {
+            get;
+            private set;
+        }
 
-		public LuaInstruction(int data)
-		{
-			Data = data;
+        public LuaInstruction(int data)
+        {
+            Data = data;
 
-			OpCode = (LuaOpcode)(data & 0x3F);
-			A = (data >> 6) & 0xFF;
-			B = (data >> 23) & 0x1FF;
-			C = (data >> 14) & 0x1FF;
+            OpCode = (LuaOpcode)(data & 0x3F);
+            A = (data >> 6) & 0xFF;
+            B = (data >> 23) & 0x1FF;
+            C = (data >> 14) & 0x1FF;
 
-			switch (OpCode)
-			{
-				case LuaOpcode.JMP:
-				case LuaOpcode.FORLOOP:
-				case LuaOpcode.FORPREP:
-					Signed = true;
-					goto case LuaOpcode.LOADK;
+            switch (OpCode)
+            {
+                case LuaOpcode.JMP:
+                case LuaOpcode.FORLOOP:
+                case LuaOpcode.FORPREP:
+                    Signed = true;
+                    goto case LuaOpcode.LOADK;
 
-				case LuaOpcode.LOADK:
-				case LuaOpcode.GETGLOBAL:
-				case LuaOpcode.SETGLOBAL:
-				case LuaOpcode.CLOSE:
-					HasBx = true;
-					break;
+                case LuaOpcode.LOADK:
+                case LuaOpcode.GETGLOBAL:
+                case LuaOpcode.SETGLOBAL:
+                case LuaOpcode.CLOSE:
+                    HasBx = true;
+                    break;
 
-				default:
-					HasBx = false;
-					Signed = false;
-					break;
-			}
-		}
+                default:
+                    HasBx = false;
+                    Signed = false;
+                    break;
+            }
+        }
 
         public override string ToString()
         {
             // TODO: check if this makes sense
-            if(this.Signed && this.HasBx)
+            if (this.Signed && this.HasBx)
                 return $"{this.OpCode} {this.sBx} {this.sBx}";
-            if(this.Signed)
+            if (this.Signed)
                 return $"{this.OpCode} {this.sBx}";
-            if(this.HasBx)
+            if (this.HasBx)
                 return $"{this.OpCode} {this.Bx}";
             else
                 return $"{this.OpCode} {this.A} {this.B} {this.C}";

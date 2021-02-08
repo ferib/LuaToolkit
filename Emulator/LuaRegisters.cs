@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace LuaSharpVM
+namespace LuaSharpVM.Emulator
 {
     public class LuaRegisters
     {
