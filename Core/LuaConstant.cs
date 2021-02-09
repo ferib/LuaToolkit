@@ -7,7 +7,7 @@ namespace LuaSharpVM.Core
         public LuaType Type
         {
             get;
-            protected set;
+            set;
         }
 
         public override abstract string ToString();
@@ -18,7 +18,7 @@ namespace LuaSharpVM.Core
         public T Value
         {
             get;
-            private set;
+            set;
         }
 
         protected LuaConstant(LuaType type, T value)

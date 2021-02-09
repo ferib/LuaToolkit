@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using LuaSharpVM.Core;
+using LuaSharpVM.Disassembler;
 
 namespace LuaSharpVM.Obfuscater.Plugin
 {
@@ -9,11 +10,11 @@ namespace LuaSharpVM.Obfuscater.Plugin
     {
         // tamper with the control flow
 
-        private LuaCFile Lua;
+        private LuaDecoder File;
 
-        public LOFlow(ref LuaCFile lua)
+        public LOFlow(ref LuaDecoder file)
         {
-            this.Lua = lua;
+            this.File = file;
         }
     }
 }

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using LuaSharpVM.Core;
+using LuaSharpVM.Disassembler;
 
 namespace LuaSharpVM.Obfuscater.Plugin
 {
@@ -11,11 +12,11 @@ namespace LuaSharpVM.Obfuscater.Plugin
         // add dead code that cant be defined on static analyses
         // multiply basic math instructions
 
-        private LuaCFile Lua;
+        private LuaDecoder File;
 
-        public LOJunk(ref LuaCFile lua)
+        public LOJunk(ref LuaDecoder file)
         {
-            this.Lua = lua;
+            this.File = file;
         }
     }
 }

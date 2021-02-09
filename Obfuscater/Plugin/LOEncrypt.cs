@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using LuaSharpVM.Models;
 using LuaSharpVM.Core;
+using LuaSharpVM.Disassembler;
 
 namespace LuaSharpVM.Obfuscater
 {
@@ -10,11 +11,11 @@ namespace LuaSharpVM.Obfuscater
     {
         // Encrypt a given stub using a XOR to break basic tools
 
-        private LuaCFile Lua;
+        private LuaDecoder File;
 
-        public LOEncrypt(ref LuaCFile lua)
+        public LOEncrypt(ref LuaDecoder file)
         {
-            this.Lua = lua;
+            this.File = file;
         }
     }
 }
