@@ -7,27 +7,26 @@ using LuaSharpVM.Models;
 
 namespace LuaSharpVM.Obfuscater.Plugin
 {
-    public class LOString
+    public class LOString : LOPlugin
     {
         // randomize strings?
+        static string desc = "Randomize function names for all the global functions.";
 
-        private LuaDecoder decoder;
         private Dictionary<string, string> StringMap = new Dictionary<string, string>();
-
-        public LOString(ref LuaDecoder decoder)
+        
+        public LOString(ref LuaDecoder decoder) : base(ref decoder, desc)
         {
-            this.decoder = decoder;
             ObfuscateStrings();
         }
 
         private void ObfuscateStrings()
         {
             // iterate all constants in root function
-            for (int i = 0; i < decoder.File.Function.Constants.Count; i++)
+            for (int i = 0; i < base.Decoder.File.Function.Constants.Count; i++)
             {
-                if (decoder.File.Function.Constants[i].Type == LuaType.String)
+                if (base.Decoder.File.Function.Constants[i].Type == LuaType.String)
                 {
-                    var LuaStr = (StringConstant)decoder.File.Function.Constants[i];
+                    var LuaStr = (StringConstant)base.Decoder.File.Function.Constants[i];
                     if (!StringMap.ContainsKey(LuaStr.Value))
                     {
                         GenerateNewString(LuaStr.Value);
@@ -50,7 +49,7 @@ namespace LuaSharpVM.Obfuscater.Plugin
             while (result.Length != len)
             {
                 char c = chars[rnd.Next(0, chars.Length)];
-                if (result.Length == 0 && !Char.IsLetter(c))
+                if (result.Length == 0 && !char.IsLetter(c))
                     continue; // we need to start with a letter
 
                 result += c;
@@ -68,7 +67,6 @@ namespace LuaSharpVM.Obfuscater.Plugin
                         this.StringMap.Add(key, str);
             }
             while (!this.StringMap.ContainsKey(key)); // repeat in case of failure
-
         }
     }
 }

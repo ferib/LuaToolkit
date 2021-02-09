@@ -6,14 +6,13 @@ using LuaSharpVM.Disassembler;
 
 namespace LuaSharpVM.Obfuscater.Plugin
 {
-    public class LOVM
+    public class LOVM : LOPlugin
     {
         // Add custom instruction by replacing pairs of existing ones
-        private LuaDecoder File;
-
-        public LOVM(ref LuaDecoder file)
+        static string desc = "TODO";
+        public LOVM(ref LuaDecoder decoder) : base(ref decoder, desc)
         {
-            this.File = file;
+
         }
     }
 }

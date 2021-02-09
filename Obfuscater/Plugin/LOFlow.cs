@@ -6,15 +6,15 @@ using LuaSharpVM.Disassembler;
 
 namespace LuaSharpVM.Obfuscater.Plugin
 {
-    public class LOFlow
+    public class LOFlow : LOPlugin
     {
         // tamper with the control flow
 
-        private LuaDecoder File;
-
-        public LOFlow(ref LuaDecoder file)
+        static string desc = "TODO";
+        public LOFlow(ref LuaDecoder decoder) : base(ref decoder, desc)
         {
-            this.File = file;
+
         }
+        // For starters, add a few jumps/ifs that dont make sense?
     }
 }

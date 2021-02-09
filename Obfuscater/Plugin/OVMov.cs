@@ -2,19 +2,19 @@
 using System.Collections.Generic;
 using System.Text;
 using LuaSharpVM.Core;
+using LuaSharpVM.Disassembler;
 
 namespace LuaSharpVM.Obfuscater.Plugin
 {
-    public class OVMov
+    public class OVMov : LOPlugin
     {
         // Movfuscation, turning machiene
         // 'You sping my head right round right round'
 
-        private LuaCFile Lua;
-
-        public OVMov(ref LuaCFile lua)
+        static string desc = "TODO";
+        public OVMov(ref LuaDecoder decoder) : base(ref decoder, desc)
         {
-            this.Lua = lua;
+
         }
 
         /*
