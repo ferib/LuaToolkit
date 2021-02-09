@@ -18,12 +18,12 @@ namespace LuaSharpVM.Disassembler
             this.File = file;
             this.Index = 0;
             
-            if(Verify())
+            if(ReadHeader())
                 this.File.Function = DecodeFunctionblock(); // init the Lua stuff
         }
 
         // check if input is as expected
-        private bool Verify()
+        private bool ReadHeader()
         {
             // check magic bytes
             if (GetString(4) != "\x1BLua")

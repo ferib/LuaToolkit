@@ -28,7 +28,7 @@ namespace LuaSharpVM.Obfuscater
 
         private void Obfuscate()
         {
-
+            LOEncrypt encrypt = new LOEncrypt(ref OriginalDecoder.File);
         }
 
         public string DecompileOriginalLuaC()
