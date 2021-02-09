@@ -39,18 +39,14 @@ namespace LuaSharpVM.Disassembler
                 return false;
             }
 
-            GetByte(); // another bytecode
+            // general settings
+            this.File.Format = GetByte();
             this.File.BigEndian = GetByte() == 0;
             this.File.IntSize = GetByte();
-            this.File.SizeT = GetByte();
-
-            // TODO: figure out what size_t and so are used for
-
-            string bytecodeTarget = GetString(3);
-            if (bytecodeTarget != "\x04\x08\x00")
-                return false;
-
-            // Index = 11 after this
+            this.File.SizeTSize = GetByte();
+            this.File.InstructionSize = GetByte();
+            this.File.LuaNumberSize = GetByte();
+            this.File.Integral = GetByte();
 
             return true;
         }
@@ -73,7 +69,7 @@ namespace LuaSharpVM.Disassembler
             Function.Vargs = (VarArg)GetByte();
             Function.MaxStackSize = GetByte();
 
-            // Decode Instructions
+            // Decode instructions
             Function.Instructions = ReadInstructions();
 
             // Decode constants
@@ -260,9 +256,9 @@ namespace LuaSharpVM.Disassembler
         {
             if(len == 0)
             {
-                if(this.File.SizeT == 4)
+                if(this.File.SizeTSize == 4)
                     len = GetInt(); // get_size_t (4 byte?)
-                else if (this.File.SizeT == 8)
+                else if (this.File.SizeTSize == 8)
                     len = GetLong(); // get_size_t (8 byte?)
             }
                 

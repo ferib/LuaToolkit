@@ -7,9 +7,13 @@ namespace LuaSharpVM.Core
 {
     public class LuaCFile
     {
+        public byte Format;
         public bool BigEndian;
-        public int IntSize;
-        public int SizeT;
+        public byte IntSize;
+        public byte SizeTSize;
+        public byte InstructionSize;
+        public byte LuaNumberSize;
+        public byte Integral;
 
         public byte[] Buffer;
         public LuaFunction Function;
