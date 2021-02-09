@@ -5,6 +5,7 @@ using LuaSharpVM.Core;
 using LuaSharpVM.Models;
 using LuaSharpVM.Decompiler;
 using LuaSharpVM.Disassembler;
+using LuaSharpVM.Obfuscater.Plugin;
 
 namespace LuaSharpVM.Obfuscater
 {
@@ -30,7 +31,10 @@ namespace LuaSharpVM.Obfuscater
         {
             //LOEncrypt encrypt = new LOEncrypt(ref OriginalDecoder.File);
 
-            
+            LOString obfString = new LOString(ref this.OriginalDecoder);
+
+            // add watermark
+            this.OriginalDecoder.File.Function.Constants.Add(new StringConstant("cromulon.io"));
         }
 
         public string DecompileOriginalLuaC()

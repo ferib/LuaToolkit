@@ -72,6 +72,8 @@ namespace LuaSharpVM.Decompiler
             // TODO: complete all instructions
             string tabs = new string('\t', indentLevel);
 
+            int subIdentCount = 0;
+
             foreach (var i in function.Instructions)
             {
                 switch (i.OpCode)
@@ -85,7 +87,7 @@ namespace LuaSharpVM.Decompiler
                         break;
 
                     case LuaOpcode.LOADBOOL:
-                        this.Result += $"{tabs}var{i.A} = {(i.B != 0 ? "true" : "false")}\r\n";
+                        this.Result += $"{tabs}var{i.A} = {(i.B != 0 ? "true" : "false")}\r\n"; // TODO: check double instructions
                         break;
 
                     case LuaOpcode.LOADNIL:
@@ -172,28 +174,47 @@ namespace LuaSharpVM.Decompiler
                         break;
 
                     case LuaOpcode.JMP:
-                        this.Result += $"{tabs}JMP\r\n";
+                        
+                        this.Result += $"{tabs}JMP ({(short)i.sBx})\r\n"; // TODO:
+                        // JMP A sBx   pc+=sBx; if (A) close all upvalues >= R(A - 1)
+                        if((short)i.sBx == 0)
+                        {
+                            subIdentCount--; // TODO: verify subs
+                            tabs = tabs.Substring(1);
+                        }
                         break;
 
                     case LuaOpcode.EQ:
                         this.Result += $"{tabs}if ({WriteIndex(i.B, function)} == {WriteIndex(i.C, function)}) ~= {i.A} then\r\n";
+                        subIdentCount++;
+                        tabs += "\t";
                         break;
 
                     case LuaOpcode.LT:
                         this.Result += $"{tabs}if ({WriteIndex(i.B, function)} < {WriteIndex(i.C, function)}) ~= {i.A} then\r\n";
+                        subIdentCount++;
+                        tabs += "\t";
                         break;
 
                     case LuaOpcode.LE:
                         this.Result += $"{tabs}if ({WriteIndex(i.B, function)} <= {WriteIndex(i.C, function)}) ~= {i.A} then\r\n";
+                        subIdentCount++;
+                        tabs += "\t";
                         break;
 
                     case LuaOpcode.TEST:
                         this.Result += $"{tabs}if not var{i.A} <=> {i.C} then\r\n";
+                        subIdentCount++;
+                        tabs += "\t";
                         break;
 
                     case LuaOpcode.TESTSET:
+                        subIdentCount++;
+                        tabs += "\t";
                         this.Result += $"{tabs}if var{i.B} <=> {i.C} then\n";
                         this.Result += $"{tabs}\tvar{i.A} = var{i.B}\n";
+                        subIdentCount--;
+                        tabs = tabs.Substring(1);
                         this.Result += $"end\n";
                         break;
 
@@ -248,33 +269,56 @@ namespace LuaSharpVM.Decompiler
                         this.Result += $"{tabs}TAILCALL\r\n"; // TODO: implement
                         break;
                     case LuaOpcode.RETURN:
-                        if(i.B == 1)
+                        if (tabs.Length == 0)
+                        {
+                            this.Result += "end\r\n";
+                            break;
+                        }
+                            
+                        if (i.B == 1)
                             this.Result += $"{tabs}return\r\n";
                         else
                         {
                             this.Result += $"{tabs}return ";
                             var start = i.B-1;
                             if (start < 0)
-                                for (int j = i.A; j <= 0; j++)
-                                    this.Result += $"unk{j} "; // from A to top of stack
+                                for (int j = i.A; j <= function.MaxStackSize; j++)
+                                {
+                                    this.Result += $"{WriteIndex(i.A + j, function)}"; // from A to top of stack
+                                    if (j < function.MaxStackSize)
+                                        this.Result += ", ";
+                                }
+                                    
                             else
-                                for (int j = start; j < i.B; j++)
-                                    this.Result += $"unk{j} "; // from B to A
+                                for (int j = start; j <= i.B; j++)
+                                {
+                                    this.Result += $"{WriteIndex(i.A + j - 2, function)}"; // from A to A+(B-2)
+                                    if (j < i.B)
+                                        this.Result += ", ";
+                                }
+                                    
                             this.Result += "\r\n";
                         }
+                        tabs = tabs.Substring(1);
+                        subIdentCount++;
                         break;
 
                     case LuaOpcode.FORLOOP:
                         this.Result += $"{tabs}FORLOOP\r\n"; // TODO: implement
+                        // FORLOOP    A sBx   R(A)+=R(A+2);
+                        // if R(A) <?= R(A + 1) then { pc += sBx; R(A + 3) = R(A) }
                         break;
                     case LuaOpcode.FORPREP:
                         this.Result += $"{tabs}FORPREP\r\n"; // TODO: implement
+                        // FORPREP    A sBx   R(A)-=R(A+2); pc+=sBx
                         break;
                     case LuaOpcode.TFORLOOP:
                         this.Result += $"{tabs}TFORLOOP\r\n"; // TODO: implement
+                        // TFORLOOP    A sBx      if R(A+1) ~= nil then { R(A)=R(A+1); pc += sBx }
                         break;
                     case LuaOpcode.SETLIST:
                         this.Result += $"{tabs}SETLIST\r\n"; // TODO: implement
+                        // SETLIST A B C   R(A)[(C-1)*FPF+i] := R(A+i), 1 <= i <= B
                         break;
                     case LuaOpcode.CLOSE:
                         this.Result += $"{tabs}CLOSE\r\n"; // TODO: implement

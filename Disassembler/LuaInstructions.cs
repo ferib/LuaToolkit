@@ -103,6 +103,14 @@ namespace LuaSharpVM.Disassembler
                 return $"{this.OpCode} {this.A} {this.B} {this.C}";
         }
     }
+
+    
+    
+    // NOTE: We can re-use this to calculate the performance impact when we add
+    //       some kind of weight to each instruction and do the math.
+
+
+
     //public static class LuaInstructions
     //{
     //    public static LuaInstruction[] Table =

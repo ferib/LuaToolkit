@@ -10,7 +10,7 @@ namespace LuaSharpVM.Obfuscater.Plugin
     {
         // tamper with the control flow
 
-        static string desc = "TODO";
+        static string desc = "Tempers the control flow to make it harder to understand.";
         public LOFlow(ref LuaDecoder decoder) : base(ref decoder, desc)
         {
 
