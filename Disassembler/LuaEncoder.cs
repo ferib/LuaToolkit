@@ -22,13 +22,15 @@ namespace LuaSharpVM.Disassembler
 
         public byte[] SaveFile()
         {
+            WriteHeader();
+            EncodeFunctionblock(this.File.Function);
             return this.Buffer.ToArray();
         }
 
         public void WriteHeader()
         {
             // write the magic
-            SetString("\x1BLua");
+            SetString("\x1BLua", false);
 
             // set version
             SetByte(0x51);
@@ -154,14 +156,10 @@ namespace LuaSharpVM.Disassembler
 
         // Helpers
         #region Helpser
-        private void SetBits()
-        {
-
-        }
 
         public void SetByte(byte d)
         {
-            this.Buffer.AddRange(BitConverter.GetBytes(d));
+            this.Buffer.Add(d);
         }
 
         public void SetInt(int d)
@@ -184,10 +182,17 @@ namespace LuaSharpVM.Disassembler
             this.Buffer.AddRange(BitConverter.GetBytes(d));
         }
 
-        public void SetString(string str)
+        public void SetString(string str, bool setLen = true)
         {
-            str += "\0";
-            this.Buffer.Add((byte)str.Length);
+            //str += "\0";
+            if(setLen)
+            {
+                if(this.File.SizeTSize == 4)
+                    this.Buffer.AddRange(BitConverter.GetBytes((int)str.Length));
+                if (this.File.SizeTSize == 8)
+                    this.Buffer.AddRange(BitConverter.GetBytes((long)str.Length));
+            }
+                
             this.Buffer.AddRange(Encoding.UTF8.GetBytes(str));
         }
 
