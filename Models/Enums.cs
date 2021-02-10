@@ -63,4 +63,9 @@
         CLOSURE,
         VARARG
     }
+
+    public enum LuaOperands
+    {
+
+    }
 }

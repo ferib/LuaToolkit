@@ -56,7 +56,8 @@ namespace LuaSharpVM.Decompiler
 
                 // iterate variable cache
                 CurrentIndentLevel += 1;
-                VariableUsageCache.Add(CurrentIndentLevel, new List<int>());
+                if(!VariableUsageCache.ContainsKey(CurrentIndentLevel))
+                    VariableUsageCache.Add(CurrentIndentLevel, new List<int>());
 
                 //WriteConstants(function, indentLevel + 1);
 
@@ -83,7 +84,8 @@ namespace LuaSharpVM.Decompiler
         {
             foreach (var f in function.Functions)
             {
-                VariableUsageCache.Add(indentLevel + 1, new List<int>());
+                if(!VariableUsageCache.ContainsKey(indentLevel + 1))
+                    VariableUsageCache.Add(indentLevel + 1, new List<int>());
                 Write(f, indentLevel + 1);
             }
         }
@@ -206,13 +208,13 @@ namespace LuaSharpVM.Decompiler
                         break;
 
                     case LuaOpcode.EQ:
-                        this.Result += $"{tabs}if ({WriteIndex(function.Instructions[i].B, function)} == {WriteIndex(function.Instructions[i].C, function)}) ~= {function.Instructions[i].A} then\r\n";
+                        this.Result += $"{tabs}if ({WriteIndex(function.Instructions[i].B, function,false)} == {WriteIndex(function.Instructions[i].C, function)}) ~= {function.Instructions[i].A} then\r\n";
                         subIdentCount++;
                         tabs += "\t";
                         break;
 
                     case LuaOpcode.LT:
-                        this.Result += $"{tabs}if ({WriteIndex(function.Instructions[i].B, function)} < {WriteIndex(function.Instructions[i].C, function)}) ~= {function.Instructions[i].A} then\r\n";
+                        this.Result += $"{tabs}if ({WriteIndex(function.Instructions[i].B, function, false)} < {WriteIndex(function.Instructions[i].C, function)}) ~= {function.Instructions[i].A} then\r\n";
                         subIdentCount++;
                         tabs += "\t";
                         break;
@@ -287,7 +289,7 @@ namespace LuaSharpVM.Decompiler
                         break;
 
                     case LuaOpcode.TAILCALL:
-                        this.Result += $"{tabs}TAILCALL\r\n"; // TODO: implement
+                        this.Result += $"{tabs}TAILCALL\r\n"; // TODO: this happends when a return statemenet has a single function call as the expression
                         break;
                     case LuaOpcode.RETURN:
                         if (tabs.Length == 0 || i == function.Instructions.Count-1)
@@ -303,7 +305,7 @@ namespace LuaSharpVM.Decompiler
                             this.Result += $"{tabs}return ";
                             for (int j = 0; j < function.Instructions[i].B - 1; j++)
                             {
-                                this.Result += $"{WriteIndex(function.Instructions[i].A + j, function)}"; // from A to A+(B-2)
+                                this.Result += $"{WriteIndex(function.Instructions[i].A + j, function, false)}"; // from A to A+(B-2)
                                 if (j < function.Instructions[i].B - 2)
                                     this.Result += ", ";
                             }
@@ -388,7 +390,7 @@ namespace LuaSharpVM.Decompiler
             else
             {
                 string data = "";
-                if(VariableUsageCache[CurrentIndentLevel].IndexOf(value) == -1)
+                if(VariableUsageCache[CurrentIndentLevel].IndexOf(value) == -1 && !constant.HasValue)
                 {
                     data += "local ";
                     VariableUsageCache[CurrentIndentLevel].Add(value);

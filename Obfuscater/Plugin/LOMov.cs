@@ -6,13 +6,13 @@ using LuaSharpVM.Disassembler;
 
 namespace LuaSharpVM.Obfuscater.Plugin
 {
-    public class LOVMov : LOPlugin
+    public class LOMov : LOPlugin
     {
         // Movfuscation, turning machiene
         // 'You sping my head right round right round'
 
         static string desc = "Implements the movfuscator turning machiene.";
-        public LOVMov(ref LuaDecoder decoder) : base(ref decoder, desc)
+        public LOMov(ref LuaDecoder decoder) : base(ref decoder, desc)
         {
 
         }
