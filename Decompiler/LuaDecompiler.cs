@@ -1,6 +1,7 @@
 ﻿using LuaSharpVM.Core;
 using LuaSharpVM.Models;
 using System.Text;
+using System.Collections.Generic;
 
 namespace LuaSharpVM.Decompiler
 {
@@ -10,6 +11,9 @@ namespace LuaSharpVM.Decompiler
         public string Result;
         private byte[] Buffer;
 
+        private Dictionary<int, List<int>> VariableUsageCache = new Dictionary<int, List<int>>();
+        private int CurrentIndentLevel;
+
         public LuaDecompiler(byte[] Buffer)
         {
             this.Buffer = Buffer;
@@ -17,6 +21,13 @@ namespace LuaSharpVM.Decompiler
 
         public void Write(LuaFunction function, int indentLevel = 0)
         {
+            // reset
+            if(indentLevel == 0)
+                VariableUsageCache = new Dictionary<int, List<int>>();
+            if(!VariableUsageCache.ContainsKey(indentLevel))
+                VariableUsageCache.Add(indentLevel, new List<int>());
+            CurrentIndentLevel = indentLevel;
+
             // top level function
             if (function.FirstLineNr == 0 && function.LastLineNr == 0)
             {
@@ -27,16 +38,25 @@ namespace LuaSharpVM.Decompiler
             {
                 string indents = new string('\t', indentLevel);
 
-                string functionHeader = indents + "function func" + FunctionsCount + "(";
+                // TODO: add name based on Main Function Constants?
+                string functionHeader = indents + $"function func" + FunctionsCount + "(";
 
                 for (int i = 0; i < function.ArgsCount; ++i)
                 {
                     functionHeader += "arg" + i + (i + 1 != function.ArgsCount ? ", " : ")");
                 }
 
-                this.Result += functionHeader + "\r\n";
+
+                this.Result += functionHeader;
+                if (function.ArgsCount == 0)
+                    this.Result += ")";
+                this.Result += "\r\n";
                 //writer.Write(functionHeader);
                 ++FunctionsCount;
+
+                // iterate variable cache
+                CurrentIndentLevel += 1;
+                VariableUsageCache.Add(CurrentIndentLevel, new List<int>());
 
                 //WriteConstants(function, indentLevel + 1);
 
@@ -63,6 +83,7 @@ namespace LuaSharpVM.Decompiler
         {
             foreach (var f in function.Functions)
             {
+                VariableUsageCache.Add(indentLevel + 1, new List<int>());
                 Write(f, indentLevel + 1);
             }
         }
@@ -74,110 +95,110 @@ namespace LuaSharpVM.Decompiler
 
             int subIdentCount = 0;
 
-            foreach (var i in function.Instructions)
+            for(int i = 0; i < function.Instructions.Count; i++)
             {
-                switch (i.OpCode)
+                switch (function.Instructions[i].OpCode)
                 {
                     case LuaOpcode.MOVE:
-                        this.Result += $"{tabs}var{i.A} = var{i.B}\r\n";
+                        this.Result += $"{tabs}{WriteIndex(function.Instructions[i].A, function, false)} = {WriteIndex(function.Instructions[i].B, function, false)}\r\n";
                         break;
 
                     case LuaOpcode.LOADK:
-                        this.Result += $"{tabs}var{i.A} = {GetConstant(i.Bx, function)}\r\n";
+                        this.Result += $"{tabs}{WriteIndex(function.Instructions[i].A, function, false)} = {GetConstant(function.Instructions[i].Bx, function)}\r\n";
                         break;
 
                     case LuaOpcode.LOADBOOL:
-                        this.Result += $"{tabs}var{i.A} = {(i.B != 0 ? "true" : "false")}\r\n"; // TODO: check double instructions
+                        this.Result += $"{tabs}{WriteIndex(function.Instructions[i].A, function, false)} = {(function.Instructions[i].B != 0 ? "true" : "false")}\r\n"; // TODO: check double instructions
                         break;
 
                     case LuaOpcode.LOADNIL:
-                        for (int x = i.A; x < i.B + 1; ++x)
-                            this.Result += $"{tabs}var{x} = nil\r\n";
+                        for (int x = function.Instructions[i].A; x < function.Instructions[i].B + 1; ++x)
+                            this.Result += $"{tabs}{WriteIndex(x, function, false)} = nil\r\n";
                         break;
 
                     case LuaOpcode.GETUPVAL:
-                        this.Result += $"{tabs}var{i.A} = upvalue[{i.B}]\r\n";
+                        this.Result += $"{tabs}{WriteIndex(function.Instructions[i].A, function, false)} = upvalue[{function.Instructions[i].B}]\r\n";
                         break;
 
                     case LuaOpcode.GETGLOBAL:
-                        this.Result += $"{tabs}var{i.A} = _G[{GetConstant(i.Bx, function)}]\r\n";
+                        this.Result += $"{tabs}{WriteIndex(function.Instructions[i].A, function, false)} = _G[{GetConstant(function.Instructions[i].Bx, function)}]\r\n";
                         break;
 
                     case LuaOpcode.GETTABLE:
-                        this.Result += $"{tabs}var{i.A} = var{i.B}[{WriteIndex(i.C, function)}]\r\n";
+                        this.Result += $"{tabs}{WriteIndex(function.Instructions[i].A, function, false)} = var{function.Instructions[i].B}[{WriteIndex(function.Instructions[i].C, function)}]\r\n";
                         break;
 
                     case LuaOpcode.SETGLOBAL:
-                        this.Result += $"{tabs}_G[{GetConstant(i.Bx, function)}] = var{i.A}\r\n";
+                        this.Result += $"{tabs}_G[{GetConstant(function.Instructions[i].Bx, function)}] = var{function.Instructions[i].A}\r\n";
                         break;
 
                     case LuaOpcode.SETUPVAL:
-                        this.Result += $"{tabs}upvalue[{i.B}] = var{i.A}\r\n";
+                        this.Result += $"{tabs}upvalue[{function.Instructions[i].B}] = var{function.Instructions[i].A}\r\n";
                         break;
 
                     case LuaOpcode.SETTABLE:
-                        this.Result += $"{tabs}var{i.A}[{WriteIndex(i.B, function)}] = {WriteIndex(i.C, function)}\r\n";
+                        this.Result += $"{tabs}{WriteIndex(function.Instructions[i].A, function, false)}[{WriteIndex(function.Instructions[i].B, function)}] = {WriteIndex(function.Instructions[i].C, function)}\r\n";
                         break;
 
                     case LuaOpcode.NEWTABLE:
-                        this.Result += $"{tabs}var{i.A} = {{}}\r\n";
+                        this.Result += $"{tabs}{WriteIndex(function.Instructions[i].A, function, false)} = {{}}\r\n"; // NOTE: do we even need to display this?
                         break;
 
                     case LuaOpcode.SELF:
-                        this.Result += $"{tabs}var{i.A} = var{i.B}\r\n";
-                        this.Result += $"{tabs}var{i.A} = var{i.B}[{WriteIndex(i.C, function)}]\r\n";
+                        this.Result += $"{tabs}{WriteIndex(function.Instructions[i].A, function, false)} = var{function.Instructions[i].B}\r\n";
+                        this.Result += $"{tabs}{WriteIndex(function.Instructions[i].A, function, false)} = var{function.Instructions[i].B}[{WriteIndex(function.Instructions[i].C, function)}]\r\n";
                         break;
 
                     case LuaOpcode.ADD:
-                        this.Result += $"{tabs}var{i.A} = var{i.B} + var{i.C}\r\n";
+                        this.Result += $"{tabs}{WriteIndex(function.Instructions[i].A, function, false)} = var{function.Instructions[i].B} + var{function.Instructions[i].C}\r\n";
                         break;
 
                     case LuaOpcode.SUB:
-                        this.Result += $"{tabs}var{i.A} = var{i.B} - var{i.C}\r\n";
+                        this.Result += $"{tabs}{WriteIndex(function.Instructions[i].A, function, false)} = var{function.Instructions[i].B} - var{function.Instructions[i].C}\r\n";
                         break;
 
                     case LuaOpcode.MUL:
-                        this.Result += $"{tabs}var{i.A} = var{i.B} * var{i.C}\r\n";
+                        this.Result += $"{tabs}{WriteIndex(function.Instructions[i].A, function, false)} = var{function.Instructions[i].B} * var{function.Instructions[i].C}\r\n";
                         break;
 
                     case LuaOpcode.DIV:
-                        this.Result += $"{tabs}var{i.A} = var{i.B} / var{i.C}\r\n";
+                        this.Result += $"{tabs}{WriteIndex(function.Instructions[i].A, function, false)} = var{function.Instructions[i].B} / var{function.Instructions[i].C}\r\n";
                         break;
 
                     case LuaOpcode.MOD:
-                        this.Result += $"{tabs}var{i.A} = var{i.B} % var{i.C}\r\n";
+                        this.Result += $"{tabs}{WriteIndex(function.Instructions[i].A, function, false)} = var{function.Instructions[i].B} % var{function.Instructions[i].C}\r\n";
                         break;
 
                     case LuaOpcode.POW:
-                        this.Result += $"{tabs}var{i.A} = var{i.B} ^ var{i.C}\r\n";
+                        this.Result += $"{tabs}{WriteIndex(function.Instructions[i].A, function, false)} = var{function.Instructions[i].B} ^ var{function.Instructions[i].C}\r\n";
                         break;
 
                     case LuaOpcode.UNM:
-                        this.Result += $"{tabs}var{i.A} = -var{i.B}\r\n";
+                        this.Result += $"{tabs}{WriteIndex(function.Instructions[i].A, function, false)} = -var{function.Instructions[i].B}\r\n";
                         break;
 
                     case LuaOpcode.NOT:
-                        this.Result += $"{tabs}var{i.A} = not var{i.B}\r\n";
+                        this.Result += $"{tabs}{WriteIndex(function.Instructions[i].A, function, false)} = not var{function.Instructions[i].B}\r\n";
                         break;
 
                     case LuaOpcode.LEN:
-                        this.Result += $"{tabs}var{i.A} = #var{i.B}\r\n";
+                        this.Result += $"{tabs}{WriteIndex(function.Instructions[i].A, function, false)} = #var{function.Instructions[i].B}\r\n";
                         break;
 
                     case LuaOpcode.CONCAT:
-                        this.Result += $"{tabs}var{i.A} = ";
+                        this.Result += $"{tabs}{WriteIndex(function.Instructions[i].A, function, false)} = ";
 
-                        for (int x = i.B; x < i.C; ++x)
-                            this.Result += $"var{x} .. \r\n";
+                        for (int x = function.Instructions[i].B; x < function.Instructions[i].C; ++x)
+                            this.Result += $"{WriteIndex(x, function, false)} .. \r\n";
 
-                        this.Result += $"var{i.C}\r\n";
+                        this.Result += $"var{function.Instructions[i].C}\r\n";
                         break;
 
                     case LuaOpcode.JMP:
-                        
-                        this.Result += $"{tabs}JMP ({(short)i.sBx})\r\n"; // TODO:
+
+                        this.Result += $"{tabs}JMP ({(short)function.Instructions[i].sBx})\r\n"; // TODO:
                         // JMP A sBx   pc+=sBx; if (A) close all upvalues >= R(A - 1)
-                        if((short)i.sBx == 0)
+                        if ((short)function.Instructions[i].sBx == 0)
                         {
                             subIdentCount--; // TODO: verify subs
                             tabs = tabs.Substring(1);
@@ -185,25 +206,25 @@ namespace LuaSharpVM.Decompiler
                         break;
 
                     case LuaOpcode.EQ:
-                        this.Result += $"{tabs}if ({WriteIndex(i.B, function)} == {WriteIndex(i.C, function)}) ~= {i.A} then\r\n";
+                        this.Result += $"{tabs}if ({WriteIndex(function.Instructions[i].B, function)} == {WriteIndex(function.Instructions[i].C, function)}) ~= {function.Instructions[i].A} then\r\n";
                         subIdentCount++;
                         tabs += "\t";
                         break;
 
                     case LuaOpcode.LT:
-                        this.Result += $"{tabs}if ({WriteIndex(i.B, function)} < {WriteIndex(i.C, function)}) ~= {i.A} then\r\n";
+                        this.Result += $"{tabs}if ({WriteIndex(function.Instructions[i].B, function)} < {WriteIndex(function.Instructions[i].C, function)}) ~= {function.Instructions[i].A} then\r\n";
                         subIdentCount++;
                         tabs += "\t";
                         break;
 
                     case LuaOpcode.LE:
-                        this.Result += $"{tabs}if ({WriteIndex(i.B, function)} <= {WriteIndex(i.C, function)}) ~= {i.A} then\r\n";
+                        this.Result += $"{tabs}if ({WriteIndex(function.Instructions[i].B, function)} <= {WriteIndex(function.Instructions[i].C, function)}) ~= {function.Instructions[i].A} then\r\n";
                         subIdentCount++;
                         tabs += "\t";
                         break;
 
                     case LuaOpcode.TEST:
-                        this.Result += $"{tabs}if not var{i.A} <=> {i.C} then\r\n";
+                        this.Result += $"{tabs}if not var{function.Instructions[i].A} <=> {function.Instructions[i].C} then\r\n";
                         subIdentCount++;
                         tabs += "\t";
                         break;
@@ -211,8 +232,8 @@ namespace LuaSharpVM.Decompiler
                     case LuaOpcode.TESTSET:
                         subIdentCount++;
                         tabs += "\t";
-                        this.Result += $"{tabs}if var{i.B} <=> {i.C} then\n";
-                        this.Result += $"{tabs}\tvar{i.A} = var{i.B}\n";
+                        this.Result += $"{tabs}if var{function.Instructions[i].B} <=> {function.Instructions[i].C} then\n";
+                        this.Result += $"{tabs}\tvar{function.Instructions[i].A} = var{function.Instructions[i].B}\n";
                         subIdentCount--;
                         tabs = tabs.Substring(1);
                         this.Result += $"end\n";
@@ -221,13 +242,13 @@ namespace LuaSharpVM.Decompiler
                     case LuaOpcode.CALL:
                         StringBuilder sb = new StringBuilder();
 
-                        if (i.C != 0)
+                        if (function.Instructions[i].C != 0)
                         {
                             sb.Append(tabs);
                             var indentLen = sb.Length;
 
                             // return values
-                            for (int x = i.A; x < i.A + i.C - 2; ++x)
+                            for (int x = function.Instructions[i].A; x < function.Instructions[i].A + function.Instructions[i].C - 2; ++x)
                                 sb.AppendFormat("var{0}, ", x);
 
                             if (sb.Length - indentLen > 2)
@@ -238,18 +259,18 @@ namespace LuaSharpVM.Decompiler
                         }
                         else
                         {
-                            this.Result += "i.C == 0\n";
+                            this.Result += "function.Instructions[i].C == 0\n";
                         }
 
                         // function
-                        sb.AppendFormat("var{0}(", i.A);
+                        sb.AppendFormat("var{0}(", function.Instructions[i].A);
 
-                        if (i.B != 0)
+                        if (function.Instructions[i].B != 0)
                         {
                             var preArgsLen = sb.Length;
 
                             // arguments
-                            for (int x = i.A; x < i.A + i.B - 1; ++x)
+                            for (int x = function.Instructions[i].A; x < function.Instructions[i].A + function.Instructions[i].B - 1; ++x)
                                 sb.AppendFormat("var{0}, ", x + 1);
 
                             if (sb.Length - preArgsLen > 2)
@@ -259,7 +280,7 @@ namespace LuaSharpVM.Decompiler
                         }
                         else
                         {
-                            this.Result += $"{tabs}i.B == 0\r\n";
+                            this.Result += $"{tabs}function.Instructions[i].B == 0\r\n";
                         }
 
                         this.Result += sb.ToString() + "\r\n";
@@ -269,35 +290,35 @@ namespace LuaSharpVM.Decompiler
                         this.Result += $"{tabs}TAILCALL\r\n"; // TODO: implement
                         break;
                     case LuaOpcode.RETURN:
-                        if (tabs.Length == 0)
+                        if (tabs.Length == 0 || i == function.Instructions.Count-1)
                         {
                             this.Result += "end\r\n";
                             break;
                         }
-                            
-                        if (i.B == 1)
+
+                        if (function.Instructions[i].B == 1)
                             this.Result += $"{tabs}return\r\n";
+                        else if (function.Instructions[i].B > 1)
+                        {
+                            this.Result += $"{tabs}return ";
+                            for (int j = 0; j < function.Instructions[i].B - 1; j++)
+                            {
+                                this.Result += $"{WriteIndex(function.Instructions[i].A + j, function)}"; // from A to A+(B-2)
+                                if (j < function.Instructions[i].B - 2)
+                                    this.Result += ", ";
+                            }
+
+                            this.Result += "\r\n";
+                        }
                         else
                         {
                             this.Result += $"{tabs}return ";
-                            var start = i.B-1;
-                            if (start < 0)
-                                for (int j = i.A; j <= function.MaxStackSize; j++)
-                                {
-                                    this.Result += $"{WriteIndex(i.A + j, function)}"; // from A to top of stack
-                                    if (j < function.MaxStackSize)
-                                        this.Result += ", ";
-                                }
-                                    
-                            else
-                                for (int j = start; j <= i.B; j++)
-                                {
-                                    this.Result += $"{WriteIndex(i.A + j - 2, function)}"; // from A to A+(B-2)
-                                    if (j < i.B)
-                                        this.Result += ", ";
-                                }
-                                    
-                            this.Result += "\r\n";
+                            for (int j = function.Instructions[i].A; j < function.MaxStackSize; j++)
+                            {
+                                this.Result += $"{WriteIndex(function.Instructions[i].A + j, function)}"; // from A to top
+                                if (j < function.MaxStackSize - 1)
+                                    this.Result += ", ";
+                            }
                         }
                         tabs = tabs.Substring(1);
                         subIdentCount++;
@@ -317,8 +338,16 @@ namespace LuaSharpVM.Decompiler
                         // TFORLOOP    A sBx      if R(A+1) ~= nil then { R(A)=R(A+1); pc += sBx }
                         break;
                     case LuaOpcode.SETLIST:
-                        this.Result += $"{tabs}SETLIST\r\n"; // TODO: implement
-                        // SETLIST A B C   R(A)[(C-1)*FPF+i] := R(A+i), 1 <= i <= B
+                        // subtract lines from the result
+                        this.Result += $"{tabs}{WriteIndex(function.Instructions[i].A, function)} = {{";
+                        for (int j = 1; j <= function.Instructions[i].B; j++)
+                        {
+                            // table = function.Instructions[i].A
+                            this.Result += $"{WriteIndex(function.Instructions[i].A+j, function)}";
+                            if (j < function.Instructions[i].B)
+                                this.Result += ", ";
+                        }
+                        this.Result += $"}}\r\n"; // TODO: implement
                         break;
                     case LuaOpcode.CLOSE:
                         this.Result += $"{tabs}CLOSE\r\n"; // TODO: implement
@@ -347,15 +376,26 @@ namespace LuaSharpVM.Decompiler
                 return value;
         }
 
-        private string WriteIndex(int value, LuaFunction function)
+        private string WriteIndex(int value, LuaFunction function, bool? constant = null)
         {
-            bool constant;
-            int idx = ToIndex(value, out constant);
+            bool constant2 = false;
+            int idx = value;
+            if (!constant.HasValue || constant == true)
+                idx = ToIndex(value, out constant2);
 
-            if (constant)
+            if (constant2)
                 return function.Constants[idx].ToString();
             else
-                return "var" + idx;
+            {
+                string data = "";
+                if(VariableUsageCache[CurrentIndentLevel].IndexOf(value) == -1)
+                {
+                    data += "local ";
+                    VariableUsageCache[CurrentIndentLevel].Add(value);
+                }
+                return data + "var" + idx;
+            }
+            
         }
 
     }
