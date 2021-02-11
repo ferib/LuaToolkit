@@ -206,9 +206,31 @@ namespace LuaSharpVM.Decompiler
                     break;
                 // CALL
                 // TAILCALL
-                //case LuaOpcode.RETURN:
+                case LuaOpcode.RETURN:
+                    // this gets overwritten by an 'end' afterwards in case its the last RETURN value of a func
+                    this.Op1 = $"return";
+                    if (Instr.B == 1)
+                        break; // no arguments
 
-                //    break;
+                    else if (Instr.B > 1)
+                    {
+                        for (int j = 0; j < Instr.B - 1; j++)
+                        {
+                            this.Op2 += $" {WriteIndex(Instr.A + j)}"; // args from A to A+(B-2)
+                            if (j < Instr.B - 2)
+                                this.Op2 += ",";
+                        }
+                    }
+                    else
+                    {
+                        for (int j = Instr.A; j < this.Func.MaxStackSize; j++)
+                        {
+                            this.Op2 += $"{WriteIndex(Instr.A + j)}"; // args from A to top
+                            if (j < this.Func.MaxStackSize - 1)
+                                this.Op2 += ",";
+                        }
+                    }
+                    break;
                 // FORLOOP
                 // TFORLOOP
                 case LuaOpcode.SETLIST:
