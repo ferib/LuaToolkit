@@ -75,7 +75,7 @@ namespace LuaSharpVM.Decompiler
                 case LuaOpcode.LOADNIL:
                     for (int i = Instr.A; i < Instr.B + 1; ++i)
                     {
-                        this.Op1 += $"{WriteIndex(i)} = nil; "; // TODO: turn into new class?
+                        this.Op1 += $"{WriteIndex(i)} = nil; "; // TODO: turn into new class? Nah, just beatify afterwards..
                         this.NumberEnd++;
                     }
                     break;
@@ -206,7 +206,9 @@ namespace LuaSharpVM.Decompiler
                     break;
                 // CALL
                 // TAILCALL
-                // RETURN
+                //case LuaOpcode.RETURN:
+
+                //    break;
                 // FORLOOP
                 // TFORLOOP
                 case LuaOpcode.SETLIST:
@@ -282,7 +284,7 @@ namespace LuaSharpVM.Decompiler
 
         public override string ToString()
         {
-            string tab = new string(' ', Depth); // NOTE: singple space for debugging
+            string tab = new string('\t', Depth); // NOTE: singple space for debugging
             if (this.Instr == null)
                 return $"{tab}{Op1}\r\n"; // wildcard
             else

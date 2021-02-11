@@ -44,7 +44,7 @@ namespace LuaSharpVM.Core
 
         public int sBx
         {
-            get { return Bx - HalfMax18Bit+1; } // NOTE: verify this?
+            get { return Bx - (HalfMax18Bit-1); } // NOTE: verify this?
         }
 
         public bool HasBx
