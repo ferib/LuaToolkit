@@ -29,9 +29,9 @@ namespace LuaSharpVM.Decompiler
         private LuaFunction Func;
         public LuaInstruction Instr;
 
-        private string Op1; // opperands ;D
-        private string Op2;
-        private string Op3;
+        public string Op1; // opperands ;D
+        public string Op2;
+        public string Op3;
 
         private string _text;
         public string Text
@@ -177,6 +177,7 @@ namespace LuaSharpVM.Decompiler
                     break;
                 case LuaOpcode.JMP:
                     // Do nothing ;D?
+                    this.Op1 = $"JMP {Instr.sBx}";
                     break;
                 case LuaOpcode.EQ:
                     this.Op1 = $"if ({WriteIndex(Instr.B)}";

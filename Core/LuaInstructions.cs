@@ -1,11 +1,11 @@
 ﻿using LuaSharpVM.Models;
 
-namespace LuaSharpVM.Disassembler
+namespace LuaSharpVM.Core
 {
     public class LuaInstruction
     {
 
-        private const int HalfMax18Bit = 2 << 17;	// == 2^18 / 2 == 131071
+        private const int HalfMax18Bit = 2 << 16;	// == 2^16 -1 == 131071
 
         public int Data
         {
@@ -44,7 +44,7 @@ namespace LuaSharpVM.Disassembler
 
         public int sBx
         {
-            get { return Bx - HalfMax18Bit; }
+            get { return Bx - HalfMax18Bit+1; } // NOTE: verify this?
         }
 
         public bool HasBx

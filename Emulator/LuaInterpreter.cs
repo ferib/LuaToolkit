@@ -15,7 +15,7 @@ namespace LuaSharpVM.Emulator
         private int Index;
         private byte[] Buffer;
         private LuaFunction Functions;
-        private LuaRegisters Registers;
+        //private LuaRegisters Registers;
         private Dictionary<int, object> Stack;
         //private new List<LuaConstant> Constants;
         private Dictionary<int, object> Upvalues;
@@ -73,8 +73,8 @@ namespace LuaSharpVM.Emulator
         #region OpcodeHandlers
         private void MOVE()
         {
-            this.Stack[this.Registers.A] = this.Stack[this.Registers.B];
-            this.Registers.IP++;
+            //this.Stack[this.Registers.A] = this.Stack[this.Registers.B];
+            //this.Registers.IP++;
         }
 
         private void LOADK()
@@ -85,29 +85,29 @@ namespace LuaSharpVM.Emulator
 
         private void LOADBOOL()
         {
-            byte val = 1;
-            if (this.Registers.B == 0)
-                val = 0;
+            //byte val = 1;
+            //if (this.Registers.B == 0)
+            //    val = 0;
 
-            this.Registers.A = val;
+            //this.Registers.A = val;
 
-            if (this.Registers.C != 0)
-                this.Registers.IP++;
-            this.Registers.IP++;
+            //if (this.Registers.C != 0)
+            //    this.Registers.IP++;
+            //this.Registers.IP++;
         }
 
         private void LOADNIL()
         {
-            for (int i = this.Registers.A; i < this.Registers.A + this.Registers.B; i++)
-                if (this.Stack.ContainsKey(i))
-                    this.Stack.Remove(i);
-            this.Registers.IP++;
+            //for (int i = this.Registers.A; i < this.Registers.A + this.Registers.B; i++)
+            //    if (this.Stack.ContainsKey(i))
+            //        this.Stack.Remove(i);
+            //this.Registers.IP++;
         }
 
         private void GETUPVAL()
         {
-            this.Stack[this.Registers.A] = this.Upvalues[this.Registers.B];
-            this.Registers.IP++;
+            //this.Stack[this.Registers.A] = this.Upvalues[this.Registers.B];
+            //this.Registers.IP++;
         }
 
         private void GETGLOBAL()
@@ -131,8 +131,8 @@ namespace LuaSharpVM.Emulator
 
         private void SETUPVAL()
         {
-            this.Upvalues[this.Registers.B] = this.Stack[this.Registers.A];
-            this.Registers.IP++;
+            //this.Upvalues[this.Registers.B] = this.Stack[this.Registers.A];
+            //this.Registers.IP++;
         }
 
         private void SETTABLE()
@@ -143,7 +143,7 @@ namespace LuaSharpVM.Emulator
 
         private void NEWTABLE()
         {
-            this.Stack[this.Registers.A] = new Dictionary<int, object>();
+            //this.Stack[this.Registers.A] = new Dictionary<int, object>();
         }
 
         private void SELF()
@@ -154,10 +154,10 @@ namespace LuaSharpVM.Emulator
         private void ADD()
         {
             // test
-            this.Registers.A++;
-            this.Registers.B++;
-            this.Registers.C++;
-            this.Registers.IP++;
+            //this.Registers.A++;
+            //this.Registers.B++;
+            //this.Registers.C++;
+            //this.Registers.IP++;
         }
         private void SUB()
         {
@@ -181,35 +181,35 @@ namespace LuaSharpVM.Emulator
         }
         private void UNM()
         {
-            this.Stack[this.Registers.A] = -Math.Abs((int)this.Stack[this.Registers.B]);
-            this.Registers.IP++;
+            //this.Stack[this.Registers.A] = -Math.Abs((int)this.Stack[this.Registers.B]);
+            //this.Registers.IP++;
         }
         private void NOT()
         {
-            int val = 0;
-            if ((int)this.Stack[this.Registers.B] == 0)
-                val = 1;
+            //int val = 0;
+            //if ((int)this.Stack[this.Registers.B] == 0)
+            //    val = 1;
 
-            this.Stack[this.Registers.A] = val;
-            this.Registers.IP++;
+            //this.Stack[this.Registers.A] = val;
+            //this.Registers.IP++;
         }
         private void LEN()
         {
-            var table = (Dictionary<int, object>)this.Stack[this.Registers.B];
-            this.Stack[this.Registers.A] = table.Count;
-            this.Registers.IP++;
+            //var table = (Dictionary<int, object>)this.Stack[this.Registers.B];
+            //this.Stack[this.Registers.A] = table.Count;
+            //this.Registers.IP++;
         }
         private void CONCAT()
         {
-            string result = (string)this.Stack[this.Registers.B];
-            for (int i = this.Registers.B; i < this.Registers.C; i++)
-                result += (char)this.Stack[i];
-            this.Stack[this.Registers.A] = result;
-            this.Registers.IP++;
+            //string result = (string)this.Stack[this.Registers.B];
+            //for (int i = this.Registers.B; i < this.Registers.C; i++)
+            //    result += (char)this.Stack[i];
+            //this.Stack[this.Registers.A] = result;
+            //this.Registers.IP++;
         }
         private void JUMP()
         {
-            this.Registers.IP += this.Registers.sBx;
+            //this.Registers.IP += this.Registers.sBx;
         }
         private void EQ()
         {
@@ -225,19 +225,19 @@ namespace LuaSharpVM.Emulator
         }
         private void TEST()
         {
-            int A = (int)this.Stack[this.Registers.A];
-            if ((A == 1) == (this.Registers.C == 0))
-                this.Registers.IP++;
-            this.Registers.IP++;
+            //int A = (int)this.Stack[this.Registers.A];
+            //if ((A == 1) == (this.Registers.C == 0))
+            //    this.Registers.IP++;
+            //this.Registers.IP++;
         }
         private void TESTSET()
         {
-            int B = (int)this.Stack[this.Registers.B];
-            if ((B == 1) == (this.Registers.C == 0))
-                this.Registers.IP++;
-            else
-                this.Stack[this.Registers.A] = B;
-            this.Registers.IP++;
+            //int B = (int)this.Stack[this.Registers.B];
+            //if ((B == 1) == (this.Registers.C == 0))
+            //    this.Registers.IP++;
+            //else
+            //    this.Stack[this.Registers.A] = B;
+            //this.Registers.IP++;
         }
         private void CALL()
         {

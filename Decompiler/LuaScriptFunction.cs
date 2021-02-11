@@ -45,16 +45,50 @@ namespace LuaSharpVM.Decompiler
             int LastIf = -1;
             int LastElse = -1; // or whatever we need
             int LastReturn = -1;
+            List<int> BlacklistJumps = new List<int>(); // put in jumps from if chains
             for (int i = 0; i < this.Lines.Count; i++)
             {
-                if (this.Lines[i].Instr.OpCode == LuaOpcode.JMP)
+                switch(this.Lines[i].Instr.OpCode)
                 {
-                    // place elseif/else/end for if
-                    if ((ushort)this.Lines[i].Instr.sBx != 0 &&
-                        this.Lines[i + (ushort)this.Lines[i].Instr.sBx + 1] != null)
-                    {
-                        this.Lines[i + (ushort)this.Lines[i].Instr.sBx + 1].Text = "END\r\n";
-                    }
+                    case LuaOpcode.JMP:
+
+                        this.Lines[i].Text = "";
+                        //this.Lines[i].Op1 = "-- JMP " + (short)(this.Lines[i].Instr.sBx);
+                        //// place elseif/else/end for if
+                        ////if ((short)(this.Lines[i].Instr.sBx) == 0)
+                        ////    continue;
+
+                        //this.Lines[i + (short)(this.Lines[i].Instr.sBx) + 1].Op1 = "END; " + this.Lines[i + (short)(this.Lines[i].Instr.sBx) + 1].Op1;
+
+                        //if (this.Lines[i + (short)(this.Lines[i].Instr.sBx)+1].Instr.OpCode == LuaOpcode.JMP)
+                        //{
+                        //    this.Lines[i + (short)(this.Lines[i].Instr.sBx + 1)].Op1 = "END2; " + this.Lines[i + (short)(this.Lines[i].Instr.sBx) + 1].Op1;
+                        //    BlacklistJumps.Add(i + (short)(this.Lines[i].Instr.sBx)+1);
+                        //}
+                    break;
+                    case LuaOpcode.EQ:
+                    case LuaOpcode.LT:
+                    case LuaOpcode.LE:
+                        // NOTE: EQ, LT, LE also increase the PC when true to avoid the first JMP
+                        //       which leads to the second part of the if statement
+                        if (this.Lines[i + 1].Instr.OpCode == LuaOpcode.JMP)
+                        {
+                            // else or end
+                            string keyword = "end\n\r ";
+                            if (this.Lines.Count > (i + 2 + (short)(this.Lines[i + 1].Instr.sBx)))
+                            {
+                                switch (this.Lines[i + 2 + (short)(this.Lines[i + 1].Instr.sBx)].Instr.OpCode)
+                                {
+                                    case LuaOpcode.EQ:
+                                    case LuaOpcode.LT:
+                                    case LuaOpcode.LE:
+                                        keyword = "else";
+                                        break;
+                                }
+                            }
+                            this.Lines[i + 2 + (short)(this.Lines[i + 1].Instr.sBx)].Op1 = keyword + "" + this.Lines[i + 2 + (short)(this.Lines[i + 1].Instr.sBx)].Op1;
+                        }
+                        break;
                 }
             }
         }
