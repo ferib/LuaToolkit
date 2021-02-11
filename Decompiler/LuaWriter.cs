@@ -36,7 +36,6 @@ namespace LuaSharpVM.Decompiler
             FunctionCounter = 0;
             for (int i = 0; i < this.Decoder.File.Function.Functions.Count; i++)
             {
-                FunctionCounter++;
                 WriteFunction(this.Decoder.File.Function.Functions[i], 2);
             }
             WriteFunction(this.Decoder.File.Function);
@@ -45,9 +44,10 @@ namespace LuaSharpVM.Decompiler
         private void WriteFunction(LuaFunction func, int dpth = 0)
         {
             // TODO: move header in LuaScriptFunction class
-            string header = $"func" + FunctionCounter + "(";
+            string header = $"func{FunctionCounter}(";
             for (int i = 0; i < func.ArgsCount; ++i)
-                header += "var" + i + (i + 1 != func.ArgsCount ? ", " : ")");
+                header += "var" + i + (i + 1 != func.ArgsCount ? ", " : "");
+            header += ")";
             FunctionCounter++;
 
             LuaScriptFunction newFunction = new LuaScriptFunction(header, ref func, ref this.Decoder);

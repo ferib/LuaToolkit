@@ -204,7 +204,27 @@ namespace LuaSharpVM.Decompiler
                     this.Op2 = $"var{Instr.A} = ";
                     this.Op3 = $"var{Instr.B}; end";
                     break;
-                // CALL
+                case LuaOpcode.CALL:
+                    if(Instr.C != 0)
+                    {
+                        for (int i = Instr.A; i < Instr.A + Instr.C - 2; ++i)
+                        {
+                            this.Op1 += $"var{i}";
+                            if (i < Instr.A - 1)
+                                this.Op1 += ", ";
+                        }
+                    }
+                    else
+                    {
+                        // top is set to last_result+1
+                        this.Op1 = "!C==0! "; // TODO
+                    }
+                    this.Op2 = $"var{Instr.A}(";
+                    if(Instr.B != 0)
+                    {
+
+                    }
+                    break;
                 // TAILCALL
                 case LuaOpcode.RETURN:
                     // this gets overwritten by an 'end' afterwards in case its the last RETURN value of a func
@@ -232,6 +252,7 @@ namespace LuaSharpVM.Decompiler
                     }
                     break;
                 // FORLOOP
+                // FORPREP
                 // TFORLOOP
                 case LuaOpcode.SETLIST:
                     this.Op1 = $"{WriteIndex(Instr.A)} = {{";
