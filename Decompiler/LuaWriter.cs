@@ -14,7 +14,7 @@ namespace LuaSharpVM.Decompiler
         private Dictionary<int, int> UsedConstants; // to definde locals
         private List<LuaScriptLine> LuaScriptLines;
 
-        private string LuaScript
+        public string LuaScript
         {
             get { return GetScript(); }
         }
@@ -23,7 +23,9 @@ namespace LuaSharpVM.Decompiler
         {
             this.Decoder = decoder;
             this.LuaScriptLines = new List<LuaScriptLine>();
-            WriteFunction(decoder.File.Function);
+            WriteFunction(this.Decoder.File.Function);
+            for (int i = 0; i < this.Decoder.File.Function.Functions.Count; i++)
+                WriteFunction(this.Decoder.File.Function.Functions[i], 2);
         }
 
 
@@ -51,14 +53,15 @@ namespace LuaSharpVM.Decompiler
     public class LuaScriptLine
     {
         public int Depth;
+        private int number;
         public int Number // Line number OR index?
         {
             set 
             {
-                Number = value;
+                number = value;
                 NumberEnd = value; // + 1;
             }
-            get { return Number; }
+            get { return number; }
         }
 
         public int NumberEnd; // in case we need more
@@ -108,7 +111,7 @@ namespace LuaSharpVM.Decompiler
                 case LuaOpcode.LOADNIL:
                     for (int i = Instr.A; i < Instr.B + 1; ++i)
                     {
-                        this.Op1 += $"{WriteIndex(i)} = nil\r\n"; // TODO: turn into new class?
+                        this.Op1 += $"{WriteIndex(i)} = nil; "; // TODO: turn into new class?
                         this.NumberEnd++;
                     }   
                     break;
@@ -130,7 +133,7 @@ namespace LuaSharpVM.Decompiler
                 case LuaOpcode.SETGLOBAL:
                     this.Op1 = $"_G[{WriteIndex(Instr.Bx)}]";
                     this.Op2 = " = ";
-                    this.Op3 = $"var{Instr.A}]";
+                    this.Op3 = $"var{Instr.A}";
                     break;
                 case LuaOpcode.SETUPVAL:
                     this.Op1 = $"upvalue[{WriteIndex(Instr.B)}]";
@@ -150,8 +153,9 @@ namespace LuaSharpVM.Decompiler
                 case LuaOpcode.SELF:
                     this.Op1 = WriteIndex(Instr.A);
                     this.Op2 = " = ";
-                    this.Op3 = $"var{Instr.B}\r\b{WriteIndex(Instr.A)} = var{Instr.B}[{WriteIndex(Instr.C)}]";
+                    this.Op3 = $"var{Instr.B}; {WriteIndex(Instr.A)} = var{Instr.B}[{WriteIndex(Instr.C)}]";
                     // TODO fix, multiline?
+                    this.NumberEnd++;
                     break;
                 case LuaOpcode.ADD:
                     this.Op1 = WriteIndex(Instr.A);
@@ -166,35 +170,98 @@ namespace LuaSharpVM.Decompiler
                  case LuaOpcode.MUL:
                     this.Op1 = WriteIndex(Instr.A);
                     this.Op2 = $" = var{Instr.B}";
-                    this.Op3 = $" + var{Instr.C}";
+                    this.Op3 = $" * var{Instr.C}";
                     break;
                  case LuaOpcode.DIV:
                     this.Op1 = WriteIndex(Instr.A);
                     this.Op2 = $" = var{Instr.B}";
-                    this.Op3 = $" + var{Instr.C}";
+                    this.Op3 = $" / var{Instr.C}";
                     break;
                  case LuaOpcode.MOD:
                     this.Op1 = WriteIndex(Instr.A);
                     this.Op2 = $" = var{Instr.B}";
-                    this.Op3 = $" + var{Instr.C}";
+                    this.Op3 = $" % var{Instr.C}";
                     break;
                  case LuaOpcode.POW:
                     this.Op1 = WriteIndex(Instr.A);
                     this.Op2 = $" = var{Instr.B}";
-                    this.Op3 = $" + var{Instr.C}";
+                    this.Op3 = $" ^ var{Instr.C}";
                     break;
                  case LuaOpcode.UNM:
                     this.Op1 = WriteIndex(Instr.A);
-                    this.Op2 = $" = var{Instr.B}";
-                    this.Op3 = $" + var{Instr.C}";
+                    this.Op2 = $" = ";
+                    this.Op3 = $"-var{Instr.B}";
                     break;
                  case LuaOpcode.NOT:
                     this.Op1 = WriteIndex(Instr.A);
-                    this.Op2 = $" = var{Instr.B}";
-                    this.Op3 = $" + var{Instr.C}";
+                    this.Op2 = $" = ";
+                    this.Op3 = $"not var{Instr.B}";
                     break;
-                
-
+                case LuaOpcode.LEN:
+                    this.Op1 = WriteIndex(Instr.A);
+                    this.Op2 = $" = ";
+                    this.Op3 = $"#var{Instr.B}";
+                    break;
+                case LuaOpcode.CONCAT:
+                    this.Op1 = $"{WriteIndex(Instr.A)} = ";
+                    for(int i = Instr.B; i <= Instr.C; ++i) 
+                    {
+                        this.Op2 += $"{WriteIndex(i)}";
+                        if (i < Instr.C)
+                            this.Op2 += " .. ";
+                    }  
+                    break;
+                case LuaOpcode.JMP:
+                    // Do nothing ;D
+                    break;
+                case LuaOpcode.EQ:
+                    this.Op1 = $"if ({WriteIndex(Instr.B)}";
+                    this.Op2 = " == ";
+                    this.Op3 = $"{WriteIndex(Instr.C)}) ~= {Instr.A} then";
+                    break;
+                case LuaOpcode.LT:
+                    this.Op1 = $"if ({WriteIndex(Instr.B)}";
+                    this.Op2 = " < ";
+                    this.Op3 = $"{WriteIndex(Instr.C)}) ~= {Instr.A} then";
+                    break;
+                case LuaOpcode.LE:
+                    this.Op1 = $"if ({WriteIndex(Instr.B)}";
+                    this.Op2 = " <= ";
+                    this.Op3 = $"{WriteIndex(Instr.C)}) ~= {Instr.A} then";
+                    break;
+                case LuaOpcode.TEST:
+                    this.Op1 = $"if not var{Instr.A}";
+                    this.Op2 = " <=> ";
+                    this.Op3 = $"{Instr.C} then";
+                    break;
+                case LuaOpcode.TESTSET:
+                    this.Op1 = $"if var{Instr.B} <=> {Instr.C} then; ";
+                    this.Op2 = $"var{Instr.A} = ";
+                    this.Op3 = $"var{Instr.B}; end";
+                    break;
+                // CALL
+                // TAILCALL
+                // RETURN
+                // FORLOOP
+                // TFORLOOP
+                case LuaOpcode.SETLIST:
+                    this.Op1 = $"{WriteIndex(Instr.A)} = {{";
+                    for(int i = 1; i <= Instr.B; i++)
+                    {
+                        this.Op2 += $"{WriteIndex(Instr.A+i)}";
+                        if (i < Instr.B)
+                            this.Op2 += ", ";
+                    }
+                    this.Op3 = "}}";
+                    break;
+                // CLOSE
+                // CLOSURE
+                // VARAG
+                default:
+                    this.Op1 = "unk";
+                    this.Op2 = "_";
+                    this.Op3 = Instr.OpCode.ToString();
+                    break;
                     // ez
             }
         }

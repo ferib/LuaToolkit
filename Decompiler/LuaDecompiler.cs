@@ -190,10 +190,10 @@ namespace LuaSharpVM.Decompiler
                     case LuaOpcode.CONCAT:
                         this.Result += $"{tabs}{WriteIndex(function.Instructions[i].A, function, false)} = ";
 
-                        for (int x = function.Instructions[i].B; x < function.Instructions[i].C; ++x)
-                            this.Result += $"{WriteIndex(x, function, false)} .. \r\n";
+                        for (int x = function.Instructions[i].B; x <= function.Instructions[i].C; ++x)
+                            this.Result += $"{WriteIndex(x, function, false)} ..";
 
-                        this.Result += $"var{function.Instructions[i].C}\r\n";
+                        //this.Result += $"var{function.Instructions[i].C}\r\n";
                         break;
 
                     case LuaOpcode.JMP:
