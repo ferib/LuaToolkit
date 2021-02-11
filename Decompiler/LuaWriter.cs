@@ -45,9 +45,9 @@ namespace LuaSharpVM.Decompiler
         private void WriteFunction(LuaFunction func, int dpth = 0)
         {
             // TODO: move header in LuaScriptFunction class
-            string header = $"{new string(' ', dpth)}function func" + FunctionCounter + "(";
+            string header = $"func" + FunctionCounter + "(";
             for (int i = 0; i < func.ArgsCount; ++i)
-                header += "arg" + i + (i + 1 != func.ArgsCount ? ", " : ")");
+                header += "var" + i + (i + 1 != func.ArgsCount ? ", " : ")");
             FunctionCounter++;
 
             LuaScriptFunction newFunction = new LuaScriptFunction(header, ref func, ref this.Decoder);
