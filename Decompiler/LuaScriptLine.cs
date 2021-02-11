@@ -85,9 +85,9 @@ namespace LuaSharpVM.Decompiler
                     this.Op3 = $"upvalue[{Instr.B}]";
                     break;
                 case LuaOpcode.GETGLOBAL:
-                    this.Op1 = WriteIndex(Instr.A);
-                    this.Op2 = " = ";
-                    this.Op3 = $"_G[{GetConstant(Instr.B)}]";
+                    this.Op1 = $"{WriteIndex(Instr.A)} = _G[";
+                    this.Op2 = GetConstant(Instr.Bx); // may be used lateron
+                    this.Op3 = $"]";
                     break;
                 case LuaOpcode.GETTABLE:
                     this.Op1 = WriteIndex(Instr.A);
@@ -205,34 +205,46 @@ namespace LuaSharpVM.Decompiler
                     this.Op3 = $"var{Instr.B}; end";
                     break;
                 case LuaOpcode.CALL:
-                    if(Instr.C != 0)
+                    // Function returns
+                    if(Instr.C == 0)
                     {
-                        for (int i = Instr.A; i < Instr.A + Instr.C - 2; ++i)
+                        // top set to last_result+1
+                    }
+                    else if(Instr.C == 1)  
+                    {
+                        // no return values saved
+                    }
+                    else // 2 or more, multiple returns
+                    {
+                        for (int i = Instr.A; i < Instr.A + Instr.C-1; ++i)
                         {
                             this.Op1 += $"var{i}";
-                            if (i < Instr.A - 1)
+                            if (i < Instr.A + Instr.C - 2)
                                 this.Op1 += ", ";
                         }
+                        this.Op1 += " = ";
                     }
-                    else
+
+                    // Function Name
+                    this.Op2 = $"var{Instr.A}"; // func name only (used lateron)
+                    
+                    // Function Args
+                    if(Instr.B == 1)
                     {
-                        // top is set to last_result+1
-                        this.Op1 = "!C==0! "; // TODO
+                        // The function has no parameters
+                        this.Op3 += "()";
                     }
-                    this.Op2 = $"var{Instr.A}(";
-                    if(Instr.B != 0)
+                    else // 2 or more, multiple args
                     {
+                        // func parms range from A+1 to B (B = top of stack)
+                        this.Op3 = "(";
                         for (int i = Instr.A; i < Instr.A + Instr.B - 1; ++i)
                         {
-                            this.Op2 += $"var{i + 1}";
+                            this.Op3 += $"var{i + 1}";
                             if (i < Instr.A + Instr.B - 2)
-                                this.Op2 += ", ";
+                                this.Op3 += ", ";
                         }
-                        this.Op2 += ")";
-                    }
-                    else
-                    {
-                        this.Op1 = "!B==0! "; // TODO
+                        this.Op3 += ")";
                     }
                     break;
                 // TAILCALL

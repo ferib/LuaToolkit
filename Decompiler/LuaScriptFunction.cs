@@ -115,6 +115,21 @@ namespace LuaSharpVM.Decompiler
                             this.Lines[i].Depth -= 1;
                         }
                         break;
+                    case LuaOpcode.GETGLOBAL:
+                        // replace _G['name'] with func ref name
+                        for (int j = i; j < this.Lines.Count; j++)
+                        {
+                            // try find a mov that references the call
+                            if (this.Lines[j].Instr.OpCode != LuaOpcode.CALL)
+                                continue;
+
+                            if (this.Lines[j].Instr.A == this.Lines[i].Instr.A) // j.A = i.A; funcname = j.Bx
+                            {
+                                this.Lines[j].Op2 = this.Lines[i].Op2.Replace("\"", "").Replace("\'", ""); // strip string enocding
+                                this.Lines[i].Text = ""; // erase
+                            }
+                        }
+                        break;
                     case LuaOpcode.CALL:
                         // Original: var1(var0); var2 = var1
                         // Fixed:    var2 = var1(var0)
@@ -125,6 +140,7 @@ namespace LuaSharpVM.Decompiler
                         string caller = this.Lines[i].Op1;
                         caller = $"{this.Lines[i + 1].Op1} = {caller}";
                         this.Lines[i].Op1 = caller;
+                        this.Lines[i + 1].Text = ""; // erase
                         break;
                     case LuaOpcode.LOADNIL:
                         // TODO: remove '= nil', add local and comas: local, v1, v2 v3, v4, v5 
