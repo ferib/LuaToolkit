@@ -60,21 +60,66 @@ namespace LuaSharpVM.Decompiler
                         //    }
                         //    break;
                         //}
-                        //break;
+                        break;
                     case LuaOpcode.JMP:
-                        //this.Lines[i].Text = ""; // hide JMP's, only used for debugging output
+                        this.Lines[i].Text = ""; // hide JMP's, only used for debugging output
                         //this.Lines[i].Op1 = "-- JMP " + (short)(this.Lines[i].Instr.sBx);
 
                         // TODO: define end of IF
                         bool isEnd = true;
                         switch (this.Lines[i - 1].Instr.OpCode)
                         {
-                            case LuaOpcode.EQ:
+                            case LuaOpcode.EQ: // else
                             case LuaOpcode.LT:
                             case LuaOpcode.LE:
                                 isEnd = false;
                                 break;
                         }
+
+                        // TODO: fix 
+                        if (this.Lines[i - 1].Instr.OpCode == LuaOpcode.TFORLOOP)
+                        {
+                            var loopStart = this.Lines[i - 1 + this.Lines[i].Instr.sBx];
+                            loopStart.Op3 += $"\n\r{new string('\t', loopStart.Depth)}for {this.Lines[i - 1].Op2} in {this.Lines[i - 1].Op3} do";
+                            this.Lines[i - 1].Op1 = "end";
+                            this.Lines[i - 1].Op2 = ""; // erase
+                            this.Lines[i - 1].Op3 = "";
+                            //this.Lines[i - 1].Text = ""; // erase
+                            //switch(loopStart.Instr.OpCode)
+                            //{
+
+                            //    //case LuaOpcode.CALL:
+                            //    //    string[] fvars = loopStart.Op1.Substring(0, loopStart.Op1.Length - 3).Split(',');
+                            //    //    string fvarss = "";
+                            //    //    for(int j = 1; j < fvars.Length; j++)
+                            //    //    {
+                            //    //        fvarss += fvars[j];
+                            //    //        if (j < fvars.Length - 1)
+                            //    //            fvarss += ",";
+                            //    //    }
+                            //    //    string tloop = $"for{fvarss} in {loopStart.Op2}{loopStart.Op3} do";
+                            //    //    loopStart.Op1 = tloop;
+                            //    //    loopStart.Op2 = ""; // erase others
+                            //    //    loopStart.Op3 = "";
+                            //    //    break;
+                            //    //case LuaOpcode.LOADNIL:
+                            //    //    string[] vars = loopStart.Op2.Replace(" = nil;","").Split(' ');
+                            //    //    string loop = $"for ";
+                            //    //    for(int j = 0; j < vars.Length-2; j++)
+                            //    //    {
+                            //    //        loop += $"{vars[j]}";
+                            //    //        if (j < vars.Length - 3)
+                            //    //            loop += ", ";
+                            //    //    }
+                            //    //    loop += $" in {vars[vars.Length - 2]}";
+                            //    //    loopStart.Op1 = loop;
+                            //    //    loopStart.Op2 = ""; // erase others
+                            //    //    loopStart.Op3 = "";
+                            //    //    break;
+                            //}
+                            //isEnd = false;
+                        }
+
 
                         // TODO: identify better
                         if (isEnd)
@@ -148,12 +193,6 @@ namespace LuaSharpVM.Decompiler
             }
         }
 
-        public void Beautify()
-        {
-            // TODO: beautify, optimize, remove dead code?
-            Realign();
-        }
-
         public void Realign()
         {
             // text based because we did wanky things instead of respecting the list
@@ -190,6 +229,8 @@ namespace LuaSharpVM.Decompiler
                 {
                     tabCount -= 1;
                 }
+                if (tabCount < 0)
+                    tabCount = 0;
 
                 newText += $"{new string('\t',tabCount)}{lines[i]}\r\n";
                 if (add)
@@ -205,7 +246,8 @@ namespace LuaSharpVM.Decompiler
         {
             // fix if statements
             Reformat();
-            Beautify();
+            Realign();
+            // TODO: move to Beautify();
         }
 
         public string GetText()

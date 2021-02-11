@@ -75,7 +75,7 @@ namespace LuaSharpVM.Decompiler
                 case LuaOpcode.LOADNIL:
                     for (int i = Instr.A; i < Instr.B + 1; ++i)
                     {
-                        this.Op1 += $"{WriteIndex(i)} = nil; "; // TODO: turn into new class? Nah, just beatify afterwards..
+                        this.Op2 += $"{WriteIndex(i)} = nil; "; // TODO: turn into new class? Nah, just beatify afterwards..
                         this.NumberEnd++;
                     }
                     break;
@@ -216,7 +216,8 @@ namespace LuaSharpVM.Decompiler
                     }
                     else // 2 or more, multiple returns
                     {
-                        for (int i = Instr.A; i < Instr.A + Instr.C-1; ++i)
+                        //for (int i = Instr.A; i < Instr.A + Instr.C-1; ++i)
+                        for (int i = Instr.A; i < Instr.A + Instr.C-1; i++)
                         {
                             this.Op1 += $"var{i}";
                             if (i < Instr.A + Instr.C - 2)
@@ -229,22 +230,33 @@ namespace LuaSharpVM.Decompiler
                     this.Op2 = $"var{Instr.A}"; // func name only (used lateron)
                     
                     // Function Args
-                    if(Instr.B == 1)
-                    {
-                        // The function has no parameters
-                        this.Op3 += "()";
-                    }
-                    else // 2 or more, multiple args
+                    if(Instr.B == 0)
                     {
                         // func parms range from A+1 to B (B = top of stack)
                         this.Op3 = "(";
-                        for (int i = Instr.A; i < Instr.A + Instr.B - 1; ++i)
+                        for (int i = Instr.A; i < Instr.B; i++)
+                        //for (int i = Instr.A; i < Instr.A + Instr.B - 1; ++i)
                         {
                             this.Op3 += $"var{i + 1}";
                             if (i < Instr.A + Instr.B - 2)
                                 this.Op3 += ", ";
                         }
                         this.Op3 += ")";
+                    }
+                    else 
+                    {
+                        this.Op3 = "(";
+                        for (int i = Instr.A; i < Instr.A + Instr.B - 1; i++)
+                        //for (int i = Instr.A; i < Instr.A + Instr.B - 1; ++i)
+                        {
+                            this.Op3 += $"var{i + 1}";
+                            if (i < Instr.A + Instr.B - 2)
+                                this.Op3 += ", ";
+                        }
+                        this.Op3 += ")";
+
+                        //// The function has no parameters
+                        ////this.Op3 += "()";
                     }
                     break;
                 // TAILCALL
@@ -283,7 +295,16 @@ namespace LuaSharpVM.Decompiler
                     // A+3: external index
                     this.Op1 = $"for {WriteIndex(Instr.A + 3)}={WriteIndex(Instr.A)},{WriteIndex(Instr.A + 1)},{WriteIndex(Instr.A + 2)} do";
                     break;
-                // TFORLOOP
+                case LuaOpcode.TFORLOOP:
+                    this.Op1 = WriteIndex(Instr.A + 1) + ", " + WriteIndex(Instr.A + 2); // state
+                    for(int i = Instr.A+3; i <= Instr.A+2+Instr.C; i++) // local loop variable result, A+3 up to A+2+C
+                    {
+                        this.Op2 += WriteIndex(i);
+                        if (i < Instr.A + 2 + Instr.C)
+                            this.Op2 += ", ";
+                    }
+                    this.Op3 = WriteIndex(Instr.A); // iterator func
+                    break;
                 case LuaOpcode.SETLIST:
                     this.Op1 = $"{WriteIndex(Instr.A)} = {{";
                     for (int i = 1; i <= Instr.B; i++)
