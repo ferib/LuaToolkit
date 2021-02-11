@@ -273,8 +273,16 @@ namespace LuaSharpVM.Decompiler
                         }
                     }
                     break;
-                // FORLOOP
-                // FORPREP
+                case LuaOpcode.FORLOOP:
+                    this.Op1 = "end"; // performs a negative jump to start of loop based on condition
+                    break;
+                case LuaOpcode.FORPREP:
+                    // A+0: i =
+                    // A+1: max 
+                    // A+2: +=
+                    // A+3: external index
+                    this.Op1 = $"for {WriteIndex(Instr.A + 3)}={WriteIndex(Instr.A)},{WriteIndex(Instr.A + 1)},{WriteIndex(Instr.A + 2)} do";
+                    break;
                 // TFORLOOP
                 case LuaOpcode.SETLIST:
                     this.Op1 = $"{WriteIndex(Instr.A)} = {{";

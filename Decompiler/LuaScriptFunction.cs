@@ -42,44 +42,43 @@ namespace LuaSharpVM.Decompiler
         public void Reformat()
         {
             // fix if statements
-            int LastIf = -1;
-            int LastElse = -1; // or whatever we need
-            int LastReturn = -1;
-            List<int> BlacklistJumps = new List<int>(); // put in jumps from if chains
             for (int i = 0; i < this.Lines.Count; i++)
             {
                 switch(this.Lines[i].Instr.OpCode)
                 {
+                    case LuaOpcode.FORLOOP:
+                        // NOTE: this get beutifyd anyways
+                        //int index = i;
+                        //while(index > 0)
+                        //{
+                        //    index -= 1;
+                        //    if (this.Lines[index].Instr.OpCode != LuaOpcode.FORPREP)
+                        //    {
+                        //        this.Lines[index].Depth += 1;
+                        //        this.Lines[index].Op1 = "." + this.Lines[index].Op1;
+                        //        continue;
+                        //    }
+                        //    break;
+                        //}
+                        //break;
                     case LuaOpcode.JMP:
                         //this.Lines[i].Text = ""; // hide JMP's, only used for debugging output
-                        this.Lines[i].Op1 = "-- JMP " + (short)(this.Lines[i].Instr.sBx);
+                        //this.Lines[i].Op1 = "-- JMP " + (short)(this.Lines[i].Instr.sBx);
 
                         // TODO: define end of IF
                         bool isEnd = true;
-                        switch(this.Lines[i-1].Instr.OpCode)
+                        switch (this.Lines[i - 1].Instr.OpCode)
                         {
                             case LuaOpcode.EQ:
                             case LuaOpcode.LT:
                             case LuaOpcode.LE:
                                 isEnd = false;
-                            break;
+                                break;
                         }
 
                         // TODO: identify better
                         if (isEnd)
                             this.Lines[i + 1 + (short)this.Lines[i].Instr.sBx].Op1 = "end\n\r" + this.Lines[i + 1 + (short)this.Lines[i].Instr.sBx].Op1;
-
-                        //// place elseif/else/end for if
-                        ////if ((short)(this.Lines[i].Instr.sBx) == 0)
-                        ////    continue;
-
-                        //this.Lines[i + (short)(this.Lines[i].Instr.sBx) + 1].Op1 = "END; " + this.Lines[i + (short)(this.Lines[i].Instr.sBx) + 1].Op1;
-
-                        //if (this.Lines[i + (short)(this.Lines[i].Instr.sBx)+1].Instr.OpCode == LuaOpcode.JMP)
-                        //{
-                        //    this.Lines[i + (short)(this.Lines[i].Instr.sBx + 1)].Op1 = "END2; " + this.Lines[i + (short)(this.Lines[i].Instr.sBx) + 1].Op1;
-                        //    BlacklistJumps.Add(i + (short)(this.Lines[i].Instr.sBx)+1);
-                        //}
                         break;
                     case LuaOpcode.EQ:
                     case LuaOpcode.LT:
@@ -109,7 +108,7 @@ namespace LuaSharpVM.Decompiler
                         }
                         break;
                     case LuaOpcode.RETURN:
-                        if(i == this.Lines.Count-1)
+                        if (i == this.Lines.Count - 1)
                         {
                             this.Lines[i].Text = "end\n\r";
                             this.Lines[i].Depth -= 1;
@@ -130,18 +129,18 @@ namespace LuaSharpVM.Decompiler
                             }
                         }
                         break;
-                    case LuaOpcode.CALL:
-                        // Original: var1(var0); var2 = var1
-                        // Fixed:    var2 = var1(var0)
-                        if (i > this.Lines.Count - 1 ||     // is MOVE && mov refs to func return
-                            this.Lines[i + 1].Instr.OpCode != LuaOpcode.MOVE || this.Lines[i].Instr.A != this.Lines[i + 1].Instr.B)
-                            break;
+                    //case LuaOpcode.CALL:
+                    //    // Original: var1(var0); var2 = var1
+                    //    // Fixed:    var2 = var1(var0)
+                    //    if (i > this.Lines.Count - 1 ||     // is MOVE && mov refs to func return
+                    //        this.Lines[i + 1].Instr.OpCode != LuaOpcode.MOVE || this.Lines[i].Instr.A != this.Lines[i + 1].Instr.B)
+                    //        break;
 
-                        string caller = this.Lines[i].Op1;
-                        caller = $"{this.Lines[i + 1].Op1} = {caller}";
-                        this.Lines[i].Op1 = caller;
-                        this.Lines[i + 1].Text = ""; // erase
-                        break;
+                    //    string caller = this.Lines[i].Op1;
+                    //    caller = $"{this.Lines[i + 1].Op1} = {caller}";
+                    //    this.Lines[i].Op1 = caller;
+                    //    this.Lines[i + 1].Text = ""; // erase
+                    //    break;
                     case LuaOpcode.LOADNIL:
                         // TODO: remove '= nil', add local and comas: local, v1, v2 v3, v4, v5 
                         break;
@@ -168,7 +167,7 @@ namespace LuaSharpVM.Decompiler
                 bool add = false;
                 bool sub = false;
 
-                if(lines[i].StartsWith("if") || lines[i].StartsWith("function"))
+                if(lines[i].StartsWith("if") || lines[i].StartsWith("function") || lines[i].StartsWith("for"))
                 {
                     add = true;
                 }
