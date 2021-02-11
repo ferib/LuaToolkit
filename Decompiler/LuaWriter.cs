@@ -12,7 +12,12 @@ namespace LuaSharpVM.Decompiler
         private LuaDecoder Decoder;
 
         private Dictionary<int, int> UsedConstants; // to definde locals
-        private List<LuaScriptLine> LuaScriptLines;
+
+        private List<LuaScriptFunction> LuaFunctions;
+        private LuaScriptLine LuaCode;
+
+
+        private int FunctionCounter;
 
         public string LuaScript
         {
@@ -22,21 +27,39 @@ namespace LuaSharpVM.Decompiler
         public LuaWriter(ref LuaDecoder decoder)
         {
             this.Decoder = decoder;
-            this.LuaScriptLines = new List<LuaScriptLine>();
-            WriteFunction(this.Decoder.File.Function);
-            for (int i = 0; i < this.Decoder.File.Function.Functions.Count; i++)
-                WriteFunction(this.Decoder.File.Function.Functions[i], 2);
+            this.LuaFunctions = new List<LuaScriptFunction>();
+            WriteFile();
         }
 
+        private void WriteFile()
+        {
+            FunctionCounter = 0;
+            for (int i = 0; i < this.Decoder.File.Function.Functions.Count; i++)
+            {
+                FunctionCounter++;
+                WriteFunction(this.Decoder.File.Function.Functions[i], 2);
+            }
+            WriteFunction(this.Decoder.File.Function);
+        }
 
         private void WriteFunction(LuaFunction func, int dpth = 0)
         {
-            for(int i = 0; i < func.Instructions.Count; i++)
+            // TODO: move header in LuaScriptFunction class
+            string header = $"{new string(' ', dpth)}function func" + FunctionCounter + "(";
+            for (int i = 0; i < func.ArgsCount; ++i)
+                header += "arg" + i + (i + 1 != func.ArgsCount ? ", " : ")");
+            FunctionCounter++;
+
+            LuaScriptFunction newFunction = new LuaScriptFunction(header, ref func, ref this.Decoder);
+            this.LuaFunctions.Add(newFunction);
+            // TODO: move the above into a LuaScriptHeader or smthing
+
+            for (int i = 0; i < func.Instructions.Count; i++)
             {
-                this.LuaScriptLines.Add(new LuaScriptLine(func.Instructions[i], ref this.Decoder, ref func)
+                newFunction.Lines.Add(new LuaScriptLine(func.Instructions[i], ref this.Decoder, ref func)
                 {
                     Number = i,
-                    Depth = dpth
+                    Depth = dpth+1
                 });
             }
         }
@@ -44,8 +67,47 @@ namespace LuaSharpVM.Decompiler
         private string GetScript()
         {
             string result = "";
-            foreach (var l in LuaScriptLines)
-                result += l.Text;
+            for(int i = 0; i < this.LuaFunctions.Count; i++)
+                result += this.LuaFunctions[i].Text;
+
+            if(this.LuaCode != null)
+                result += this.LuaCode.Text;
+
+            return result;
+        }
+    }
+
+    public class LuaScriptFunction
+    {
+        public int Depth;
+        private LuaDecoder Decoder;
+        private LuaFunction Func;
+        private string Name;
+
+        public List<LuaScriptLine> Lines;
+
+        public string Text
+        {
+            get { return GetText(); }
+        }
+
+        public LuaScriptFunction(string name,  ref LuaFunction func, ref LuaDecoder decoder)
+        {
+            this.Name = name;
+            this.Func = func;
+            this.Lines = new List<LuaScriptLine>();
+        }
+
+        public override string ToString()
+        {
+            return $"function {this.Name}()\n\r";
+        }
+
+        public string GetText()
+        {
+            string result = this.ToString();
+            for(int i = 0; i < this.Lines.Count; i++)
+                result += this.Lines[i].Text;
             return result;
         }
     }
@@ -79,6 +141,11 @@ namespace LuaSharpVM.Decompiler
         public string Text
         {
             get { return ToString(); }
+        }
+
+        public LuaScriptLine(string wildcard)
+        {
+            this.Op1 = wildcard;
         }
 
         public LuaScriptLine(LuaInstruction instr, ref LuaDecoder decoder, ref LuaFunction func)
@@ -212,7 +279,7 @@ namespace LuaSharpVM.Decompiler
                     }  
                     break;
                 case LuaOpcode.JMP:
-                    // Do nothing ;D
+                    // Do nothing ;D?
                     break;
                 case LuaOpcode.EQ:
                     this.Op1 = $"if ({WriteIndex(Instr.B)}";
@@ -318,7 +385,10 @@ namespace LuaSharpVM.Decompiler
         public override string ToString()
         {
             string tab = new string(' ', Depth); // NOTE: singple space for debugging
-            return $"{tab}{Op1}{Op2}{Op3}\r\n";
+            if(this.Instr == null)
+                return $"{tab}{Op1}\r\n"; // wildcard
+            else
+                return $"{tab}{Op1}{Op2}{Op3}\r\n";
         }
     }
 }
