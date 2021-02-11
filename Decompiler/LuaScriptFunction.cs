@@ -115,6 +115,20 @@ namespace LuaSharpVM.Decompiler
                             this.Lines[i].Depth -= 1;
                         }
                         break;
+                    case LuaOpcode.CALL:
+                        // Original: var1(var0); var2 = var1
+                        // Fixed:    var2 = var1(var0)
+                        if (i > this.Lines.Count - 1 ||     // is MOVE && mov refs to func return
+                            this.Lines[i + 1].Instr.OpCode != LuaOpcode.MOVE || this.Lines[i].Instr.A != this.Lines[i + 1].Instr.B)
+                            break;
+
+                        string caller = this.Lines[i].Op1;
+                        caller = $"{this.Lines[i + 1].Op1} = {caller}";
+                        this.Lines[i].Op1 = caller;
+                        break;
+                    case LuaOpcode.LOADNIL:
+                        // TODO: remove '= nil', add local and comas: local, v1, v2 v3, v4, v5 
+                        break;
                 }
             }
         }

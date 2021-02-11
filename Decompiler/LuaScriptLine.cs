@@ -222,7 +222,17 @@ namespace LuaSharpVM.Decompiler
                     this.Op2 = $"var{Instr.A}(";
                     if(Instr.B != 0)
                     {
-
+                        for (int i = Instr.A; i < Instr.A + Instr.B - 1; ++i)
+                        {
+                            this.Op2 += $"var{i + 1}";
+                            if (i < Instr.A + Instr.B - 2)
+                                this.Op2 += ", ";
+                        }
+                        this.Op2 += ")";
+                    }
+                    else
+                    {
+                        this.Op1 = "!B==0! "; // TODO
                     }
                     break;
                 // TAILCALL
