@@ -68,7 +68,7 @@ namespace LuaSharpVM.Decompiler
                         break;
                     case LuaOpcode.JMP:
                         // NOTE: debugging
-                        this.Lines[i].Op1 = "-- JMP " + (short)(this.Lines[i].Instr.sBx);
+                        // this.Lines[i].Op1 = "-- JMP " + (short)(this.Lines[i].Instr.sBx);
 
                         // IF's ELSE detection
                         if(i > (short)this.Lines[i].Instr.sBx+1) // else detected when JMP leads to 'IF;JMP'
@@ -95,38 +95,39 @@ namespace LuaSharpVM.Decompiler
                         // IF's END detection
                         switch (this.Lines[i - 1].Instr.OpCode)
                         {
-                            case LuaOpcode.EQ: // end detection
+                            case LuaOpcode.EQ: 
                             case LuaOpcode.LT:
-                            case LuaOpcode.LE:
+                            case LuaOpcode.LE: // if start detected
+                                break;
+                            default: // no if start detected
                                 this.Lines[i + 1 + (short)this.Lines[i].Instr.sBx].Op1 = "end\n\r" + this.Lines[i + 1 + (short)this.Lines[i].Instr.sBx].Op1;
-
                                 break;
                         }
                         break;
                     case LuaOpcode.EQ:
-                    case LuaOpcode.LT:
+                    case LuaOpcode.LT: // NOTE: this is taken care of on JMP
                     case LuaOpcode.LE:
                         // NOTE: EQ, LT, LE also increase the PC when true to avoid the first JMP
                         //       which leads to the second part of the if statement
-                        if (this.Lines[i + 1].Instr.OpCode == LuaOpcode.JMP)
-                        {
-                            // else or end
-                            string keyword = $"end\n\r{new string('\t', this.Lines[i].Depth)}";
-                            if (this.Lines.Count > (i + 2 + (short)(this.Lines[i + 1].Instr.sBx)))
-                            {
-                                switch (this.Lines[i + 2 + (short)(this.Lines[i + 1].Instr.sBx)].Instr.OpCode)
-                                {
-                                    case LuaOpcode.EQ:
-                                    case LuaOpcode.LT:
-                                    case LuaOpcode.LE: // another if for elseif
-                                        keyword = "else";
-                                        break;
-                                }
-                            }
-                            if (this.Lines[i + 1 + (short)(this.Lines[i + 1].Instr.sBx)].Instr.OpCode == LuaOpcode.JMP)
-                                keyword = $"else\n\r{new string('\t', this.Lines[i + 2 + (short)(this.Lines[i + 1].Instr.sBx)].Depth)}"; // JMP indicates there is another block
-                            this.Lines[i + 2 + (short)(this.Lines[i + 1].Instr.sBx)].Op1 = keyword + this.Lines[i + 2 + (short)(this.Lines[i + 1].Instr.sBx)].Op1;
-                        }
+                        //if (this.Lines[i + 1].Instr.OpCode == LuaOpcode.JMP)
+                        //{
+                        //    // else or end
+                        //    string keyword = $"end\n\r{new string('\t', this.Lines[i].Depth)}";
+                        //    if (this.Lines.Count > (i + 2 + (short)(this.Lines[i + 1].Instr.sBx)))
+                        //    {
+                        //        switch (this.Lines[i + 2 + (short)(this.Lines[i + 1].Instr.sBx)].Instr.OpCode)
+                        //        {
+                        //            case LuaOpcode.EQ:
+                        //            case LuaOpcode.LT:
+                        //            case LuaOpcode.LE: // another if for elseif
+                        //                keyword = "else";
+                        //                break;
+                        //        }
+                        //    }
+                        //    if (this.Lines[i + 1 + (short)(this.Lines[i + 1].Instr.sBx)].Instr.OpCode == LuaOpcode.JMP)
+                        //        keyword = $"else\n\r{new string('\t', this.Lines[i + 2 + (short)(this.Lines[i + 1].Instr.sBx)].Depth)}"; // JMP indicates there is another block
+                        //    this.Lines[i + 2 + (short)(this.Lines[i + 1].Instr.sBx)].Op1 = keyword + this.Lines[i + 2 + (short)(this.Lines[i + 1].Instr.sBx)].Op1;
+                        //}
                         // pre IF instruction merg
                         switch (this.Lines[i -2].Instr.OpCode)
                         {
@@ -212,7 +213,7 @@ namespace LuaSharpVM.Decompiler
                     {
                         // elseif
                         newText += $"{new string('\t', tabCount-1)}{lines[i]}{lines[i+1]}\r\n";
-                        i +=1; // brrrr fuck y'all, i skip next one this way!
+                        i += 1; // brrrr fuck y'all, i skip next one this way!
                         continue;
                     }
                     else

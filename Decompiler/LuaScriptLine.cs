@@ -178,6 +178,7 @@ namespace LuaSharpVM.Decompiler
                     break;
                 case LuaOpcode.JMP:
                     // Do nothing ;D?
+                    //this.Op3 = $"JMP {Instr.sBx}"; // NOTE: uncomment for debugging
                     break;
                 case LuaOpcode.EQ:
                     this.Op1 = $"if";
