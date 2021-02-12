@@ -28,6 +28,7 @@ namespace LuaSharpVM.Decompiler
         private LuaDecoder Decoder;
         private LuaFunction Func;
         public LuaInstruction Instr;
+        public List<int> BranchInc = new List<int>();
 
         public string Op1; // opperands ;D
         public string Op2;
@@ -178,7 +179,7 @@ namespace LuaSharpVM.Decompiler
                     break;
                 case LuaOpcode.JMP:
                     // Do nothing ;D?
-                    //this.Op3 = $"JMP {Instr.sBx}"; // NOTE: uncomment for debugging
+                    this.Op3 = $"JMP {Instr.sBx}"; // NOTE: uncomment for debugging
                     break;
                 case LuaOpcode.EQ:
                     this.Op1 = $"if";
@@ -197,7 +198,7 @@ namespace LuaSharpVM.Decompiler
                     break;
                 case LuaOpcode.TEST:
                     this.Op1 = $"if";
-                    this.Op2 = $" not var{Instr.A} <=> {Instr.C}";
+                    this.Op2 = $" not var{Instr.A} <=> {Instr.C} ";
                     this.Op3 = $"then";
                     break;
                 case LuaOpcode.TESTSET:
