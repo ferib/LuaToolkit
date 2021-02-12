@@ -5,7 +5,7 @@ using LuaSharpVM.Models;
 using LuaSharpVM.Core;
 using LuaSharpVM.Disassembler;
 
-namespace LuaSharpVM.Obfuscater.Plugin
+namespace LuaSharpVM.Obfuscator.Plugin
 {
     public class LOEncrypt : LOPlugin
     {

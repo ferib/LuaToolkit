@@ -49,6 +49,7 @@ namespace LuaSharpVM.Decompiler
         {
             this.Instr = instr;
             this.Func = func;
+            this.Decoder = decoder;
             SetType();
             SetMain();
         }
@@ -83,6 +84,7 @@ namespace LuaSharpVM.Decompiler
                     this.Op1 = WriteIndex(Instr.A);
                     this.Op2 = " = ";
                     this.Op3 = $"upvalue[{Instr.B}]";
+
                     break;
                 case LuaOpcode.GETGLOBAL:
                     this.Op1 = $"{WriteIndex(Instr.A)} = _G[";
@@ -112,7 +114,7 @@ namespace LuaSharpVM.Decompiler
                 case LuaOpcode.NEWTABLE:
                     this.Op1 = WriteIndex(Instr.A);
                     this.Op2 = " = ";
-                    this.Op3 = "{{}}";
+                    this.Op3 = "{}";
                     break;
                 case LuaOpcode.SELF:
                     this.Op1 = WriteIndex(Instr.A);
@@ -129,7 +131,7 @@ namespace LuaSharpVM.Decompiler
                 case LuaOpcode.SUB:
                     this.Op1 = WriteIndex(Instr.A);
                     this.Op2 = $" = var{Instr.B}";
-                    this.Op3 = $" + var{Instr.C}";
+                    this.Op3 = $" - var{Instr.C}";
                     break;
                 case LuaOpcode.MUL:
                     this.Op1 = WriteIndex(Instr.A);
@@ -254,9 +256,6 @@ namespace LuaSharpVM.Decompiler
                                 this.Op3 += ", ";
                         }
                         this.Op3 += ")";
-
-                        //// The function has no parameters
-                        ////this.Op3 += "()";
                     }
                     break;
                 // TAILCALL
@@ -367,6 +366,9 @@ namespace LuaSharpVM.Decompiler
 
         private string GetConstant(int index)
         {
+            if (index >= this.Func.Constants.Count)
+                return "\"unk" + index.ToString() + "\""; // happends with local functions
+
             return this.Func.Constants[index].ToString();
         }
 

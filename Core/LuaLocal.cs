@@ -9,19 +9,19 @@ namespace LuaSharpVM.Core
 		public string Name
 		{
 			get;
-			private set;
+			set;
 		}
 
 		public int ScopeStart
 		{
 			get;
-			private set;
+			set;
 		}
 
 		public int ScopeEnd
 		{
 			get;
-			private set;
+			set;
 		}
 
 		public LuaLocal(string name, int scopeStart, int scopeEnd)

@@ -4,9 +4,9 @@ using System.Text;
 using LuaSharpVM.Models;
 using LuaSharpVM.Disassembler;
 
-namespace LuaSharpVM.Obfuscater.Plugin
+namespace LuaSharpVM.Obfuscator.Plugin
 {
-    public class LOPlugin
+    public abstract class LOPlugin
     {
         public LuaDecoder Decoder;
         public string Description;

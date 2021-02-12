@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using LuaSharpVM.Disassembler;
 
-namespace LuaSharpVM.Obfuscater.Plugin
+namespace LuaSharpVM.Obfuscator.Plugin
 {
     public class LOProxyCall : LOPlugin
     {

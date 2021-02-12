@@ -5,7 +5,7 @@ using LuaSharpVM.Core;
 using LuaSharpVM.Disassembler;
 using LuaSharpVM.Models;
 
-namespace LuaSharpVM.Obfuscater.Plugin
+namespace LuaSharpVM.Obfuscator.Plugin
 {
     public class LOString : LOPlugin
     {
