@@ -68,7 +68,7 @@ namespace LuaSharpVM.Decompiler
                         break;
                     case LuaOpcode.JMP:
                         // NOTE: debugging
-                        // this.Lines[i].Op1 = "-- JMP " + (short)(this.Lines[i].Instr.sBx);
+                        //this.Lines[i].Op1 = "-- JMP " + (short)(this.Lines[i].Instr.sBx);
 
                         // IF's ELSE detection
                         if(i > (short)this.Lines[i].Instr.sBx+1) // else detected when JMP leads to 'IF;JMP'
@@ -143,10 +143,10 @@ namespace LuaSharpVM.Decompiler
                             case LuaOpcode.EQ:
                             case LuaOpcode.LT:
                             case LuaOpcode.LE:
-                                if((short)this.Lines[i + 2].Instr.sBx == 2) // skips 2 in case of OR
-                                    this.Lines[i].Op3 = "or"; // define or/and
+                                if((short)this.Lines[i + 1].Instr.sBx - (short)this.Lines[i + 3].Instr.sBx == 2) // if next to each other then OR
+                                    this.Lines[i].Op3 = "and"; // define or/and
                                 else
-                                    this.Lines[i].Op3 = "and";
+                                    this.Lines[i].Op3 = "or";
                                 break;
                         }
                         break;
@@ -199,13 +199,14 @@ namespace LuaSharpVM.Decompiler
             int tabCount = 1;
             string[] lines = Text.Replace("\r","").Replace("\t","").Split('\n');
             string newText = "";
+            bool lastIsIf = false;
+            bool lastIsThen = false;
             for(int i = 0; i < lines.Length; i++)
             {
                 //string[] moreLines = lines[i].Split(';');
                 bool postAdd = false;
                 bool postSub = false;
-
-                if(lines[i].StartsWith("if") || lines[i].StartsWith("function") || lines[i].StartsWith("for"))
+                if (lines[i].StartsWith("if") || lines[i].StartsWith("function") || lines[i].StartsWith("for"))
                     postAdd = true;
                 else if(lines[i].StartsWith("else"))
                 {
@@ -228,12 +229,22 @@ namespace LuaSharpVM.Decompiler
                 if (tabCount < 0)
                     tabCount = 0;
 
-                newText += $"{new string('\t',tabCount)}{lines[i]}\r\n";
+                if(lines[i].StartsWith("if"))
+                    newText += $"{new string('\t', tabCount)}{lines[i]}";
+                else if(lastIsIf && !lines[i].EndsWith("then"))
+                    newText += $"{lines[i]}";
+                else if (lastIsIf && lines[i].EndsWith("then"))
+                    newText += $"{lines[i]}\r\n";
+                else
+                    newText += $"{new string('\t',tabCount)}{lines[i]}\r\n";
+
                 if (postAdd)
                     tabCount += 1;
                 if (postSub)
                     tabCount -= 1;
 
+                lastIsIf = lines[i].StartsWith("if") || lines[i].EndsWith(" or") || lines[i].EndsWith(" and");
+                lastIsThen = lines[i].EndsWith("then");
             }
             _text = newText;
         }
