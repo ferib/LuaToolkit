@@ -67,20 +67,10 @@ namespace LuaSharpVM.Decompiler
                         // NOTE: this get beutifyd anyways
                         break;
                     case LuaOpcode.JMP:
-                        //this.Lines[i].Text = ""; // hide JMP's, only used for debugging output
-                        //this.Lines[i].Op1 = "-- JMP " + (short)(this.Lines[i].Instr.sBx);
+                        // NOTE: debugging
+                        this.Lines[i].Op1 = "-- JMP " + (short)(this.Lines[i].Instr.sBx);
 
-                        // TODO: replace Op1 & Op3 for multilign if's
-                        bool isEnd = true;
-                        bool isElse = false;
-                        switch (this.Lines[i - 1].Instr.OpCode)
-                        {
-                            case LuaOpcode.EQ: // end detection
-                            case LuaOpcode.LT:
-                            case LuaOpcode.LE:
-                                isEnd = false;
-                                break;
-                        }
+                        // IF's ELSE detection
                         if(i > (short)this.Lines[i].Instr.sBx+1) // else detected when JMP leads to 'IF;JMP'
                             if (this.Lines[i - (short)this.Lines[i].Instr.sBx - 1].Instr.OpCode == LuaOpcode.JMP)
                                 switch (this.Lines[i - (short)this.Lines[i].Instr.sBx - 2].Instr.OpCode)
@@ -88,12 +78,11 @@ namespace LuaSharpVM.Decompiler
                                     case LuaOpcode.EQ: // else detection
                                     case LuaOpcode.LT:
                                     case LuaOpcode.LE:
-                                        isElse = true;
                                         this.Lines[i].Op1 = "else";
                                         break;
                                 }
 
-                        // TODO: fix 
+                        // TFORLOOP block detection
                         if (this.Lines[i - 1].Instr.OpCode == LuaOpcode.TFORLOOP)
                         {
                             var loopStart = this.Lines[i - 1 + this.Lines[i].Instr.sBx];
@@ -102,8 +91,17 @@ namespace LuaSharpVM.Decompiler
                             this.Lines[i - 1].Op2 = ""; // erase
                             this.Lines[i - 1].Op3 = "";
                         }
-                        if (isEnd)
-                            this.Lines[i + 1 + (short)this.Lines[i].Instr.sBx].Op1 = "end\n\r" + this.Lines[i + 1 + (short)this.Lines[i].Instr.sBx].Op1;
+
+                        // IF's END detection
+                        switch (this.Lines[i - 1].Instr.OpCode)
+                        {
+                            case LuaOpcode.EQ: // end detection
+                            case LuaOpcode.LT:
+                            case LuaOpcode.LE:
+                                this.Lines[i + 1 + (short)this.Lines[i].Instr.sBx].Op1 = "end\n\r" + this.Lines[i + 1 + (short)this.Lines[i].Instr.sBx].Op1;
+
+                                break;
+                        }
                         break;
                     case LuaOpcode.EQ:
                     case LuaOpcode.LT:
@@ -126,12 +124,10 @@ namespace LuaSharpVM.Decompiler
                                 }
                             }
                             if (this.Lines[i + 1 + (short)(this.Lines[i + 1].Instr.sBx)].Instr.OpCode == LuaOpcode.JMP)
-                            {
                                 keyword = $"else\n\r{new string('\t', this.Lines[i + 2 + (short)(this.Lines[i + 1].Instr.sBx)].Depth)}"; // JMP indicates there is another block
-                            }
-                            this.Lines[i + 2 + (short)(this.Lines[i + 1].Instr.sBx)].Op1 = keyword + "" + this.Lines[i + 2 + (short)(this.Lines[i + 1].Instr.sBx)].Op1;
+                            this.Lines[i + 2 + (short)(this.Lines[i + 1].Instr.sBx)].Op1 = keyword + this.Lines[i + 2 + (short)(this.Lines[i + 1].Instr.sBx)].Op1;
                         }
-                        // pre
+                        // pre IF instruction merg
                         switch (this.Lines[i -2].Instr.OpCode)
                         {
                             case LuaOpcode.EQ:
@@ -140,7 +136,7 @@ namespace LuaSharpVM.Decompiler
                                 this.Lines[i].Op1 = ""; // remove 'if'
                                 break;
                         }
-                        // post
+                        // post IF instruction merge
                         switch (this.Lines[i + 2].Instr.OpCode)
                         {
                             case LuaOpcode.EQ:
@@ -175,6 +171,7 @@ namespace LuaSharpVM.Decompiler
                             }
                         }
                         break;
+                    // TODO: remove this to another level?
                     //case LuaOpcode.CALL:
                     //    // Original: var1(var0); var2 = var1
                     //    // Fixed:    var2 = var1(var0)
@@ -204,13 +201,11 @@ namespace LuaSharpVM.Decompiler
             for(int i = 0; i < lines.Length; i++)
             {
                 //string[] moreLines = lines[i].Split(';');
-                bool add = false;
-                bool sub = false;
+                bool postAdd = false;
+                bool postSub = false;
 
                 if(lines[i].StartsWith("if") || lines[i].StartsWith("function") || lines[i].StartsWith("for"))
-                {
-                    add = true;
-                }
+                    postAdd = true;
                 else if(lines[i].StartsWith("else"))
                 {
                     if(i < lines.Length-1 && lines[i+1].StartsWith("if"))
@@ -224,19 +219,18 @@ namespace LuaSharpVM.Decompiler
                     {
                         // else
                         tabCount -= 1;
-                        add = true;
+                        postAdd = true;
                     }
                 }else if(lines[i].StartsWith("end"))
-                {
                     tabCount -= 1;
-                }
+
                 if (tabCount < 0)
                     tabCount = 0;
 
                 newText += $"{new string('\t',tabCount)}{lines[i]}\r\n";
-                if (add)
+                if (postAdd)
                     tabCount += 1;
-                if (sub)
+                if (postSub)
                     tabCount -= 1;
 
             }
