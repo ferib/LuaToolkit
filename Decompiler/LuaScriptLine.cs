@@ -84,7 +84,6 @@ namespace LuaSharpVM.Decompiler
                     this.Op1 = WriteIndex(Instr.A);
                     this.Op2 = " = ";
                     this.Op3 = $"upvalue[{Instr.B}]";
-
                     break;
                 case LuaOpcode.GETGLOBAL:
                     this.Op1 = $"{WriteIndex(Instr.A)} = _G[";
@@ -179,27 +178,26 @@ namespace LuaSharpVM.Decompiler
                     break;
                 case LuaOpcode.JMP:
                     // Do nothing ;D?
-                    this.Op1 = $"JMP {Instr.sBx}";
                     break;
                 case LuaOpcode.EQ:
-                    this.Op1 = $"if ({WriteIndex(Instr.B)}";
-                    this.Op2 = " == ";
-                    this.Op3 = $"{WriteIndex(Instr.C)}) ~= {Instr.A} then";
+                    this.Op1 = $"if";
+                    this.Op2 = $" ({WriteIndex(Instr.B)} == {WriteIndex(Instr.C)}) ~= {Instr.A} ";
+                    this.Op3 = $"then";
                     break;
                 case LuaOpcode.LT:
-                    this.Op1 = $"if ({WriteIndex(Instr.B)}";
-                    this.Op2 = " < ";
-                    this.Op3 = $"{WriteIndex(Instr.C)}) ~= {Instr.A} then";
+                    this.Op1 = $"if";
+                    this.Op2 = $"({WriteIndex(Instr.B)} < {WriteIndex(Instr.C)}) ~= {Instr.A} ";
+                    this.Op3 = $"then";
                     break;
                 case LuaOpcode.LE:
-                    this.Op1 = $"if ({WriteIndex(Instr.B)}";
-                    this.Op2 = " <= ";
-                    this.Op3 = $"{WriteIndex(Instr.C)}) ~= {Instr.A} then";
+                    this.Op1 = $"if";
+                    this.Op2 = $"  ({WriteIndex(Instr.B)} <= {WriteIndex(Instr.C)}) ~= {Instr.A} ";
+                    this.Op3 = $"then";
                     break;
                 case LuaOpcode.TEST:
-                    this.Op1 = $"if not var{Instr.A}";
-                    this.Op2 = " <=> ";
-                    this.Op3 = $"{Instr.C} then";
+                    this.Op1 = $"if";
+                    this.Op2 = $" not var{Instr.A} <=> {Instr.C}";
+                    this.Op3 = $"then";
                     break;
                 case LuaOpcode.TESTSET:
                     this.Op1 = $"if var{Instr.B} <=> {Instr.C} then; ";
@@ -400,6 +398,10 @@ namespace LuaSharpVM.Decompiler
             string tab = new string('\t', Depth); // NOTE: singple space for debugging
             if (this.Instr == null)
                 return $"{tab}{Op1}\r\n"; // wildcard
+            else if ((this.Op1 == "" || this.Op1  == null)
+                && (this.Op2 == "" || this.Op2 == null)
+                &&  (this.Op3 == "" || this.Op3 == null))
+                return "";
             else
                 return $"{tab}{Op1}{Op2}{Op3}\r\n";
         }

@@ -65,33 +65,33 @@ namespace LuaSharpVM.Decompiler
                 {
                     case LuaOpcode.FORLOOP:
                         // NOTE: this get beutifyd anyways
-                        //int index = i;
-                        //while(index > 0)
-                        //{
-                        //    index -= 1;
-                        //    if (this.Lines[index].Instr.OpCode != LuaOpcode.FORPREP)
-                        //    {
-                        //        this.Lines[index].Depth += 1;
-                        //        this.Lines[index].Op1 = "." + this.Lines[index].Op1;
-                        //        continue;
-                        //    }
-                        //    break;
-                        //}
                         break;
                     case LuaOpcode.JMP:
-                        this.Lines[i].Text = ""; // hide JMP's, only used for debugging output
+                        //this.Lines[i].Text = ""; // hide JMP's, only used for debugging output
                         //this.Lines[i].Op1 = "-- JMP " + (short)(this.Lines[i].Instr.sBx);
 
-                        // TODO: define end of IF
+                        // TODO: replace Op1 & Op3 for multilign if's
                         bool isEnd = true;
+                        bool isElse = false;
                         switch (this.Lines[i - 1].Instr.OpCode)
                         {
-                            case LuaOpcode.EQ: // else
+                            case LuaOpcode.EQ: // end detection
                             case LuaOpcode.LT:
                             case LuaOpcode.LE:
                                 isEnd = false;
                                 break;
                         }
+                        if(i > (short)this.Lines[i].Instr.sBx+1) // else detected when JMP leads to 'IF;JMP'
+                            if (this.Lines[i - (short)this.Lines[i].Instr.sBx - 1].Instr.OpCode == LuaOpcode.JMP)
+                                switch (this.Lines[i - (short)this.Lines[i].Instr.sBx - 2].Instr.OpCode)
+                                {
+                                    case LuaOpcode.EQ: // else detection
+                                    case LuaOpcode.LT:
+                                    case LuaOpcode.LE:
+                                        isElse = true;
+                                        this.Lines[i].Op1 = "else";
+                                        break;
+                                }
 
                         // TODO: fix 
                         if (this.Lines[i - 1].Instr.OpCode == LuaOpcode.TFORLOOP)
@@ -101,44 +101,7 @@ namespace LuaSharpVM.Decompiler
                             this.Lines[i - 1].Op1 = "end";
                             this.Lines[i - 1].Op2 = ""; // erase
                             this.Lines[i - 1].Op3 = "";
-                            //this.Lines[i - 1].Text = ""; // erase
-                            //switch(loopStart.Instr.OpCode)
-                            //{
-
-                            //    //case LuaOpcode.CALL:
-                            //    //    string[] fvars = loopStart.Op1.Substring(0, loopStart.Op1.Length - 3).Split(',');
-                            //    //    string fvarss = "";
-                            //    //    for(int j = 1; j < fvars.Length; j++)
-                            //    //    {
-                            //    //        fvarss += fvars[j];
-                            //    //        if (j < fvars.Length - 1)
-                            //    //            fvarss += ",";
-                            //    //    }
-                            //    //    string tloop = $"for{fvarss} in {loopStart.Op2}{loopStart.Op3} do";
-                            //    //    loopStart.Op1 = tloop;
-                            //    //    loopStart.Op2 = ""; // erase others
-                            //    //    loopStart.Op3 = "";
-                            //    //    break;
-                            //    //case LuaOpcode.LOADNIL:
-                            //    //    string[] vars = loopStart.Op2.Replace(" = nil;","").Split(' ');
-                            //    //    string loop = $"for ";
-                            //    //    for(int j = 0; j < vars.Length-2; j++)
-                            //    //    {
-                            //    //        loop += $"{vars[j]}";
-                            //    //        if (j < vars.Length - 3)
-                            //    //            loop += ", ";
-                            //    //    }
-                            //    //    loop += $" in {vars[vars.Length - 2]}";
-                            //    //    loopStart.Op1 = loop;
-                            //    //    loopStart.Op2 = ""; // erase others
-                            //    //    loopStart.Op3 = "";
-                            //    //    break;
-                            //}
-                            //isEnd = false;
                         }
-
-
-                        // TODO: identify better
                         if (isEnd)
                             this.Lines[i + 1 + (short)this.Lines[i].Instr.sBx].Op1 = "end\n\r" + this.Lines[i + 1 + (short)this.Lines[i].Instr.sBx].Op1;
                         break;
@@ -167,6 +130,27 @@ namespace LuaSharpVM.Decompiler
                                 keyword = $"else\n\r{new string('\t', this.Lines[i + 2 + (short)(this.Lines[i + 1].Instr.sBx)].Depth)}"; // JMP indicates there is another block
                             }
                             this.Lines[i + 2 + (short)(this.Lines[i + 1].Instr.sBx)].Op1 = keyword + "" + this.Lines[i + 2 + (short)(this.Lines[i + 1].Instr.sBx)].Op1;
+                        }
+                        // pre
+                        switch (this.Lines[i -2].Instr.OpCode)
+                        {
+                            case LuaOpcode.EQ:
+                            case LuaOpcode.LT:
+                            case LuaOpcode.LE:
+                                this.Lines[i].Op1 = ""; // remove 'if'
+                                break;
+                        }
+                        // post
+                        switch (this.Lines[i + 2].Instr.OpCode)
+                        {
+                            case LuaOpcode.EQ:
+                            case LuaOpcode.LT:
+                            case LuaOpcode.LE:
+                                if((short)this.Lines[i + 2].Instr.sBx == 2) // skips 2 in case of OR
+                                    this.Lines[i].Op3 = "or"; // define or/and
+                                else
+                                    this.Lines[i].Op3 = "and";
+                                break;
                         }
                         break;
                     case LuaOpcode.RETURN:
