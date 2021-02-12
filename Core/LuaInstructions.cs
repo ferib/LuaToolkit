@@ -92,15 +92,44 @@ namespace LuaSharpVM.Core
 
         public override string ToString()
         {
-            // TODO: check if this makes sense
-            if (this.Signed && this.HasBx)
-                return $"{this.OpCode} {this.sBx} {this.sBx}";
-            if (this.Signed)
+            // TODO: cleanup
+            if (this.OpCode == LuaOpcode.CLOSE)
+                return $"{this.OpCode} {this.A}";
+            else if (this.OpCode == LuaOpcode.CLOSURE || this.OpCode == LuaOpcode.GETGLOBAL 
+                || this.OpCode == LuaOpcode.SETGLOBAL || this.OpCode == LuaOpcode.LOADK)
+                return $"{this.OpCode} {this.A} {this.Bx}";
+
+            if(this.OpCode == LuaOpcode.TFORLOOP || this.OpCode == LuaOpcode.TEST)
+                return $"{this.OpCode} {this.A} {this.C}";
+
+            if (this.OpCode == LuaOpcode.JMP)
                 return $"{this.OpCode} {this.sBx}";
+            else if (this.Signed)
+                return $"{this.OpCode} {this.A} {this.sBx}";
+
+            bool NoC = false;
+            switch(this.OpCode)
+            {
+                case LuaOpcode.MOVE:
+                case LuaOpcode.LOADNIL:
+                case LuaOpcode.GETUPVAL:
+                case LuaOpcode.SETUPVAL:
+                case LuaOpcode.UNM:
+                case LuaOpcode.NOT:
+                case LuaOpcode.LEN:
+                case LuaOpcode.RETURN:
+                case LuaOpcode.VARARG:
+                    NoC = true;
+                    break;
+            }
+
             if (this.HasBx)
-                return $"{this.OpCode} {this.Bx}";
+                return $"{this.OpCode} {this.A} {this.Bx}";
             else
-                return $"{this.OpCode} {this.A} {this.B} {this.C}";
+                if(NoC)
+                    return $"{this.OpCode} {this.A} {this.B}";
+                else
+                    return $"{this.OpCode} {this.A} {this.B} {this.C}";
         }
     }
 

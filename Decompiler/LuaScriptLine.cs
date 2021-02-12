@@ -315,7 +315,10 @@ namespace LuaSharpVM.Decompiler
                     }
                     this.Op3 = "}}";
                     break;
-                // CLOSE
+                case LuaOpcode.CLOSE:
+                    // NOTE: close all variables in the stack up to
+                    // has no impact on the decompiler?
+                    break;
                 case LuaOpcode.CLOSURE:
                     this.Op1 = $"{WriteIndex(Instr.A)}";
                     this.Op2 = " = ";
