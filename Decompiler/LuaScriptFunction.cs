@@ -34,6 +34,8 @@ namespace LuaSharpVM.Decompiler
 
         public override string ToString()
         {
+            if (this.Name == null)
+                return "-- root file\n\r";
             return $"\n\r" + (this.IsLocal ? "local" : "") + $"function {this.Name}\n\r";
             //return $"\n\rfunction {this.Name}()\n\r";
         }

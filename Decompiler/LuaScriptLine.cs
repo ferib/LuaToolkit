@@ -95,7 +95,7 @@ namespace LuaSharpVM.Decompiler
                     this.Op3 = $"var{Instr.B}[{WriteIndex(Instr.C)}]"; // TODO: fix
                     break;
                 case LuaOpcode.SETGLOBAL:
-                    this.Op1 = $"_G[{WriteIndex(Instr.Bx)}]";
+                    this.Op1 = $"_G[{GetConstant(Instr.Bx)}]";
                     this.Op2 = " = ";
                     this.Op3 = $"var{Instr.A}";
                     break;
@@ -316,8 +316,14 @@ namespace LuaSharpVM.Decompiler
                     this.Op3 = "}}";
                     break;
                 // CLOSE
-                // CLOSURE
-                // VARAG
+                case LuaOpcode.CLOSURE:
+                    this.Op1 = $"{WriteIndex(Instr.A)}";
+                    this.Op2 = " = ";
+                    this.Op3 = GetConstant(Instr.Bx).Substring(1, GetConstant(Instr.Bx).Length - 2);
+                    break;
+                //case LuaOpcode.VARARG:
+                //    this.Op1 = "..."; // B > 1 for fixed range, B 0 for unspecified
+                //    break;
                 default:
                     this.Op1 = "unk";
                     this.Op2 = "_";
