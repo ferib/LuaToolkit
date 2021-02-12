@@ -14,7 +14,7 @@ namespace LuaSharpVM.Decompiler
         private LuaFunction Func;
         private string Name;
         private bool IsLocal = false;
-
+        private List<string> Args;
         public List<LuaScriptLine> Lines;
 
         private string _text;
@@ -24,9 +24,10 @@ namespace LuaSharpVM.Decompiler
             get { return GetText(); }
         }
 
-        public LuaScriptFunction(string name, ref LuaFunction func, ref LuaDecoder decoder)
+        public LuaScriptFunction(string name, List<string> args, ref LuaFunction func, ref LuaDecoder decoder)
         {
             this.Name = name;
+            this.Args = args;
             this.Func = func;
             this.Decoder = decoder;
             this.Lines = new List<LuaScriptLine>();
@@ -34,12 +35,26 @@ namespace LuaSharpVM.Decompiler
 
         public override string ToString()
         {
-            if (this.Name == null)
+            if (this.Name == null && GetName() != null)
                 return "-- root file\n\r";
-            return $"\n\r" + (this.IsLocal ? "local" : "") + $"function {this.Name}\n\r";
-            //return $"\n\rfunction {this.Name}()\n\r";
+
+            string args = "(";
+            for(int i = 0; i < this.Args.Count; i++)
+            {
+                args += this.Args[i];
+                if (i < this.Args.Count - 1)
+                    args += ", "; 
+            }
+            args += ")";
+            return $"\n\r" + (this.IsLocal ? "local" : "") + $"function {GetName()}{args}\n\r";
         }
 
+        private string GetName()
+        {
+            if (Func.Name != null && Func.Name != "")
+                return Func.Name;
+            return this.Name;
+        }
 
         public void Reformat()
         {

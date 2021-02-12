@@ -16,9 +16,6 @@ namespace LuaSharpVM.Decompiler
         private List<LuaScriptFunction> LuaFunctions;
         private LuaScriptLine LuaCode;
 
-
-        private int FunctionCounter;
-
         public string LuaScript
         {
             get { return GetScript(); }
@@ -33,27 +30,29 @@ namespace LuaSharpVM.Decompiler
 
         private void WriteFile()
         {
-            FunctionCounter = 0;
             for (int i = 0; i < this.Decoder.File.Function.Functions.Count; i++)
             {
                 WriteFunction(this.Decoder.File.Function.Functions[i], 1);
             }
             WriteFunction(this.Decoder.File.Function);
+
+            // allign/format/whatever each function
+            foreach (var f in this.LuaFunctions)
+                f.Complete();
         }
 
         private void WriteFunction(LuaFunction func, int dpth = 0)
         {
             // TODO: move header in LuaScriptFunction class
-            string header = $"func{FunctionCounter}(";
-            for (int i = 0; i < func.ArgsCount; ++i)
-                header += "var" + i + (i + 1 != func.ArgsCount ? ", " : "");
-            header += ")";
-            FunctionCounter++;
+            string funcName = "";
+            List<string> args = new List<string>();
+            for (int i = 0; i < func.ArgsCount; i++)
+                args.Add($"var{i}");
 
             if (dpth == 0)
-                header = null; // destroy header on root
+                funcName = null; // destroy header on root
 
-            LuaScriptFunction newFunction = new LuaScriptFunction(header, ref func, ref this.Decoder);
+            LuaScriptFunction newFunction = new LuaScriptFunction(funcName, args, ref func, ref this.Decoder);
             this.LuaFunctions.Add(newFunction);
             // TODO: move the above into a LuaScriptHeader or smthing
 
@@ -65,7 +64,6 @@ namespace LuaSharpVM.Decompiler
                     Depth = dpth+1
                 });
             }
-            newFunction.Complete();
         }
 
         private string GetScript()
