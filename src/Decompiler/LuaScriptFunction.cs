@@ -134,11 +134,13 @@ namespace LuaSharpVM.Decompiler
                 {
                     // TODO: check which instructions dont pick the next one
                     case LuaOpcode.TFORLOOP:
-                        this.Blocks[i].JumpsNext = this.Blocks[i].StartAddress + this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 2].Instr.sBx + 1; // TODO: verify math
-                        this.Blocks[i].JumpsTo = -1; // erase from possible previous block?
+                    case LuaOpcode.FORLOOP:
+                        this.Blocks[i].JumpsTo = this.Blocks[i].StartAddress + (short)this.Blocks[i].GetConditionLine().Instr.sBx+1; // TODO: verify math
+                        this.Blocks[i].JumpsNext = this.Blocks[i].JumpsNext = this.Blocks[i + 1].StartAddress;
                         break; // jmp?
                     case LuaOpcode.LOADBOOL: // pc++
                         this.Blocks[i].JumpsNext = 0;
+                        this.Blocks[i].JumpsTo = 1;
                         break;
                     case LuaOpcode.LT:
                     case LuaOpcode.LE:

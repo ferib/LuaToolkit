@@ -43,7 +43,7 @@
             this.fileToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Size = new System.Drawing.Size(590, 24);
+            this.menuStrip1.Size = new System.Drawing.Size(628, 24);
             this.menuStrip1.TabIndex = 0;
             this.menuStrip1.Text = "menuStrip1";
             // 
@@ -58,7 +58,7 @@
             // openToolStripMenuItem
             // 
             this.openToolStripMenuItem.Name = "openToolStripMenuItem";
-            this.openToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.openToolStripMenuItem.Size = new System.Drawing.Size(103, 22);
             this.openToolStripMenuItem.Text = "&Open";
             this.openToolStripMenuItem.Click += new System.EventHandler(this.openToolStripMenuItem_Click);
             // 
@@ -68,7 +68,7 @@
             this.lstFuncs.FormattingEnabled = true;
             this.lstFuncs.Location = new System.Drawing.Point(0, 24);
             this.lstFuncs.Name = "lstFuncs";
-            this.lstFuncs.Size = new System.Drawing.Size(168, 213);
+            this.lstFuncs.Size = new System.Drawing.Size(168, 194);
             this.lstFuncs.TabIndex = 1;
             this.lstFuncs.SelectedIndexChanged += new System.EventHandler(this.listBox1_SelectedIndexChanged);
             // 
@@ -79,14 +79,15 @@
             this.txtLuaCode.Location = new System.Drawing.Point(174, 24);
             this.txtLuaCode.Multiline = true;
             this.txtLuaCode.Name = "txtLuaCode";
-            this.txtLuaCode.Size = new System.Drawing.Size(416, 213);
+            this.txtLuaCode.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+            this.txtLuaCode.Size = new System.Drawing.Size(454, 194);
             this.txtLuaCode.TabIndex = 2;
             // 
             // frmMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(590, 237);
+            this.ClientSize = new System.Drawing.Size(628, 218);
             this.Controls.Add(this.txtLuaCode);
             this.Controls.Add(this.lstFuncs);
             this.Controls.Add(this.menuStrip1);

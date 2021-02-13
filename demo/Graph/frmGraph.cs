@@ -174,7 +174,7 @@ namespace Graph
             DrawTarget.BeginDraw();
             DrawTarget.Clear(new RawColor4(0x70, 0x70, 0x70, 255));
             DrawTarget.FillRectangle(new RawRectangleF(0, 0, this.Width, this.Height), backgroundBrush);
-            DrawTarget.DrawText($"{this.Writer.LuaFunctions[0].ToString()} ({graphX},{graphY})", fontSmall, new RawRectangleF(1, 1, 350, 20), blackBrush);
+            DrawTarget.DrawText($"{this.Writer.LuaFunctions[targetFunc].ToString()} ({graphX},{graphY})", fontSmall, new RawRectangleF(1, 1, 350, 20), blackBrush);
             DrawTarget.DrawLine(new RawVector2(1, 18), new RawVector2(250, 18), blackBrush);
 
             // draw mouse snapline
