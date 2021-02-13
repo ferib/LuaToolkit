@@ -55,6 +55,15 @@ namespace Graph
 
         public LuaWriter Writer;
 
+        private int targetFunc = 0;
+        public int TargetFunc
+        {
+            get { return targetFunc; }
+            set { targetFunc = value;
+                ReInitialise(); // re-initialise
+            }
+        }
+
         public frmGraph(LuaWriter writter)
         {
             InitializeComponent();
@@ -129,7 +138,7 @@ namespace Graph
                 Initialise(); // create graph blocks & arrows
 
                 if (GBlocks.Count > 0)
-                    graphY = (int)GBlocks[0].BoundryBox.Top; // jump to first block TODO: fix bug that causes this!
+                    graphY = (int)GBlocks[TargetFunc].BoundryBox.Top; // jump to first block TODO: fix bug that causes this!
 
                 while (true)
                 {
@@ -144,7 +153,7 @@ namespace Graph
         {
             // Create & Init GBlock List if needed
             if (GBlocks == null)
-                CreateBlocks(this.Writer.LuaFunctions[2].Blocks);
+                CreateBlocks(this.Writer.LuaFunctions[TargetFunc].Blocks);
 
             // create GraphArrows
             if (GArrows == null)
@@ -152,6 +161,13 @@ namespace Graph
 
 
         }
+
+        private void ReInitialise()
+        {
+            CreateBlocks(this.Writer.LuaFunctions[TargetFunc].Blocks);
+            CreateArrows();
+        }
+
         private void DrawData()
         {
             //Start to draw

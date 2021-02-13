@@ -20,13 +20,7 @@ namespace Graph
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-
-            //var luaF = new LuaCFile(File.ReadAllBytes(@"L:\Projects\LuaBytcodeInterpreter\lua_installer\files\debuffspread.luac"));
-            var luaF = new LuaCFile(File.ReadAllBytes(@"L:\Projects\LuaBytcodeInterpreter\lua_installer\files\RamerDouglasPeucker.luac"));
-            LuaDecoder d = new LuaDecoder(luaF);
-            LuaWriter writer = new LuaWriter(ref d);
-
-            Application.Run(new frmGraph(writer));
+            Application.Run(new frmMain());
         }
     }
 }
