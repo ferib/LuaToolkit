@@ -50,7 +50,7 @@ namespace LuaSharpVM.Decompiler
                     args += ", "; 
             }
             args += ")";
-            return $"\n\r" + (this.IsLocal ? "local" : "") + $"function {GetName()}{args}\n\r";
+            return (this.IsLocal ? "local" : "") + $"function {GetName()}{args}\n\r";
         }
 
         private string GetName()
@@ -120,26 +120,29 @@ namespace LuaSharpVM.Decompiler
                     // Last block shouldnt jump to anywhere
                     this.Blocks[i].JumpsTo = -1;
                     this.Blocks[i].JumpsNext = -1;
+                    if (this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Instr.OpCode == LuaOpcode.RETURN)
+                        this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Op1 = "end"; // replace last RETURN with END
                     continue;
                 }
 
                 // pre jmp instruction
-                switch(this.Blocks[i].Lines[this.Blocks[i].Lines.Count-2].Instr.OpCode)
-                {
-                    // TODO: check which instructions dont pick the next one
+                if(this.Blocks[i].Lines.Count > 1)
+                    switch(this.Blocks[i].Lines[this.Blocks[i].Lines.Count-2].Instr.OpCode)
+                    {
+                        // TODO: check which instructions dont pick the next one
 
-                    //case LuaOpcode.TFORLOOP:
-                    //    this.Blocks[i].JumpsNext = this.Blocks[i].StartAddress + this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 2].Instr.sBx + 1; // TODO: verify math
-                    //    this.Blocks[i].JumpsTo = -1; // erase?
-                    //    break; // jmp?
-                    //case LuaOpcode.LOADBOOL: // pc++
-                    //    this.Blocks[i].JumpsNext = 0;
-                    //    break;
-                    default:
-                        // TODO: figure out what other instructions do NOT PC+=1
-                        this.Blocks[i].JumpsNext = this.Blocks[i + 1].StartAddress;
-                        break;
-                }
+                        //case LuaOpcode.TFORLOOP:
+                        //    this.Blocks[i].JumpsNext = this.Blocks[i].StartAddress + this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 2].Instr.sBx + 1; // TODO: verify math
+                        //    this.Blocks[i].JumpsTo = -1; // erase?
+                        //    break; // jmp?
+                        //case LuaOpcode.LOADBOOL: // pc++
+                        //    this.Blocks[i].JumpsNext = 0;
+                        //    break;
+                        default:
+                            // TODO: figure out what other instructions do NOT PC+=1
+                            this.Blocks[i].JumpsNext = this.Blocks[i + 1].StartAddress;
+                            break;
+                    }
             }
         }
 
@@ -493,8 +496,24 @@ namespace LuaSharpVM.Decompiler
                 return _text; // stores end results
 
             string result = this.ToString();
-            for (int i = 0; i < this.Lines.Count; i++)
-                result += this.Lines[i].Text;
+            result += GenerateCode();
+            return result;
+        }
+
+        private string GenerateCode()
+        {
+            string result = "";
+            int tabLevel = 0;
+            for(int b = 0; b < this.Blocks.Count; b++)
+            {
+                for(int i = 0; i < this.Blocks[b].Lines.Count; i++)
+                {
+                    result += (this.Blocks[b].StartAddress + i).ToString("0000") + ": " + this.Blocks[b].Lines[i].Text;
+                }
+                result += new string('-', 50) + $" ({this.Blocks[b].JumpsTo}) \n\r";
+                if (b == this.Blocks.Count - 1)
+                    result += "\n\r"; // keep it clean?
+            }
             return result;
         }
     }
