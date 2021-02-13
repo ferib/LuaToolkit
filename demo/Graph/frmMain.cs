@@ -41,6 +41,8 @@ namespace Graph
                 lstFuncs.Items.Clear();
                 foreach (var f in activeGraph.Writer.LuaFunctions)
                     lstFuncs.Items.Add(f.ToString());
+
+                txtLuaCode.Text = activeGraph.Writer.LuaScript;
             }
         }
 
@@ -52,6 +54,11 @@ namespace Graph
             if (activeGraph.Writer.LuaFunctions.Count < lstFuncs.SelectedIndex)
                 return;
             activeGraph.TargetFunc = lstFuncs.SelectedIndex;
+        }
+
+        private void frmMain_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            Application.Exit();
         }
     }
 }
