@@ -4,6 +4,7 @@ using System.Text;
 using LuaSharpVM.Core;
 using LuaSharpVM.Models;
 using LuaSharpVM.Disassembler;
+using System.Linq;
 
 namespace LuaSharpVM.Decompiler
 {
@@ -110,7 +111,36 @@ namespace LuaSharpVM.Decompiler
 
                 this.Blocks.Insert(BlockSplitLines[i].Key+1, splitBlock); // insert new block after modified one
             }
+            // fix JumpsTo and JumpsNext ?
+            this.Blocks.OrderBy(x => x.StartAddress);
+            for (int i = 0; i < this.Blocks.Count; i++)
+            {
+                if (i == this.Blocks.Count - 1)
+                {
+                    // Last block shouldnt jump to anywhere
+                    this.Blocks[i].JumpsTo = -1;
+                    this.Blocks[i].JumpsNext = -1;
+                    continue;
+                }
 
+                // pre jmp instruction
+                switch(this.Blocks[i].Lines[this.Blocks[i].Lines.Count-2].Instr.OpCode)
+                {
+                    // TODO: check which instructions dont pick the next one
+
+                    //case LuaOpcode.TFORLOOP:
+                    //    this.Blocks[i].JumpsNext = this.Blocks[i].StartAddress + this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 2].Instr.sBx + 1; // TODO: verify math
+                    //    this.Blocks[i].JumpsTo = -1; // erase?
+                    //    break; // jmp?
+                    //case LuaOpcode.LOADBOOL: // pc++
+                    //    this.Blocks[i].JumpsNext = 0;
+                    //    break;
+                    default:
+                        // TODO: figure out what other instructions do NOT PC+=1
+                        this.Blocks[i].JumpsNext = this.Blocks[i + 1].StartAddress;
+                        break;
+                }
+            }
         }
 
         public void GenerateBlocks()
