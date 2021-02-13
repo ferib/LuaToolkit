@@ -426,7 +426,7 @@ namespace LuaSharpVM.Decompiler
 
         public bool IsBranch()
         {
-            return this.Instr.OpCode == LuaOpcode.JMP;
+            return this.Instr.OpCode == LuaOpcode.JMP || this.Instr.OpCode == LuaOpcode.FORLOOP || this.Instr.OpCode == LuaOpcode.TFORLOOP;
         }
 
         public bool IsMove()

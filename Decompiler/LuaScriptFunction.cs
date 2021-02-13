@@ -76,16 +76,44 @@ namespace LuaSharpVM.Decompiler
                 index++;
                 this.Blocks.Add(b); // save block
             }
-            // add block jumpsFrom
-            for(int i = 0; i < this.Blocks.Count; i++)
+
+            // add block jumpsFrom and split
+            List<KeyValuePair<int, int>> BlockSplitLines = new List<KeyValuePair<int, int>>();// block, line
+            for (int i = 0; i < this.Blocks.Count; i++)
             {
-                if (!this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].IsBranch())
+                if (this.Blocks[i].JumpsTo == -1)
                     continue;
-                var destLine = -1; //this.Lines.FindIndex(x => x.Instr.sBx + 1 + i)
+                var targets = this.Blocks.FindAll(x => x.HasLineNumber(this.Blocks[i].JumpsTo));
+                if(targets.Count > 0)
+                    BlockSplitLines.Add(new KeyValuePair<int, int>(this.Blocks.FindIndex(x => x.StartAddress == targets[0].StartAddress), this.Blocks[i].JumpsTo));
+                //foreach (var tb in targets)
+                //    BlockSplitLines.Add(new KeyValuePair<int, int>(this.Blocks.FindIndex(x => x.StartAddress == tb.StartAddress), i));
             }
+
+            // cut blocks and make new ones
+            for (int i = 0; i < BlockSplitLines.Count; i++)
+            {
+                if (this.Blocks[BlockSplitLines[i].Key].StartAddress + this.Blocks[BlockSplitLines[i].Key].Lines.Count < BlockSplitLines[i].Value &&
+                    this.Blocks[BlockSplitLines[i].Key].Lines.Count >= BlockSplitLines[i].Value)
+                    continue; // already circumcised this boi
+
+                if (this.Blocks.Find(x => x.StartAddress == BlockSplitLines[i].Value) != null)
+                    continue; // already circumcised by another block
+
+                LuaScriptBlock splitBlock = new LuaScriptBlock(BlockSplitLines[i].Value, ref this.Decoder, ref this.Func);
+                for(int j = BlockSplitLines[i].Value - this.Blocks[BlockSplitLines[i].Key].StartAddress; j < this.Blocks[BlockSplitLines[i].Key].Lines.Count; j++)
+                    splitBlock.Lines.Add(this.Blocks[BlockSplitLines[i].Key].Lines[j]); // copy from old to new
+                
+                // delete old lines
+                if(splitBlock.Lines.Count > 0)
+                    this.Blocks[BlockSplitLines[i].Key].Lines.RemoveRange(BlockSplitLines[i].Value - this.Blocks[BlockSplitLines[i].Key].StartAddress, splitBlock.Lines.Count);
+
+                this.Blocks.Insert(BlockSplitLines[i].Key+1, splitBlock); // insert new block after modified one
+            }
+
         }
 
-        public void GetBlocks()
+        public void GenerateBlocks()
         {
             GreateBlocks();
             // fix if statements

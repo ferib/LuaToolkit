@@ -38,7 +38,7 @@ namespace LuaSharpVM.Decompiler
 
             // allign/format/whatever each function
             foreach (var f in this.LuaFunctions)
-                f.GetBlocks();
+                f.GenerateBlocks();
         }
 
         private void WriteFunction(LuaFunction func, int dpth = 0)
