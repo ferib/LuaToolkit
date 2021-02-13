@@ -97,7 +97,7 @@ namespace LuaSharpVM.Decompiler
                 return $"{this.StartAddress.ToString("0000")}: (loop) GOTO {this.JumpsTo}";
 
             if(this.JumpsTo == -1 && this.JumpsNext != -1)
-                return $"{this.StartAddress.ToString("0000")}: {this.JumpsTo}";
+                return $"{this.StartAddress.ToString("0000")}: {this.JumpsNext}";
 
             return $"{this.StartAddress.ToString("0000")}: UNK_GOTO {this.JumpsTo}";
         }

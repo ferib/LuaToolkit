@@ -61,7 +61,7 @@ namespace LuaSharpVM.Decompiler
         }
         
 
-        private void GreateBlocks()
+        private void GenerateBlocks()
         {
             int index = 0;
             this.Blocks.Clear();
@@ -143,9 +143,9 @@ namespace LuaSharpVM.Decompiler
             }
         }
 
-        public void GenerateBlocks()
+        public void Complete()
         {
-            GreateBlocks();
+            GenerateBlocks();
             // fix if statements
             //Reformat(); // OLD
             //FixCodeBlocks();
