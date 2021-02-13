@@ -1,0 +1,93 @@
+{
+  "version": 3,
+  "targets": {
+    ".NETCoreApp,Version=v3.1": {
+      "LuaSharpVM/1.0.0": {
+        "type": "project",
+        "framework": ".NETStandard,Version=v2.0",
+        "compile": {
+          "bin/placeholder/LuaSharpVM.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/LuaSharpVM.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "LuaSharpVM/1.0.0": {
+      "type": "project",
+      "path": "../LuaSharpVM/LuaSharpVM.csproj",
+      "msbuildProject": "../LuaSharpVM/LuaSharpVM.csproj"
+    }
+  },
+  "projectFileDependencyGroups": {
+    ".NETCoreApp,Version=v3.1": [
+      "LuaSharpVM >= 1.0.0"
+    ]
+  },
+  "packageFolders": {
+    "C:\\Users\\Ferib\\.nuget\\packages\\": {},
+    "C:\\Microsoft\\Xamarin\\NuGet\\": {}
+  },
+  "project": {
+    "version": "1.0.0",
+    "restore": {
+      "projectUniqueName": "L:\\Projects\\LuaSharpVM\\Test\\Test.csproj",
+      "projectName": "Test",
+      "projectPath": "L:\\Projects\\LuaSharpVM\\Test\\Test.csproj",
+      "packagesPath": "C:\\Users\\Ferib\\.nuget\\packages\\",
+      "outputPath": "L:\\Projects\\LuaSharpVM\\Test\\obj\\",
+      "projectStyle": "PackageReference",
+      "fallbackFolders": [
+        "C:\\Microsoft\\Xamarin\\NuGet\\"
+      ],
+      "configFilePaths": [
+        "C:\\Users\\Ferib\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Xamarin.Offline.config"
+      ],
+      "originalTargetFrameworks": [
+        "netcoreapp3.1"
+      ],
+      "sources": {
+        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+        "https://api.nuget.org/v3/index.json": {}
+      },
+      "frameworks": {
+        "netcoreapp3.1": {
+          "projectReferences": {
+            "L:\\Projects\\LuaSharpVM\\LuaSharpVM\\LuaSharpVM.csproj": {
+              "projectPath": "L:\\Projects\\LuaSharpVM\\LuaSharpVM\\LuaSharpVM.csproj"
+            }
+          }
+        }
+      },
+      "warningProperties": {
+        "warnAsError": [
+          "NU1605"
+        ]
+      }
+    },
+    "frameworks": {
+      "netcoreapp3.1": {
+        "imports": [
+          "net461",
+          "net462",
+          "net47",
+          "net471",
+          "net472",
+          "net48"
+        ],
+        "assetTargetFallback": true,
+        "warn": true,
+        "frameworkReferences": {
+          "Microsoft.NETCore.App": {
+            "privateAssets": "all"
+          }
+        },
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\3.1.302\\RuntimeIdentifierGraph.json"
+      }
+    }
+  }
+}

@@ -92,10 +92,10 @@ namespace LuaSharpVM.Decompiler
 
 
             if (this.JumpsTo == -1 && this.JumpsNext != -1)
-                return $"{this.StartAddress.ToString("0000")}: {this.JumpsNext}";
+                return $"{this.StartAddress.ToString("0000")}: JMP: {this.JumpsNext}";
 
             if (this.JumpsTo != -1 && this.JumpsNext != -1)
-                return $"{this.StartAddress.ToString("0000")}: true:{this.JumpsTo}, false:{this.JumpsNext}";
+                return $"{this.StartAddress.ToString("0000")}: JMP: {this.JumpsTo}, ELSE: {this.JumpsNext}";
 
             // depriciated
             if (sLastLine.Instr.OpCode == LuaOpcode.JMP)

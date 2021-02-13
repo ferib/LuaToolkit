@@ -1,0 +1,16 @@
+L:\Projects\LuaSharpVM\Test\bin\Debug\netcoreapp3.1\Test.exe
+L:\Projects\LuaSharpVM\Test\bin\Debug\netcoreapp3.1\Test.deps.json
+L:\Projects\LuaSharpVM\Test\bin\Debug\netcoreapp3.1\Test.runtimeconfig.json
+L:\Projects\LuaSharpVM\Test\bin\Debug\netcoreapp3.1\Test.runtimeconfig.dev.json
+L:\Projects\LuaSharpVM\Test\bin\Debug\netcoreapp3.1\Test.dll
+L:\Projects\LuaSharpVM\Test\bin\Debug\netcoreapp3.1\Test.pdb
+L:\Projects\LuaSharpVM\Test\bin\Debug\netcoreapp3.1\LuaSharpVM.dll
+L:\Projects\LuaSharpVM\Test\bin\Debug\netcoreapp3.1\LuaSharpVM.pdb
+L:\Projects\LuaSharpVM\Test\obj\Debug\netcoreapp3.1\Test.csprojAssemblyReference.cache
+L:\Projects\LuaSharpVM\Test\obj\Debug\netcoreapp3.1\Test.AssemblyInfoInputs.cache
+L:\Projects\LuaSharpVM\Test\obj\Debug\netcoreapp3.1\Test.AssemblyInfo.cs
+L:\Projects\LuaSharpVM\Test\obj\Debug\netcoreapp3.1\Test.csproj.CoreCompileInputs.cache
+L:\Projects\LuaSharpVM\Test\obj\Debug\netcoreapp3.1\Test.csproj.CopyComplete
+L:\Projects\LuaSharpVM\Test\obj\Debug\netcoreapp3.1\Test.dll
+L:\Projects\LuaSharpVM\Test\obj\Debug\netcoreapp3.1\Test.pdb
+L:\Projects\LuaSharpVM\Test\obj\Debug\netcoreapp3.1\Test.genruntimeconfig.cache
