@@ -91,15 +91,16 @@ namespace LuaSharpVM.Decompiler
                 //    BlockSplitLines.Add(new KeyValuePair<int, int>(this.Blocks.FindIndex(x => x.StartAddress == tb.StartAddress), i));
             }
 
+            BlockSplitLines = BlockSplitLines.OrderBy(x => x.Key).ToList();
             // cut blocks and make new ones
             for (int i = 0; i < BlockSplitLines.Count; i++)
             {
-                if (this.Blocks[BlockSplitLines[i].Key].StartAddress + this.Blocks[BlockSplitLines[i].Key].Lines.Count < BlockSplitLines[i].Value &&
-                    this.Blocks[BlockSplitLines[i].Key].Lines.Count >= BlockSplitLines[i].Value)
+                if (this.Blocks[BlockSplitLines[i].Key].StartAddress + this.Blocks[BlockSplitLines[i].Key].Lines.Count < BlockSplitLines[i].Value ||
+                    this.Blocks[BlockSplitLines[i].Key].StartAddress > BlockSplitLines[i].Value)
                     continue; // already circumcised this boi
 
                 if (this.Blocks.Find(x => x.StartAddress == BlockSplitLines[i].Value) != null)
-                    continue; // already circumcised by another block
+                    continue; // been there, done that
 
                 LuaScriptBlock splitBlock = new LuaScriptBlock(BlockSplitLines[i].Value, ref this.Decoder, ref this.Func);
                 for(int j = BlockSplitLines[i].Value - this.Blocks[BlockSplitLines[i].Key].StartAddress; j < this.Blocks[BlockSplitLines[i].Key].Lines.Count; j++)
@@ -110,6 +111,9 @@ namespace LuaSharpVM.Decompiler
                     this.Blocks[BlockSplitLines[i].Key].Lines.RemoveRange(BlockSplitLines[i].Value - this.Blocks[BlockSplitLines[i].Key].StartAddress, splitBlock.Lines.Count);
 
                 this.Blocks.Insert(BlockSplitLines[i].Key+1, splitBlock); // insert new block after modified one
+                // update BlockSplitLines indexing
+                for (int j = i + 1; j < BlockSplitLines.Count; j++)
+                    BlockSplitLines[j] = new KeyValuePair<int, int>(BlockSplitLines[j].Key+1, BlockSplitLines[j].Value); // offset
             }
             // fix JumpsTo and JumpsNext ?
             this.Blocks.OrderBy(x => x.StartAddress);
@@ -506,7 +510,25 @@ namespace LuaSharpVM.Decompiler
             int tabLevel = 0;
             for(int b = 0; b < this.Blocks.Count; b++)
             {
+                // print block content
                 for(int i = 0; i < this.Blocks[b].Lines.Count; i++)
+                {
+                    result += (this.Blocks[b].StartAddress + i).ToString("0000") + $": {new string(' ',tabLevel)}" + this.Blocks[b].Lines[i].Text;
+                }
+                result += new string('-', 50) + $" ({this.Blocks[b].JumpsTo}) \n\r";
+                if (b == this.Blocks.Count - 1)
+                    result += "\n\r"; // keep it clean?
+            }
+            return result;
+        }
+
+        private string GenerateCodeFlat()
+        {
+            string result = "";
+            int tabLevel = 0;
+            for (int b = 0; b < this.Blocks.Count; b++)
+            {
+                for (int i = 0; i < this.Blocks[b].Lines.Count; i++)
                 {
                     result += (this.Blocks[b].StartAddress + i).ToString("0000") + ": " + this.Blocks[b].Lines[i].Text;
                 }
