@@ -179,7 +179,7 @@ namespace LuaSharpVM.Decompiler
                     break;
                 case LuaOpcode.JMP:
                     // Do nothing ;D?
-                    this.Op3 = $"JMP {Instr.sBx}"; // NOTE: uncomment for debugging
+                    //this.Op3 = $"JMP {Instr.sBx}"; // NOTE: uncomment for debugging
                     break;
                 case LuaOpcode.EQ:
                     this.Op1 = $"if";
@@ -285,7 +285,7 @@ namespace LuaSharpVM.Decompiler
                     }
                     break;
                 case LuaOpcode.FORLOOP:
-                    this.Op1 = "end"; // performs a negative jump to start of loop based on condition
+                    //this.Op1 = "end"; // performs a negative jump to start of loop based on condition
                     break;
                 case LuaOpcode.FORPREP:
                     // A+0: i =
@@ -397,6 +397,7 @@ namespace LuaSharpVM.Decompiler
 
         public override string ToString()
         {
+            // TODO: leave tab to another level?
             string tab = new string('\t', Depth); // NOTE: singple space for debugging
             if (this.Instr == null)
                 return $"{tab}{Op1}\r\n"; // wildcard
@@ -407,5 +408,37 @@ namespace LuaSharpVM.Decompiler
             else
                 return $"{tab}{Op1}{Op2}{Op3}\r\n";
         }
+
+        public bool IsCondition()
+        {
+            switch(this.Instr.OpCode)
+            {
+                case LuaOpcode.LE:
+                case LuaOpcode.LT:
+                case LuaOpcode.EQ:
+                case LuaOpcode.TEST:
+                case LuaOpcode.TESTSET:
+                    return true;
+                    break;
+            }
+            return false;
+        }
+
+        public bool IsBranch()
+        {
+            return this.Instr.OpCode == LuaOpcode.JMP;
+        }
+
+        public bool IsMove()
+        {
+            switch (this.Instr.OpCode)
+            {
+                case LuaOpcode.MOVE: // anything else, sir?
+                    return true;
+                    break;
+            }
+            return false;
+        }
+
     }
 }

@@ -17,6 +17,8 @@ namespace LuaSharpVM.Decompiler
         private List<string> Args;
         public List<LuaScriptLine> Lines;
 
+        public List<LuaScriptBlock> Blocks;
+
         private string _text;
 
         public string Text
@@ -31,6 +33,7 @@ namespace LuaSharpVM.Decompiler
             this.Func = func;
             this.Decoder = decoder;
             this.Lines = new List<LuaScriptLine>();
+            this.Blocks = new List<LuaScriptBlock>();
         }
 
         public override string ToString()
@@ -56,12 +59,39 @@ namespace LuaSharpVM.Decompiler
             return this.Name;
         }
         
-        public void Complete()
+
+        private void GreateBlocks()
         {
+            int index = 0;
+            this.Blocks.Clear();
+            while(index < this.Lines.Count)
+            { 
+                LuaScriptBlock b = new LuaScriptBlock(index, ref this.Decoder, ref this.Func);
+                while(index < this.Lines.Count)
+                {
+                    if (b.AddScriptLine(this.Lines[index]))
+                        break;
+                    index++;
+                }
+                index++;
+                this.Blocks.Add(b); // save block
+            }
+            // add block jumpsFrom
+            for(int i = 0; i < this.Blocks.Count; i++)
+            {
+                if (!this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].IsBranch())
+                    continue;
+                var destLine = -1; //this.Lines.FindIndex(x => x.Instr.sBx + 1 + i)
+            }
+        }
+
+        public void GetBlocks()
+        {
+            GreateBlocks();
             // fix if statements
             //Reformat(); // OLD
-            FixCodeBlocks();
-            Realign(); // correct tabs
+            //FixCodeBlocks();
+            //Realign(); // correct tabs
         }
 
         private void Reformat()
@@ -219,17 +249,18 @@ namespace LuaSharpVM.Decompiler
                 switch (this.Lines[i].Instr.OpCode)
                 {
                     case LuaOpcode.FORLOOP:
-                        // NOTE: this get beutifyd anyways
+                        this.Lines[i].Op1 = "end -- FORLOOP\n\r" + this.Lines[i].Op1;
                         break;
                     case LuaOpcode.JMP:
                         //this.Lines[i + 1 + this.Lines[i].Instr.sBx].Op1 = "." + this.Lines[i + 1 + this.Lines[i].Instr.sBx].Op1;
                         
-                        if(this.Lines[i].Instr.sBx == 1)
-                        {
-                            // JMP 1 commonly used for lots of things
-                            this.Lines[i + 1].Op3 += "\r\nend.";
-                        }
-                        else
+                        ////TODO:
+                        ////if(this.Lines[i].Instr.sBx == 1)
+                        ////{
+                        ////    // JMP 1 commonly used for lots of things
+                        ////    this.Lines[i + 1].Op3 += "\r\nend.";
+                        ////}
+                        ////else
                             this.Lines[i + 1 + this.Lines[i].Instr.sBx].BranchInc.Add(i); // let em know incomming jumps
 
                         break;
@@ -249,11 +280,12 @@ namespace LuaSharpVM.Decompiler
             {
                 if(this.Lines[i].BranchInc.Count > 0)
                 {
-                    if(this.Lines[i].BranchInc.Count > 1) // not always end?
+                    if(this.Lines[i].BranchInc.Count > 1) // NOTE: Skip when more then 1 jump, probs indicates an end anyway
                     {
-                        this.Lines[i].Op1 = "end\n\r" + this.Lines[i].Op1;
+                        ////TODO: this.Lines[i].Op1 = "end\n\r" + this.Lines[i].Op1;
                         continue;
                     }
+
                     for(int j = 0; j < this.Lines[i].BranchInc.Count; j++)
                     {
                         if(this.Lines[i-1].Instr.OpCode == LuaOpcode.JMP)
@@ -268,24 +300,77 @@ namespace LuaSharpVM.Decompiler
                             continue;
                         }
                         // check if IF statements is next to IF
-                        switch(this.Lines[this.Lines[i].BranchInc[j]-1].Instr.OpCode)
+                        if(this.Lines[this.Lines[i].BranchInc[j] - 1].IsCondition())
                         {
-                            case LuaOpcode.LE:
-                            case LuaOpcode.LT:
-                            case LuaOpcode.EQ:
-                            case LuaOpcode.TESTSET:
-                            case LuaOpcode.TEST:
-                                // IF confirmd
-                                //this.Lines[i].Op1 = "if " + this.Lines[i].Op1;
-                                //this.Lines[this.Lines[i].BranchInc[j]].Op1 = "IF_ " + this.Lines[this.Lines[i].BranchInc[j]].Op1;
-                                break;
-                            default:
-                                // else or end?
-                                this.Lines[i].Op1 = "else" + this.Lines[i].Op1;
-                                break;
+                            // IF confirmd
+                            //this.Lines[i].Op1 = "if " + this.Lines[i].Op1;
+                            //this.Lines[this.Lines[i].BranchInc[j]].Op1 = "IF_ " + this.Lines[this.Lines[i].BranchInc[j]].Op1;
                         }
+                        else if(this.Lines[this.Lines[i].BranchInc[j] - 1].IsBranch())
+                        {
+                            this.Lines[i].Op1 = "else" + this.Lines[i].Op1;
+                            break;
+                        }   
                     }
                 }
+            }
+
+            // post process IF mergings
+            for (int i = 2; i < this.Lines.Count-1; i++)
+            {
+                if (this.Lines[i].IsCondition())
+                {
+                    // Do Right-side
+                    int forwardIf = -1;
+                    for(int j = i+2; j < this.Lines.Count-1; j++)
+                    {
+                        if(this.Lines[j].IsCondition())
+                        {
+                            forwardIf = j; // set target
+                            break;
+                        }
+                        if (!this.Lines[j].IsMove())
+                            break; // fuck you
+                    }
+                    if (this.Lines[i+1].IsBranch() && forwardIf != -1)
+                    {
+                        // replace 'then' with keyword
+                        if ((forwardIf+1) + (short)this.Lines[forwardIf+1].Instr.sBx == (i+1) + (short)this.Lines[i +1].Instr.sBx) // if the point to same result its or
+                            this.Lines[i].Op3 = "or";
+                        else
+                            this.Lines[i].Op3 = "and";
+                    }
+
+                    // Do Left-side
+                    int backwardId = -1;
+                    for (int j = i - 1; j > 2; j--)
+                    {
+                        if (this.Lines[j].IsBranch())
+                        {
+                            backwardId = j; // set target
+                            break;
+                        }
+                        if (!this.Lines[j].IsMove())
+                            break; // fuck you
+                    }
+                    if (backwardId != -1)
+                    {
+                        this.Lines[i].Op1 = "";
+                    }
+                }
+            }
+
+            // IF end blocks
+            for (int i = 0; i < this.Lines.Count-1; i++)
+            {
+                if (!this.Lines[i].IsCondition())
+                    continue;
+                if (!this.Lines[i + 1].IsBranch())
+                    continue;
+                int targetJmp = this.Lines[i + 1].Instr.sBx + i + 1;
+                if (!this.Lines[targetJmp-1].IsCondition() && !this.Lines[targetJmp].IsBranch()) // dont end when there is a jump
+                    this.Lines[this.Lines[i + 1].Instr.sBx].Op1 += " --end ";
+                    //this.Lines[this.Lines[i + 1].Instr.sBx].Op1 = "end\n\r" + this.Lines[this.Lines[i + 1].Instr.sBx].Op1;
             }
         }
 
@@ -327,7 +412,7 @@ namespace LuaSharpVM.Decompiler
 
                 if (lines[i].StartsWith("if"))
                     newText += $"{new string('\t', tabCount)}{lines[i]}";
-                else if (lines[i].EndsWith("or") || lines[i].EndsWith("and"))
+                else if (lines[i].EndsWith("or") || lines[i].EndsWith("and") || lines[i].StartsWith(" not"))
                     newText += $"{lines[i]}";
                 else
                     newText += $"{new string('\t', tabCount)}{lines[i]}\n\r";
