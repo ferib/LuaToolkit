@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\LuaSharpVM\LuaSharpVM.csproj" />
+    <ProjectReference Include="..\..\src\LuaSharpVM.csproj" />
   </ItemGroup>
 
 </Project>

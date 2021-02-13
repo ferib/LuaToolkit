@@ -13,7 +13,7 @@ namespace LuaSharpVM.Decompiler
 
         private Dictionary<int, int> UsedConstants; // to definde locals
 
-        private List<LuaScriptFunction> LuaFunctions;
+        public List<LuaScriptFunction> LuaFunctions;
         private LuaScriptLine LuaCode;
 
         public string LuaScript

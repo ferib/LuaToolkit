@@ -14,7 +14,8 @@ namespace Test
         static void Main(string[] args)
         {
             Console.WriteLine("[+] LuaSharpVM\r\n");
-            var luaF = new LuaCFile(File.ReadAllBytes(@"L:\Projects\LuaBytcodeInterpreter\lua_installer\files\RamerDouglasPeucker.luac"));
+            //var luaF = new LuaCFile(File.ReadAllBytes(@"L:\Projects\LuaBytcodeInterpreter\lua_installer\files\RamerDouglasPeucker.luac"));
+            var luaF = new LuaCFile(File.ReadAllBytes(@"L:\Projects\LuaBytcodeInterpreter\lua_installer\files\debuffspread.luac"));
             LuaDecoder d = new LuaDecoder(luaF);
             LuaWriter writer = new LuaWriter(ref d);
 
