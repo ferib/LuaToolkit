@@ -130,23 +130,30 @@ namespace LuaSharpVM.Decompiler
                 }
 
                 // pre jmp instruction
-                if(this.Blocks[i].Lines.Count > 1)
-                    switch(this.Blocks[i].Lines[this.Blocks[i].Lines.Count-2].Instr.OpCode)
-                    {
-                        // TODO: check which instructions dont pick the next one
-
-                        //case LuaOpcode.TFORLOOP:
-                        //    this.Blocks[i].JumpsNext = this.Blocks[i].StartAddress + this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 2].Instr.sBx + 1; // TODO: verify math
-                        //    this.Blocks[i].JumpsTo = -1; // erase?
-                        //    break; // jmp?
-                        //case LuaOpcode.LOADBOOL: // pc++
-                        //    this.Blocks[i].JumpsNext = 0;
-                        //    break;
-                        default:
-                            // TODO: figure out what other instructions do NOT PC+=1
-                            this.Blocks[i].JumpsNext = this.Blocks[i + 1].StartAddress;
-                            break;
-                    }
+                switch(this.Blocks[i].GetConditionLine().Instr.OpCode)
+                {
+                    // TODO: check which instructions dont pick the next one
+                    case LuaOpcode.TFORLOOP:
+                        this.Blocks[i].JumpsNext = this.Blocks[i].StartAddress + this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 2].Instr.sBx + 1; // TODO: verify math
+                        this.Blocks[i].JumpsTo = -1; // erase from possible previous block?
+                        break; // jmp?
+                    case LuaOpcode.LOADBOOL: // pc++
+                        this.Blocks[i].JumpsNext = 0;
+                        break;
+                    case LuaOpcode.LT:
+                    case LuaOpcode.LE:
+                    case LuaOpcode.EQ:
+                    case LuaOpcode.TEST:
+                    case LuaOpcode.TESTSET:
+                        // do NOT erase, only set next
+                        this.Blocks[i].JumpsNext = this.Blocks[i + 1].StartAddress;
+                        break;
+                    default:
+                        // TODO: figure out what other instructions do NOT PC+=1
+                        this.Blocks[i].JumpsNext = this.Blocks[i + 1].StartAddress;
+                        this.Blocks[i].JumpsTo = -1; // erase from possible previous block?
+                        break;
+                }
             }
         }
 

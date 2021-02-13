@@ -83,10 +83,19 @@ namespace LuaSharpVM.Decompiler
             return this.StartAddress < index && index < this.StartAddress + this.lines.Count;
         }
 
+        public LuaScriptLine GetConditionLine()
+        {
+            if (this.Lines.Count > 1)
+                return this.Lines[this.lines.Count - 2]; // second last should be decision making
+            if(this.Lines != null && this.Lines.Count > 0)
+                return this.lines[0];
+            return null;
+        }
+
         public string ToString()
         {
-            if(this.lines.Count < 2 || (this.JumpsTo == -1 && this.JumpsNext == -1))
-                return $"{this.StartAddress.ToString("0000")}: The End";
+            //if (this.lines.Count < 2 || (this.JumpsTo == -1 && this.JumpsNext == -1))
+            //    return $"{this.StartAddress.ToString("0000")}: {this.lines[0]};
 
             var sLastLine = this.lines[this.lines.Count - 1];
 
