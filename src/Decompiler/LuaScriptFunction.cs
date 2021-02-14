@@ -119,6 +119,7 @@ namespace LuaSharpVM.Decompiler
             this.Blocks.OrderBy(x => x.StartAddress);
             for (int i = 0; i < this.Blocks.Count; i++)
             {
+                // last return
                 if (i == this.Blocks.Count - 1)
                 {
                     // Last block shouldnt jump to anywhere
@@ -128,35 +129,47 @@ namespace LuaSharpVM.Decompiler
                         this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Op1 = "end"; // replace last RETURN with END
                     continue;
                 }
+                // Conditions without JMP
 
-                // pre jmp instruction
-                switch(this.Blocks[i].GetConditionLine().Instr.OpCode)
+                if (this.Blocks[i].Lines.Count > 0)
+                    switch (this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Instr.OpCode)
+                    {
+                        // TODO: check which instructions dont pick the next one
+                        case LuaOpcode.TFORLOOP:
+                        case LuaOpcode.FORLOOP: // calculate LOOP jump
+                            this.Blocks[i].JumpsTo = (this.Blocks[i].StartAddress + this.Blocks[i].Lines.Count - 1) + (short)this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Instr.sBx + 1; // TODO: verify math
+                            this.Blocks[i].JumpsNext = this.Blocks[i].JumpsNext = this.Blocks[i + 1].StartAddress;
+                            break; // jmp?
+                        case LuaOpcode.LOADBOOL: // pc++
+                            this.Blocks[i].JumpsTo = (this.Blocks[i].StartAddress + this.Blocks[i].Lines.Count - 1) + 2; // skips one if C
+                            this.Blocks[i].JumpsNext = (this.Blocks[i].StartAddress + this.Blocks[i].Lines.Count - 1) + 1; // next block
+                            break;
+                        case LuaOpcode.JMP: // pc++
+                            // check previous condition
+                            if(this.Blocks[i].Lines.Count > 1 && this.Blocks[i].Lines[this.Blocks[i].Lines.Count-2].IsCondition()) // check for IF
+                            {
+                                // if/test/testset
+                                this.Blocks[i].JumpsTo = (this.Blocks[i].StartAddress + this.Blocks[i].Lines.Count - 1) + (short)this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Instr.sBx + 1; // TODO: verify math
+                                this.Blocks[i].JumpsNext = this.Blocks[i + 1].StartAddress;
+                            }
+                            else
+                            {
+                                // unknown jump
+                                this.Blocks[i].JumpsTo = (this.Blocks[i].StartAddress + this.Blocks[i].Lines.Count - 1) + (short)this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Instr.sBx + 1; // TODO: verify math
+                                this.Blocks[i].JumpsNext = this.Blocks[i + 1].StartAddress;
+                            }
+                            break;
+                        default:
+                            this.Blocks[i].JumpsTo = -1; // erase from possible previous block?
+                            this.Blocks[i].JumpsNext = this.Blocks[i + 1].StartAddress;
+                            break;
+                    }
+                else
                 {
-                    // TODO: check which instructions dont pick the next one
-                    case LuaOpcode.TFORLOOP:
-                    case LuaOpcode.FORLOOP:
-                        this.Blocks[i].JumpsTo = this.Blocks[i].StartAddress + (short)this.Blocks[i].GetConditionLine().Instr.sBx+1; // TODO: verify math
-                        this.Blocks[i].JumpsNext = this.Blocks[i].JumpsNext = this.Blocks[i + 1].StartAddress;
-                        break; // jmp?
-                    case LuaOpcode.LOADBOOL: // pc++
-                        this.Blocks[i].JumpsNext = 0;
-                        this.Blocks[i].JumpsTo = 1;
-                        break;
-                    case LuaOpcode.LT:
-                    case LuaOpcode.LE:
-                    case LuaOpcode.EQ:
-                    case LuaOpcode.TEST:
-                    case LuaOpcode.TESTSET:
-                        // do NOT erase, only set next
-                        this.Blocks[i].JumpsNext = this.Blocks[i + 1].StartAddress;
-                        break;
-                    default:
-                        // TODO: figure out what other instructions do NOT PC+=1
-                        this.Blocks[i].JumpsNext = this.Blocks[i + 1].StartAddress;
-                        this.Blocks[i].JumpsTo = -1; // erase from possible previous block?
-                        break;
+                    var qwe = 123;
                 }
             }
+
         }
 
         public void Complete()

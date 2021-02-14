@@ -152,19 +152,24 @@ namespace Graph
         private void Initialise()
         {
             // Create & Init GBlock List if needed
-            if (GBlocks == null)
-                CreateBlocks(this.Writer.LuaFunctions[TargetFunc].Blocks);
-
-            // create GraphArrows
-            if (GArrows == null)
-                CreateArrows();
-
-
+            ReInitialise();
         }
 
         private void ReInitialise()
         {
             CreateBlocks(this.Writer.LuaFunctions[TargetFunc].Blocks);
+            foreach(var gb in GBlocks)
+            {
+                // remap jumps from address to block
+                for (int i = 0; i < this.GBlocks.Count; i++)
+                {
+                    if (this.GBlocks[i].Block.HasLineNumber(gb.Block.JumpsTo))
+                        gb.JumpsToBlock = i;
+                    if (this.GBlocks[i].Block.HasLineNumber(gb.Block.JumpsNext))
+                        gb.JumpsNextBlock = i;
+                }
+            }
+           
             CreateArrows();
         }
 

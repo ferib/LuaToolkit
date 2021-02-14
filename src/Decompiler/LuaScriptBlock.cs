@@ -83,12 +83,29 @@ namespace LuaSharpVM.Decompiler
             return this.StartAddress < index && index < this.StartAddress + this.lines.Count;
         }
 
-        public LuaScriptLine GetConditionLine()
+        public LuaScriptLine GetConditionLine() // second last line
+        {
+            if (this.Lines.Count > 0)
+            {
+                //if (this.Lines[this.lines.Count - 1].IsBranch()) // last line for JMP, test, testset, etc
+                    return this.Lines[this.lines.Count - 1];
+                //else if (this.Lines[this.lines.Count - 2].IsBranch()) // IF before JMP
+                //    return this.Lines[this.lines.Count - 2];
+
+            }
+            return null;
+        }
+
+        public LuaScriptLine GetBranchLine() // last line
         {
             if (this.Lines.Count > 1)
-                return this.Lines[this.lines.Count - 2]; // second last should be decision making
-            if(this.Lines != null && this.Lines.Count > 0)
-                return this.lines[0];
+            {
+                //if (this.Lines[this.lines.Count - 1].IsBranch()) // last line for JMP, test, testset, etc
+                return this.Lines[this.lines.Count - 2];
+                //else if (this.Lines[this.lines.Count - 2].IsBranch()) // IF before JMP
+                //    return this.Lines[this.lines.Count - 2];
+
+            }
             return null;
         }
 
@@ -103,7 +120,7 @@ namespace LuaSharpVM.Decompiler
             if (this.JumpsTo == -1 && this.JumpsNext != -1)
                 return $"{this.StartAddress.ToString("0000")}: JMP: {this.JumpsNext}";
 
-            if (this.JumpsTo != -1 && this.JumpsNext != -1)
+            //if (this.JumpsTo != -1 && this.JumpsNext != -1)
                 return $"{this.StartAddress.ToString("0000")}: JMP: {this.JumpsTo}, ELSE: {this.JumpsNext}";
 
             // depriciated
