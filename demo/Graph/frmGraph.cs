@@ -248,7 +248,8 @@ namespace Graph
                     //GB.BoundryBox.Right += thicc;
                     GArrows.Add(new GraphArrow(ref GBlocks)
                     {
-                        Brush = redBrush,
+                        //Brush = redBrush,
+                        Brush = greenBrush, // colors are reverse due to jump skip logic
                         Start = GB.Block.StartAddress,
                         End = GB.Block.JumpsNext
                     });
@@ -258,7 +259,8 @@ namespace Graph
                     //GArrows.Add(block.JumpsToBlock, new RawVector2(((box.Left + box.Right) / 2), box.Bottom)); // green, jump OK
                     GArrows.Add(new GraphArrow(ref GBlocks)
                     {
-                        Brush = greenBrush,
+                        //Brush = greenBrush,
+                        Brush = redBrush, // colors are reverse due to jump skip logic
                         Start = GB.Block.StartAddress,
                         End = GB.Block.JumpsTo
                     });
