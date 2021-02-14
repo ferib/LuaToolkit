@@ -54,6 +54,7 @@ namespace Graph
             if (activeGraph.Writer.LuaFunctions.Count < lstFuncs.SelectedIndex)
                 return;
             activeGraph.TargetFunc = lstFuncs.SelectedIndex;
+            txtLuaCode.Text = activeGraph.Writer.LuaFunctions[lstFuncs.SelectedIndex].Text;
         }
 
         private void frmMain_FormClosed(object sender, FormClosedEventArgs e)
