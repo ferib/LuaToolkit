@@ -55,6 +55,15 @@ namespace Graph
 
         public LuaWriter Writer;
 
+        private int targetFunc = 0;
+        public int TargetFunc
+        {
+            get { return targetFunc; }
+            set { targetFunc = value;
+                ReInitialise(); // re-initialise
+            }
+        }
+
         public frmGraph(LuaWriter writter)
         {
             InitializeComponent();
@@ -129,7 +138,7 @@ namespace Graph
                 Initialise(); // create graph blocks & arrows
 
                 if (GBlocks.Count > 0)
-                    graphY = (int)GBlocks[0].BoundryBox.Top; // jump to first block TODO: fix bug that causes this!
+                    graphY = (int)GBlocks[TargetFunc].BoundryBox.Top; // jump to first block TODO: fix bug that causes this!
 
                 while (true)
                 {
@@ -143,22 +152,34 @@ namespace Graph
         private void Initialise()
         {
             // Create & Init GBlock List if needed
-            if (GBlocks == null)
-                CreateBlocks(this.Writer.LuaFunctions[2].Blocks);
-
-            // create GraphArrows
-            if (GArrows == null)
-                CreateArrows();
-
-
+            ReInitialise();
         }
+
+        private void ReInitialise()
+        {
+            CreateBlocks(this.Writer.LuaFunctions[TargetFunc].Blocks);
+            foreach(var gb in GBlocks)
+            {
+                // remap jumps from address to block
+                for (int i = 0; i < this.GBlocks.Count; i++)
+                {
+                    if (this.GBlocks[i].Block.HasLineNumber(gb.Block.JumpsTo))
+                        gb.JumpsToBlock = i;
+                    if (this.GBlocks[i].Block.HasLineNumber(gb.Block.JumpsNext))
+                        gb.JumpsNextBlock = i;
+                }
+            }
+           
+            CreateArrows();
+        }
+
         private void DrawData()
         {
             //Start to draw
             DrawTarget.BeginDraw();
             DrawTarget.Clear(new RawColor4(0x70, 0x70, 0x70, 255));
             DrawTarget.FillRectangle(new RawRectangleF(0, 0, this.Width, this.Height), backgroundBrush);
-            DrawTarget.DrawText($"{this.Writer.LuaFunctions[0].ToString()} ({graphX},{graphY})", fontSmall, new RawRectangleF(1, 1, 350, 20), blackBrush);
+            DrawTarget.DrawText($"{this.Writer.LuaFunctions[targetFunc].ToString()} ({graphX},{graphY})", fontSmall, new RawRectangleF(1, 1, 350, 20), blackBrush);
             DrawTarget.DrawLine(new RawVector2(1, 18), new RawVector2(250, 18), blackBrush);
 
             // draw mouse snapline

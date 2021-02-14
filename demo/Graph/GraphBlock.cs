@@ -28,6 +28,8 @@ namespace Graph
     {
         public RawRectangleF BoundryBox;
         public LuaScriptBlock Block;
+        public int JumpsToBlock;
+        public int JumpsNextBlock;
         public string BlockInnerString;
 
         private int OffsetLeft;

@@ -418,6 +418,7 @@ namespace LuaSharpVM.Decompiler
                 case LuaOpcode.EQ:
                 case LuaOpcode.TEST:
                 case LuaOpcode.TESTSET:
+                case LuaOpcode.LOADBOOL: // untested
                     return true;
                     break;
             }
@@ -426,7 +427,15 @@ namespace LuaSharpVM.Decompiler
 
         public bool IsBranch()
         {
-            return this.Instr.OpCode == LuaOpcode.JMP || this.Instr.OpCode == LuaOpcode.FORLOOP || this.Instr.OpCode == LuaOpcode.TFORLOOP;
+            switch(this.Instr.OpCode)
+            {
+                // those change PC
+                case LuaOpcode.JMP:
+                case LuaOpcode.FORLOOP:
+                case LuaOpcode.TFORLOOP:
+                    return true;
+            }
+            return false;
         }
 
         public bool IsMove()
