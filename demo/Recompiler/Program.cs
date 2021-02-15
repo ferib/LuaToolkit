@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using LuaSharpVM.Obfuscator;
 
 namespace Recompiler
 {
@@ -20,7 +21,11 @@ namespace Recompiler
 
             Compiler comp = new Compiler(File.ReadAllBytes(path), "Test.luac", "Ferib");
             Decompiler dec = new Decompiler(comp.GetCompiled());
+            LuaObfuscator obfuscator = new LuaObfuscator(comp.GetCompiled());
+            Console.ForegroundColor = ConsoleColor.Yellow;
             Console.WriteLine(dec.GetResult());
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            //Console.WriteLine(obfuscator);
             Console.ReadLine();
         }
     }
