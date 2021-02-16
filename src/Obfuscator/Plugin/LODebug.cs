@@ -29,11 +29,12 @@ namespace LuaSharpVM.Obfuscator.Plugin
         {
             for(int i = 0; i < base.Functions.Count; i++)
             {
-                Console.WriteLine($"{base.Functions[i]}: {desc}");
+                Console.WriteLine($"{base.Functions[i]}: {desc} ({(LODebugLevel)base.Levels[i]})");
                 switch ((LODebugLevel)base.Levels[i])
                 {
                     case LODebugLevel.RandomLow:
-                        RandomizeAllDebugLocals();
+                        //RandomizeAllDebugLocals();
+                        RandomizeDebugLocals(base.Decoder.File.Function.Functions.Find(x => x.Name == base.Functions[i]), base.Levels[i]);
                         break;
                     case LODebugLevel.RandomMedium:
                         //RandomizeAllDebugLocals();

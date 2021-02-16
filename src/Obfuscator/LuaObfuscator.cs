@@ -14,6 +14,7 @@ namespace LuaSharpVM.Obfuscator
     {
         public LuaDecoder Decoder;
         private LuaWriter Decompiler;
+        private LOSettings Settings;
         private byte[] ObfuscatedLuaC;
 
         public LuaObfuscator(byte[] originalLuaC)
@@ -23,12 +24,10 @@ namespace LuaSharpVM.Obfuscator
             this.Decompiler = new LuaWriter(ref this.Decoder);
         }
 
-        public string Obfuscate(LOSettings settings)
+        public string Obfuscate(string settings)
         {
-
-            //var plugins = settings;
-            settings = new LOSettings(ref this.Decoder, "{'test':123}");
-            settings.Execute();
+            this.Settings = new LOSettings(ref this.Decoder, settings);
+            this.Settings.Execute();
 
             // add watermark
             this.Decoder.File.Function.Constants.Add(new StringConstant("cromulon.io"));

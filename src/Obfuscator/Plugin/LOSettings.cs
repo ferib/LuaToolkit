@@ -36,8 +36,9 @@ namespace LuaSharpVM.Obfuscator.Plugin
             //}
 
             // NOTE: test demo
-            //this.ActivePlugins.Add(new LOPlugin(ref this.Decoder));
-            AddSetting<LODebug>("test", 1);
+            AddSetting<LODebug>("Exports", 2);
+            AddSetting<LOString>("Exports", 2);
+            AddSetting<LOString>("anotherRandom", 2);
 
         }
 
@@ -59,6 +60,13 @@ namespace LuaSharpVM.Obfuscator.Plugin
             if (target == null)
                 this.ActivePlugins.Add((LOPlugin)Activator.CreateInstance(typeof(T), new object[] { this.Decoder }));
 
+            target = this.ActivePlugins.Find(x => x is T);
+            if(target != null)
+            {
+                target.Functions.Add(functionName);
+                target.Levels.Add(level);
+            }
+                
         }
     }
 }
