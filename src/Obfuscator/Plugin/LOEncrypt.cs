@@ -19,5 +19,10 @@ namespace LuaSharpVM.Obfuscator.Plugin
         // TODO: create a hash table for each function name
         //       create a custom hash function to funcname -> hash
         //       have another custom func handle the hash calling
+
+        public override void Obfuscate(LOSettings settings)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

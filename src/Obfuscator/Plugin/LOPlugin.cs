@@ -16,5 +16,7 @@ namespace LuaSharpVM.Obfuscator.Plugin
             this.Decoder = decoder;
             this.Description = desc;
         }
+
+        public abstract void Obfuscate(LOSettings settings)
     }
 }

@@ -14,5 +14,9 @@ namespace LuaSharpVM.Obfuscator.Plugin
         {
 
         }
+        public override void Obfuscate()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

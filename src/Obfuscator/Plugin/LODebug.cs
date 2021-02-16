@@ -24,11 +24,10 @@ namespace LuaSharpVM.Obfuscator.Plugin
 
         public LODebug(ref LuaDecoder decoder, LODebugLevel level) : base(ref decoder, desc)
         {
-            this.Level = level;
-            Obfuscate();
+            
         }
 
-        private void Obfuscate()
+        public override void Obfuscate(LOSettings settings)
         {
             Console.WriteLine(desc);
             switch(this.Level)

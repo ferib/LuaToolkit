@@ -10,21 +10,7 @@ using LuaSharpVM.Obfuscator.Plugin;
 
 namespace LuaSharpVM.Obfuscator
 {
-    public class ObfuscatorSettings
-    {
-        // todo settings
-        public List<LOPlugin> Plugins;
-        
-        public LOPlugin GetPlugin<T>()
-        {
-            var c = this.Plugins.Find(x => x is T);
-            if (c != null)
-                return c;
-            return null;
-        }
-
-    }
-
+    
     public class LuaObfuscator
     {
         public LuaDecoder Decoder;
@@ -38,7 +24,7 @@ namespace LuaSharpVM.Obfuscator
             this.Decompiler = new LuaWriter(ref this.Decoder);
         }
 
-        private string Obfuscate(ObfuscatorSettings settings)
+        private string Obfuscate()
         {
             //LOEncrypt encrypt = new LOEncrypt(ref OriginalDecoder.File);
 

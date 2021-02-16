@@ -16,10 +16,9 @@ namespace LuaSharpVM.Obfuscator.Plugin
         
         public LOString(ref LuaDecoder decoder) : base(ref decoder, desc)
         {
-            ObfuscateStrings();
         }
 
-        private void ObfuscateStrings()
+        public override void Obfuscate(LOSettings settings)
         {
             // iterate all constants in root function
             for (int i = 0; i < base.Decoder.File.Function.Constants.Count; i++)

@@ -16,5 +16,9 @@ namespace LuaSharpVM.Obfuscator.Plugin
 
         }
         // For starters, add a few jumps/ifs that dont make sense?
+        public override void Obfuscate(LOSettings settings)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

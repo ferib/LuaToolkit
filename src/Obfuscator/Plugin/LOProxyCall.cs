@@ -19,5 +19,10 @@ namespace LuaSharpVM.Obfuscator.Plugin
             // until it has a match, once there is a match, it calls the input of the checksum
             // NOTE: this heavly reduces performance, only use on non performance critical stuff
         }
+
+        public override void Obfuscate(LOSettings settings)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
