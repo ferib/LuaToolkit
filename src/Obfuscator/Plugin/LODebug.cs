@@ -16,6 +16,7 @@ namespace LuaSharpVM.Obfuscator.Plugin
     {
         // Add custom instruction by replacing pairs of existing ones
         static string desc = "Randomizing/removing debug information.";
+        private static string Name = "DebugRandomizer";
         // NOTE: Have a semi-trusted debugging information may give the reverser 
         //       a harder time compared to giving no debugging information at all.
 
@@ -24,25 +25,32 @@ namespace LuaSharpVM.Obfuscator.Plugin
 
         }
 
-        public override void Obfuscate(int lvl)
+        public override void Obfuscate()
         {
-            base.Level = lvl; // set ;D
-            Console.WriteLine(desc);
-            switch ((LODebugLevel)lvl)
+            for(int i = 0; i < base.Functions.Count; i++)
             {
-                case LODebugLevel.RandomLow:
-                    CounterAllDebugLines();
-                    RandomizeAllDebugLocals();
-                    break;
-                case LODebugLevel.RandomMedium:
-                    CounterAllDebugLines();
-                    RandomizeAllDebugLocals();
-                    EraseAllDebugUpvalues();
-                    break;
-                case LODebugLevel.EraseAll:
-                    EraseAllDebuginfo();
-                    break;
+                Console.WriteLine($"{base.Functions[i]}: {desc}");
+                switch ((LODebugLevel)base.Levels[i])
+                {
+                    case LODebugLevel.RandomLow:
+                        RandomizeAllDebugLocals();
+                        break;
+                    case LODebugLevel.RandomMedium:
+                        //RandomizeAllDebugLocals();
+                        //EraseAllDebugUpvalues();
+                        RandomizeDebugLocals(base.Decoder.File.Function.Functions.Find(x => x.Name == base.Functions[i]), base.Levels[i]);
+                        EraseDebugUpvalues(base.Decoder.File.Function.Functions.Find(x => x.Name == base.Functions[i]), base.Levels[i]);
+                        break;
+                    case LODebugLevel.EraseAll:
+                        EraseAllDebuginfo();
+                        break;
+                }
             }
+        }
+
+        public override string GetName()
+        {
+            return Name;
         }
 
         private void EraseAllDebuginfo()
@@ -60,16 +68,16 @@ namespace LuaSharpVM.Obfuscator.Plugin
 
         private void CounterAllDebugLines()
         {
-            CounterDebugLines(base.Decoder.File.Function);
-            foreach (var f in base.Decoder.File.Function.Functions)
-                CounterDebugLines(f);
+            //CounterDebugLines(base.Decoder.File.Function);
+            //foreach (var f in base.Decoder.File.Function.Functions)
+            //    CounterDebugLines(f);
         }
 
-        private void CounterDebugLines(LuaFunction func)
+        private void CounterDebugLines(LuaFunction func, int level)
         {
             Random rnd = new Random();
             int trigger = 24;
-            if ((LODebugLevel)base.Level == LODebugLevel.RandomMedium)
+            if ((LODebugLevel)level == LODebugLevel.RandomMedium)
                 trigger = 60;
 
             for (int i = 0; i < base.Decoder.File.Function.DebugLines.Count; i++)
@@ -79,12 +87,12 @@ namespace LuaSharpVM.Obfuscator.Plugin
 
         private void EraseAllDebugUpvalues()
         {
-            EraseDebugUpvalues(base.Decoder.File.Function);
-            foreach (var f in base.Decoder.File.Function.Functions)
-                EraseDebugUpvalues(f);
+            //EraseDebugUpvalues(base.Decoder.File.Function);
+            //foreach (var f in base.Decoder.File.Function.Functions)
+            //    EraseDebugUpvalues(f);
         }
 
-        private void EraseDebugUpvalues(LuaFunction func)
+        private void EraseDebugUpvalues(LuaFunction func, int level)
         {
             for (int i = 0; i < base.Decoder.File.Function.DebugUpvalues.Count; i++)
                 base.Decoder.File.Function.DebugUpvalues[i] = "";
@@ -92,12 +100,12 @@ namespace LuaSharpVM.Obfuscator.Plugin
 
         private void RandomizeAllDebugLocals()
         {
-            RandomizeDebugLocals(base.Decoder.File.Function);
-            foreach (var f in base.Decoder.File.Function.Functions)
-                RandomizeDebugLocals(f);
+            //RandomizeDebugLocals(base.Decoder.File.Function);
+            //foreach (var f in base.Decoder.File.Function.Functions)
+            //    RandomizeDebugLocals(f);
         }
 
-        private void RandomizeDebugLocals(LuaFunction func)
+        private void RandomizeDebugLocals(LuaFunction func, int level)
         {
             Random rnd = new Random();
             List<string> rndPrefix = new List<string> { "is", "Get", "Set" }; // random prefix
@@ -130,7 +138,7 @@ namespace LuaSharpVM.Obfuscator.Plugin
                 func.DebugLocals[i].Name = fakeLocal;
 
                 int offset = 2; // not to much, return instructions are obviously to see when missaligned
-                if ((LODebugLevel)base.Level == LODebugLevel.RandomMedium)
+                if ((LODebugLevel)level == LODebugLevel.RandomMedium)
                     offset += 11; // lets go a little crazy here for the skids
 
                 //////lets make sure they still align, people that reverse arent retarded afterall; No need to align, maybe I am retarded ?

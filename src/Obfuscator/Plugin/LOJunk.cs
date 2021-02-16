@@ -13,14 +13,21 @@ namespace LuaSharpVM.Obfuscator.Plugin
         // multiply basic math instructions
 
         static string desc = "Add junk opcodes here and there to confuse decompilers.";
+        private static string Name = "JunkCode";
+
         public LOJunk(ref LuaDecoder decoder) : base(ref decoder, desc)
         {
 
         }
 
-        public override void Obfuscate(int lvl)
+        public override void Obfuscate()
         {
             throw new NotImplementedException();
+        }
+
+        public override string GetName()
+        {
+            return Name;
         }
     }
 }

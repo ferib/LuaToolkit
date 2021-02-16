@@ -10,14 +10,20 @@ namespace LuaSharpVM.Obfuscator.Plugin
     {
         public LuaDecoder Decoder;
         public string Description;
-        public int Level;
+        public List<string> Functions;
+        public List<int> Levels;
 
         public LOPlugin(ref LuaDecoder decoder, string desc)
         {
             this.Decoder = decoder;
             this.Description = desc;
+            this.Functions = new List<string>();
+            this.Levels = new List<int>();
         }
 
-        public abstract void Obfuscate(int lvl);
+        public abstract void Obfuscate();
+
+        public abstract string GetName();
+
     }
 }

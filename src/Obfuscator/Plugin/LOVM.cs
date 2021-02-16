@@ -10,13 +10,20 @@ namespace LuaSharpVM.Obfuscator.Plugin
     {
         // Add custom instruction by replacing pairs of existing ones
         static string desc = "TODO";
+        private static string Name = "VM";
+
         public LOVM(ref LuaDecoder decoder) : base(ref decoder, desc)
         {
 
         }
-        public override void Obfuscate(int lvl)
+        public override void Obfuscate()
         {
             throw new NotImplementedException();
+        }
+
+        public override string GetName()
+        {
+            return Name;
         }
     }
 }

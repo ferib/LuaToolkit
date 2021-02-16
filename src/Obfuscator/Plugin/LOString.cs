@@ -11,6 +11,8 @@ namespace LuaSharpVM.Obfuscator.Plugin
     {
         // randomize strings?
         static string desc = "Randomize function names for all the global functions.";
+        private static string Name = "StringRanomizer";
+
 
         private Dictionary<string, string> StringMap = new Dictionary<string, string>();
         
@@ -18,7 +20,7 @@ namespace LuaSharpVM.Obfuscator.Plugin
         {
         }
 
-        public override void Obfuscate(int lvl)
+        public override void Obfuscate()
         {
             // iterate all constants in root function
             for (int i = 0; i < base.Decoder.File.Function.Constants.Count; i++)
@@ -34,6 +36,11 @@ namespace LuaSharpVM.Obfuscator.Plugin
                     LuaStr.Value = StringMap[LuaStr.Value];
                 }
             }
+        }
+
+        public override string GetName()
+        {
+            return Name;
         }
 
         private string RandomString()

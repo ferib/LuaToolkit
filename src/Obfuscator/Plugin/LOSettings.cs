@@ -8,27 +8,20 @@ using Newtonsoft.Json;
 
 namespace LuaSharpVM.Obfuscator.Plugin
 {
-    public class LOSettingCollection
-    {
-        public string FunctionName;
-        public List<LOPlugin> Plugins;
-        //public List<int> Settings;
-    }
-
     public class LOSettings
     {
-        private List<LOSettingCollection> ActivePlugins;
+        private List<LOPlugin> ActivePlugins;
         private LuaDecoder Decoder;
 
         public LOSettings()
         {
-            this.ActivePlugins = new List<LOSettingCollection>();
+            this.ActivePlugins = new List<LOPlugin>();
         }
 
         public LOSettings(ref LuaDecoder decoder, string settings)
         {
             this.Decoder = decoder;
-            this.ActivePlugins = new List<LOSettingCollection>();
+            this.ActivePlugins = new List<LOPlugin>();
             DeserialiseSettings(settings);
         }
 
@@ -41,7 +34,11 @@ namespace LuaSharpVM.Obfuscator.Plugin
             //{
             //    this.AddPlugin<LODebug>(ObjSettings[i], new LODebug(ref this.Decoder));
             //}
-            
+
+            // NOTE: test demo
+            //this.ActivePlugins.Add(new LOPlugin(ref this.Decoder));
+            AddSetting<LODebug>("test", 1);
+
         }
 
         public bool Execute()
@@ -50,43 +47,18 @@ namespace LuaSharpVM.Obfuscator.Plugin
             if (this.Decoder == null || this.ActivePlugins == null || this.ActivePlugins.Count == 0)
                 return false;
 
-            var list = this.ActivePlugins.ToList();
-            foreach (var sc in list)
-                for(int i = 0; i < sc.Plugins.Count; i++)
-                    sc.Plugins[i].Obfuscate(sc.Plugins[i].Level); // NOTE: go like this, ye?
+            foreach (var p in this.ActivePlugins)
+                p.Obfuscate();
 
             return true;
         }
 
-        public string[] GetListedFunctionNames()
+        public void AddSetting<T>(string functionName, int level)
         {
-            var keyList = this.ActivePlugins.ToList();
-            string[] res = new string[keyList.Count];
-            for (int i = 0; i < res.Length; i++)
-                res[i] = keyList[i].FunctionName;
-            return res;
-        }
+            var target = this.ActivePlugins.Find(x => x is T);
+            if (target == null)
+                this.ActivePlugins.Add((LOPlugin)Activator.CreateInstance(typeof(T), new object[] { this.Decoder }));
 
-        public void AddPlugin<T>(string functionName, LOPlugin plugin)
-        {
-            var target = this.ActivePlugins.Find(x => x.FunctionName == functionName);
-            if (target != null)
-            {
-                var oldIndex = -1;
-                var oldPlugin = target.Plugins.Find(x => x is T);
-                if(oldPlugin != null)
-                    target.Plugins.IndexOf(oldPlugin);
-
-                if (oldIndex != -1)
-                    target.Plugins.RemoveAt(oldIndex);
-                target.Plugins.Add(plugin);
-
-            } else
-                this.ActivePlugins.Add(new LOSettingCollection()
-                {
-                    FunctionName = functionName,
-                    Plugins = new List<LOPlugin>() { plugin }
-                });
         }
     }
 }

@@ -17,7 +17,11 @@ namespace Test
             Console.WriteLine("[+] LuaSharpVM\r\n");
 
             LuaObfuscator o = new LuaObfuscator(File.ReadAllBytes(@"L:\Projects\LuaBytcodeInterpreter\lua_installer\files\debuffspread.luac"));
+            
+            
             o.Obfuscate(null);
+
+
             Console.ReadLine();
 
             //var luaF = new LuaCFile(File.ReadAllBytes(@"L:\Projects\LuaBytcodeInterpreter\lua_installer\files\RamerDouglasPeucker.luac"));

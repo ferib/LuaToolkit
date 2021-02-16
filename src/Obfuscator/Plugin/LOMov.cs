@@ -12,14 +12,21 @@ namespace LuaSharpVM.Obfuscator.Plugin
         // 'You sping my head right round right round'
 
         static string desc = "Implements the movfuscator turning machiene.";
+        private static string Name = "Movfuscator";
+
         public LOMov(ref LuaDecoder decoder) : base(ref decoder, desc)
         {
 
         }
 
-        public override void Obfuscate(int lvl)
+        public override void Obfuscate()
         {
             throw new NotImplementedException();
+        }
+
+        public override string GetName()
+        {
+            return Name;
         }
 
         // Lua bool result generation:

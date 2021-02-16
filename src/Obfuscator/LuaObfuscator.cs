@@ -28,7 +28,8 @@ namespace LuaSharpVM.Obfuscator
 
             //var plugins = settings;
             settings = new LOSettings(ref this.Decoder, "{'test':123}");
-            
+            settings.Execute();
+
             // add watermark
             this.Decoder.File.Function.Constants.Add(new StringConstant("cromulon.io"));
             return this.Decompiler.LuaScript;
