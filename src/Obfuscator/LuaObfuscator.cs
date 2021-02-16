@@ -10,7 +10,6 @@ using LuaSharpVM.Obfuscator.Plugin;
 
 namespace LuaSharpVM.Obfuscator
 {
-    
     public class LuaObfuscator
     {
         public LuaDecoder Decoder;
@@ -24,17 +23,15 @@ namespace LuaSharpVM.Obfuscator
             this.Decompiler = new LuaWriter(ref this.Decoder);
         }
 
-        private string Obfuscate()
+        public string Obfuscate(LOSettings settings)
         {
-            //LOEncrypt encrypt = new LOEncrypt(ref OriginalDecoder.File);
 
-            //LOString obfString = new LOString(ref this.OriginalDecoder);
-            LODebug obfDebug = new LODebug(ref this.Decoder, LODebugLevel.RandomLow);
-
+            //var plugins = settings;
+            settings = new LOSettings(ref this.Decoder, "{'test':123}");
+            
             // add watermark
             this.Decoder.File.Function.Constants.Add(new StringConstant("cromulon.io"));
             return this.Decompiler.LuaScript;
         }
-
     }
 }

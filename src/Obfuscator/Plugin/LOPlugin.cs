@@ -10,6 +10,7 @@ namespace LuaSharpVM.Obfuscator.Plugin
     {
         public LuaDecoder Decoder;
         public string Description;
+        public int Level;
 
         public LOPlugin(ref LuaDecoder decoder, string desc)
         {
@@ -17,6 +18,6 @@ namespace LuaSharpVM.Obfuscator.Plugin
             this.Description = desc;
         }
 
-        public abstract void Obfuscate(LOSettings settings)
+        public abstract void Obfuscate(int lvl);
     }
 }

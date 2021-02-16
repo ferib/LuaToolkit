@@ -1,17 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using LuaSharpVM.Core;
+﻿using LuaSharpVM.Core;
 using LuaSharpVM.Disassembler;
+using System;
+using System.Collections.Generic;
 
 namespace LuaSharpVM.Obfuscator.Plugin
 {
     public enum LODebugLevel
     {
         None = 0,
-        RandomLow,  // minimal random
-        RandomMedium, // more randomness to make it harder but may reveal the nonse
-        EraseAll, // play it safe and have it erase!
+        RandomLow,      // minimal random
+        RandomMedium,   // more randomness to make it harder but may reveal the nonse
+        EraseAll,       // play it safe and have it erase!
     }
     public class LODebug : LOPlugin
     {
@@ -20,17 +19,15 @@ namespace LuaSharpVM.Obfuscator.Plugin
         // NOTE: Have a semi-trusted debugging information may give the reverser 
         //       a harder time compared to giving no debugging information at all.
 
-        private LODebugLevel Level;
-
-        public LODebug(ref LuaDecoder decoder, LODebugLevel level) : base(ref decoder, desc)
+        public LODebug(ref LuaDecoder decoder) : base(ref decoder, desc)
         {
-            
+
         }
 
-        public override void Obfuscate(LOSettings settings)
+        public override void Obfuscate(int lvl)
         {
             Console.WriteLine(desc);
-            switch(this.Level)
+            switch ((LODebugLevel)lvl)
             {
                 case LODebugLevel.RandomLow:
                     CounterAllDebugLines();
@@ -45,7 +42,6 @@ namespace LuaSharpVM.Obfuscator.Plugin
                     EraseAllDebuginfo();
                     break;
             }
-            
         }
 
         private void EraseAllDebuginfo()
@@ -60,6 +56,7 @@ namespace LuaSharpVM.Obfuscator.Plugin
                 f.DebugUpvalues.Clear();
             }
         }
+
         private void CounterAllDebugLines()
         {
             CounterDebugLines(base.Decoder.File.Function);
@@ -75,7 +72,7 @@ namespace LuaSharpVM.Obfuscator.Plugin
                 trigger = 60;
 
             for (int i = 0; i < base.Decoder.File.Function.DebugLines.Count; i++)
-                if(rnd.Next(0,100) > trigger)
+                if (rnd.Next(0, 100) > trigger)
                     base.Decoder.File.Function.DebugLines[i] += 1;
         }
 
@@ -85,11 +82,11 @@ namespace LuaSharpVM.Obfuscator.Plugin
             foreach (var f in base.Decoder.File.Function.Functions)
                 EraseDebugUpvalues(f);
         }
-        
+
         private void EraseDebugUpvalues(LuaFunction func)
         {
             for (int i = 0; i < base.Decoder.File.Function.DebugUpvalues.Count; i++)
-                    base.Decoder.File.Function.DebugUpvalues[i] = "";
+                base.Decoder.File.Function.DebugUpvalues[i] = "";
         }
 
         private void RandomizeAllDebugLocals()
@@ -102,23 +99,23 @@ namespace LuaSharpVM.Obfuscator.Plugin
         private void RandomizeDebugLocals(LuaFunction func)
         {
             Random rnd = new Random();
-            List<string> rndPrefix = new List<string> { "is", "Get", "Set"}; // random prefix
+            List<string> rndPrefix = new List<string> { "is", "Get", "Set" }; // random prefix
 
             // collect randomPrefixes from existing locals
             for (int i = 0; i < func.DebugLocals.Count; i++)
             {
                 // iterate to find upercase or underscore to indicate when strings end
                 int start = 0;
-                for(int j = 1; j < func.DebugLocals[i].Name.Length; j++)
+                for (int j = 1; j < func.DebugLocals[i].Name.Length; j++)
                 {
-                    if(char.IsUpper(func.DebugLocals[i].Name[j]) && char.IsLower(func.DebugLocals[i].Name[j-1])
+                    if (char.IsUpper(func.DebugLocals[i].Name[j]) && char.IsLower(func.DebugLocals[i].Name[j - 1])
                         || func.DebugLocals[i].Name[j] == '_')
                     {
                         // split it!
                         string newWord = func.DebugLocals[i].Name.Substring(start, j - start);
-                        if(rndPrefix.FindIndex(x => x.ToUpper() == newWord.ToUpper()) == -1)
+                        if (rndPrefix.FindIndex(x => x.ToUpper() == newWord.ToUpper()) == -1)
                             rndPrefix.Add(newWord);
-                        start = j+1;
+                        start = j + 1;
                     }
                 }
             }
@@ -127,7 +124,7 @@ namespace LuaSharpVM.Obfuscator.Plugin
             {
                 string fakeLocal = "";
                 int count = rnd.Next(2, 5);
-                for(int j = 0; j < count; j++)
+                for (int j = 0; j < count; j++)
                     fakeLocal += rndPrefix[rnd.Next(0, rndPrefix.Count)];
                 func.DebugLocals[i].Name = fakeLocal;
 

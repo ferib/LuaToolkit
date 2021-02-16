@@ -4,6 +4,7 @@ using LuaSharpVM.Decompiler;
 using LuaSharpVM.Core;
 using LuaSharpVM.Disassembler;
 using LuaSharpVM.Obfuscator;
+using LuaSharpVM.Obfuscator.Plugin;
 using System.IO;
 using System.Collections.Generic;
 
@@ -14,6 +15,11 @@ namespace Test
         static void Main(string[] args)
         {
             Console.WriteLine("[+] LuaSharpVM\r\n");
+
+            LuaObfuscator o = new LuaObfuscator(File.ReadAllBytes(@"L:\Projects\LuaBytcodeInterpreter\lua_installer\files\debuffspread.luac"));
+            o.Obfuscate(null);
+            Console.ReadLine();
+
             //var luaF = new LuaCFile(File.ReadAllBytes(@"L:\Projects\LuaBytcodeInterpreter\lua_installer\files\RamerDouglasPeucker.luac"));
             var luaF = new LuaCFile(File.ReadAllBytes(@"L:\Projects\LuaBytcodeInterpreter\lua_installer\files\debuffspread.luac"));
             LuaDecoder d = new LuaDecoder(luaF);
