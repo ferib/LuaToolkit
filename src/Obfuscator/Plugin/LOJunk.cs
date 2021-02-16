@@ -18,7 +18,7 @@ namespace LuaSharpVM.Obfuscator.Plugin
 
         }
 
-        public override void Obfuscate(LOSettings settings)
+        public override void Obfuscate(int lvl)
         {
             throw new NotImplementedException();
         }

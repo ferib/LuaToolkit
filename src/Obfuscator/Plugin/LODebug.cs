@@ -26,6 +26,7 @@ namespace LuaSharpVM.Obfuscator.Plugin
 
         public override void Obfuscate(int lvl)
         {
+            base.Level = lvl; // set ;D
             Console.WriteLine(desc);
             switch ((LODebugLevel)lvl)
             {
@@ -68,7 +69,7 @@ namespace LuaSharpVM.Obfuscator.Plugin
         {
             Random rnd = new Random();
             int trigger = 24;
-            if (this.Level == LODebugLevel.RandomMedium)
+            if ((LODebugLevel)base.Level == LODebugLevel.RandomMedium)
                 trigger = 60;
 
             for (int i = 0; i < base.Decoder.File.Function.DebugLines.Count; i++)
@@ -129,7 +130,7 @@ namespace LuaSharpVM.Obfuscator.Plugin
                 func.DebugLocals[i].Name = fakeLocal;
 
                 int offset = 2; // not to much, return instructions are obviously to see when missaligned
-                if (this.Level == LODebugLevel.RandomMedium)
+                if ((LODebugLevel)base.Level == LODebugLevel.RandomMedium)
                     offset += 11; // lets go a little crazy here for the skids
 
                 //////lets make sure they still align, people that reverse arent retarded afterall; No need to align, maybe I am retarded ?

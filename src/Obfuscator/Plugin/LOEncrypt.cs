@@ -20,7 +20,7 @@ namespace LuaSharpVM.Obfuscator.Plugin
         //       create a custom hash function to funcname -> hash
         //       have another custom func handle the hash calling
 
-        public override void Obfuscate(LOSettings settings)
+        public override void Obfuscate(int lvl)
         {
             throw new NotImplementedException();
         }

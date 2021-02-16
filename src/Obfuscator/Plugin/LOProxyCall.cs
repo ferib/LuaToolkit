@@ -20,7 +20,7 @@ namespace LuaSharpVM.Obfuscator.Plugin
             // NOTE: this heavly reduces performance, only use on non performance critical stuff
         }
 
-        public override void Obfuscate(LOSettings settings)
+        public override void Obfuscate(int lvl)
         {
             throw new NotImplementedException();
         }

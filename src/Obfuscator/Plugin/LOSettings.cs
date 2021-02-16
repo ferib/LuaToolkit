@@ -88,8 +88,5 @@ namespace LuaSharpVM.Obfuscator.Plugin
                     Plugins = new List<LOPlugin>() { plugin }
                 });
         }
-
-
     }
-
 }

@@ -18,7 +18,7 @@ namespace LuaSharpVM.Obfuscator.Plugin
         {
         }
 
-        public override void Obfuscate(LOSettings settings)
+        public override void Obfuscate(int lvl)
         {
             // iterate all constants in root function
             for (int i = 0; i < base.Decoder.File.Function.Constants.Count; i++)
