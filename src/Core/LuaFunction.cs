@@ -15,6 +15,7 @@ namespace LuaSharpVM.Core
         public byte MaxStackSize;
         public List<LuaInstruction> Instructions;
         public List<LuaConstant> Constants;
+        public List<LuaConstant> Upvalues; // Those are usualy static ones that can be obtained from static analysis
         public List<LuaFunction> Functions;
         public List<int> DebugLines;
         public List<LuaLocal> DebugLocals;
@@ -25,6 +26,7 @@ namespace LuaSharpVM.Core
             // NOTE: remove?
             this.Instructions = new List<LuaInstruction>();
             this.Constants = new List<LuaConstant>();
+            this.Upvalues = new List<LuaConstant>();
             this.Functions = new List<LuaFunction>();
             this.DebugLines = new List<int>();
         }

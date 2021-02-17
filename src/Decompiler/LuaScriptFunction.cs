@@ -14,7 +14,7 @@ namespace LuaSharpVM.Decompiler
         private LuaDecoder Decoder;
         private LuaFunction Func;
         private string Name;
-        private bool IsLocal = false;
+        public bool IsLocal = true;
         private List<string> Args;
         public List<LuaScriptLine> Lines;
 
@@ -50,13 +50,15 @@ namespace LuaSharpVM.Decompiler
                     args += ", ";
             }
             args += ")";
-            return (this.IsLocal ? "local" : "") + $"function {GetName()}{args}\n\r";
+            return (this.IsLocal ? "local " : "") + $"function {GetName()}{args}\n\r";
         }
 
         private string GetName()
         {
             if (Func.Name != null && Func.Name != "")
                 return Func.Name;
+            if (this.Name == "") // unknonw
+                return "unknown" + Decoder.File.Function.Functions.IndexOf(Func);
             return this.Name;
         }
 
@@ -174,25 +176,27 @@ namespace LuaSharpVM.Decompiler
 
         private void SetUpvalues()
         {
-            // iterate instructions and set upvalues
-            Dictionary<int, int> UpvalueConstants = new Dictionary<int, int>();
-            for (int i = 0; i < this.Lines.Count; i++)
-            {
-                var instr = this.Lines[i].Instr;
-                switch(instr.OpCode)
-                {
-                    case LuaOpcode.SETUPVAL:
-                        if (!UpvalueConstants.ContainsKey(instr.A))
-                            UpvalueConstants.Add(instr.A, instr.B); // idk..
-                        break;
-                    case LuaOpcode.GETUPVAL:
-                        //if (instr.B == 0)
-                        //    this.Lines[i].Op3 = "self()";
-                        //else
-                        //    this.Lines[i].Op3 = this.Func.Constants[instr.B].ToString();
-                        break;
-                }
-            }
+            // TODO: set upvalues for functions defined in functions?
+
+            //// iterate instructions and set upvalues
+            //Dictionary<int, int> UpvalueConstants = new Dictionary<int, int>();
+            //for (int i = 0; i < this.Lines.Count; i++)
+            //{
+            //    var instr = this.Lines[i].Instr;
+            //    switch(instr.OpCode)
+            //    {
+            //        case LuaOpcode.SETUPVAL:
+            //            if (!UpvalueConstants.ContainsKey(instr.A))
+            //                UpvalueConstants.Add(instr.A, instr.B); // idk..
+            //            break;
+            //        case LuaOpcode.GETUPVAL:
+            //            //if (instr.B == 0)
+            //            //    this.Lines[i].Op3 = "self()";
+            //            //else
+            //            //    this.Lines[i].Op3 = this.Func.Constants[instr.B].ToString();
+            //            break;
+            //    }
+            //}
         }
 
         public void Complete()

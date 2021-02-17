@@ -34,7 +34,7 @@ namespace LuaSharpVM.Decompiler
             var names = GetFunctionNames();
             for (int i = 0; i < this.Decoder.File.Function.Functions.Count; i++)
             {
-                WriteFunction(this.Decoder.File.Function.Functions[i], 1, names[i]);
+                WriteFunction(this.Decoder.File.Function.Functions[i], 1, names[i].Key, names[i].Value);
             }
             WriteFunction(this.Decoder.File.Function);
 
@@ -43,7 +43,7 @@ namespace LuaSharpVM.Decompiler
                 f.Complete();
         }
 
-        private void WriteFunction(LuaFunction func, int dpth = 0, string name = "")
+        private void WriteFunction(LuaFunction func, int dpth = 0, string name = "", bool isGlobal = false)
         {
             // TODO: move header in LuaScriptFunction class
             string funcName = "";
@@ -57,7 +57,7 @@ namespace LuaSharpVM.Decompiler
             if (funcName != null)
                 funcName = name; // TODO: remp fix, cleanup soonTM
 
-            LuaScriptFunction newFunction = new LuaScriptFunction(funcName, args, ref func, ref this.Decoder);
+            LuaScriptFunction newFunction = new LuaScriptFunction(funcName, args, ref func, ref this.Decoder) { IsLocal = !isGlobal };
             this.LuaFunctions.Add(newFunction);
             // TODO: move the above into a LuaScriptHeader or smthing
 
@@ -71,13 +71,30 @@ namespace LuaSharpVM.Decompiler
             }
         }
 
-        private List<string> GetFunctionNames()
+        private void SetStaticUpvalues()
         {
-            List<string> names = new List<string>();
+            for (int i = 0; i < this.Decoder.File.Function.Instructions.Count; i++)
+            {
+                var instr = this.Decoder.File.Function.Instructions[i];
+                switch (instr.OpCode)
+                {
+                    case LuaOpcode.CLOSURE:
 
-            // NOTE: Global functions use GETGLOBAL to get first part, then
+                        break;
+                    case LuaOpcode.SETUPVAL:
+                        break;
+                }
+            }
+        }
+
+        private List<KeyValuePair<string, bool>> GetFunctionNames()
+        {
+            List<KeyValuePair<string, bool>> names = new List<KeyValuePair<string, bool>>();
+
+            // NOTE: Global functions use GETGLOBAL to get first parts, then
             // CLOSURE to set the variables they just got, and then SETTABLE
             // to move a constant (second part of func name) into the global
+            // also, while we are at it, lets check if it sets global or not
 
             for(int i = 0; i < this.Decoder.File.Function.Instructions.Count; i++)
             {
@@ -85,8 +102,9 @@ namespace LuaSharpVM.Decompiler
                 switch(instr.OpCode)
                 {
                     case LuaOpcode.CLOSURE:
-                        string name = "unknown";
+                        string name = "";
                         string globalName = "";
+                        bool isGlobal = false;
                         int e = this.Decoder.File.Function.Instructions.Count-1;
 
                         int j = i - 1;
@@ -113,12 +131,14 @@ namespace LuaSharpVM.Decompiler
                                 break; // meh
                             if (this.Decoder.File.Function.Instructions[j].OpCode == LuaOpcode.SETTABLE)
                             {
+                                isGlobal = true;
                                 name = this.Decoder.File.Function.Constants[this.Decoder.File.Function.Instructions[j].C].ToString();
                                 name = name.Substring(1, name.Length-2);
                                 break; // job's done
                             }else if(this.Decoder.File.Function.Instructions[j].OpCode == LuaOpcode.SETGLOBAL)
                             {
-                                // is local!
+                                // is global!
+                                isGlobal = true;
                                 name = this.Decoder.File.Function.Constants[this.Decoder.File.Function.Instructions[j].C].ToString();
                                 name = name.Substring(1, name.Length - 2);
                                 break; 
@@ -128,7 +148,7 @@ namespace LuaSharpVM.Decompiler
 
                         if (globalName != "")
                             name = globalName + ":" + name;
-                        names.Add(name);
+                        names.Add(new KeyValuePair<string, bool>(name, isGlobal));
                         break;
                 }
             }
