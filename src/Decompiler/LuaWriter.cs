@@ -58,7 +58,7 @@ namespace LuaSharpVM.Decompiler
             if (funcName != null)
                 funcName = name; // TODO: remp fix, cleanup soonTM
 
-            LuaScriptFunction newFunction = new LuaScriptFunction(funcName, args, ref func, ref this.Decoder) { IsLocal = !isGlobal };
+            LuaScriptFunction newFunction = new LuaScriptFunction(funcName, args, ref func, ref this.Decoder);
             this.LuaFunctions.Add(newFunction);
             // TODO: move the above into a LuaScriptHeader or smthing
 

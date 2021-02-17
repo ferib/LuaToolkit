@@ -268,12 +268,12 @@ namespace LuaSharpVM.Decompiler
                                     LuaConstant cons;
                                     cons = new StringConstant($"unknown{parent.Instructions[j].B}\0"); // NOTE: strip last character??
                                     this.Func.Upvalues.Add(cons);
-                                    this.IsLocal = true;
+                                    this.IsLocal = false;
                                 }
                             }
                             else if (parent.Instructions[j].OpCode == LuaOpcode.SETTABLE)
                             {
-                                //this.IsLocal = true;
+                                this.IsLocal = false;
                                 this.Name = parent.Constants[parent.Instructions[j].C].ToString();
                                 this.Name = this.Name.Substring(1, this.Name.Length - 2);
                                 break; // job's done
