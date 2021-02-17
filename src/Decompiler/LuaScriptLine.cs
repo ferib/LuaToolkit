@@ -84,7 +84,7 @@ namespace LuaSharpVM.Decompiler
                 case LuaOpcode.GETUPVAL:
                     this.Op1 = WriteIndex(Instr.A);
                     this.Op2 = " = ";
-                    this.Op3 = $"upvalue[{Instr.B}]";
+                    this.Op3 = this.Func.Upvalues[Instr.B].ToString().Substring(1, this.Func.Upvalues[Instr.B].ToString().Length - 2); // this is legit for prototypes etc
                     break;
                 case LuaOpcode.GETGLOBAL:
                     this.Op1 = $"{WriteIndex(Instr.A)} = _G[";
@@ -94,7 +94,7 @@ namespace LuaSharpVM.Decompiler
                 case LuaOpcode.GETTABLE:
                     this.Op1 = WriteIndex(Instr.A);
                     this.Op2 = " = ";
-                    this.Op3 = $"var{Instr.B}[{WriteIndex(Instr.C)}]"; // TODO: fix
+                    this.Op3 = $"var{Instr.B}[{WriteIndex(Instr.C)}]"; // TODO: fix???
                     break;
                 case LuaOpcode.SETGLOBAL:
                     this.Op1 = $"_G[{GetConstant(Instr.Bx)}]";
@@ -102,7 +102,8 @@ namespace LuaSharpVM.Decompiler
                     this.Op3 = $"var{Instr.A}";
                     break;
                 case LuaOpcode.SETUPVAL:
-                    this.Op1 = $"upvalue[{WriteIndex(Instr.B)}]";
+                    //this.Op1 = $"upvalue[{WriteIndex(Instr.B)}]"; TODO: Verify if below actually work
+                    this.Op1 = this.Func.Upvalues[Instr.B].ToString().Substring(1, this.Func.Upvalues[Instr.B].ToString().Length - 2);
                     this.Op2 = " = ";
                     this.Op3 = $"var[{GetConstant(Instr.A)}]";
                     break;
@@ -321,15 +322,16 @@ namespace LuaSharpVM.Decompiler
                 case LuaOpcode.CLOSURE:
                     this.Op1 = $"{WriteIndex(Instr.A)}";
                     this.Op2 = " = ";
-                    this.Op3 = GetConstant(Instr.Bx).Substring(1, GetConstant(Instr.Bx).Length - 2);
-                    // set function in decoder, go by un named
-                    for(int i = 0; i < this.Func.Functions.Count; i++)
-                        if(this.Func.Functions[i].Name == "")
-                        {
-                            this.Func.Functions[i].Name = this.Op3;
-                            break;
-                        }
-                            
+                    this.Op3 = $"{WriteIndex(Instr.Bx)}";
+                    //this.Op3 = GetConstant(Instr.Bx).Substring(1, GetConstant(Instr.Bx).Length - 2);
+                    //// set function in decoder, go by un named
+                    //for(int i = 0; i < this.Func.Functions.Count; i++)
+                    //    if(this.Func.Functions[i].Name == "")
+                    //    {
+                    //        this.Func.Functions[i].Name = this.Op3;
+                    //        break;
+                    //    }
+
                     break;
                 case LuaOpcode.VARARG:
                     // TODO: this.Op1 = "..."; // B > 1 for fixed range, B 0 for unspecified

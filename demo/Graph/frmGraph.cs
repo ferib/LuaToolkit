@@ -179,7 +179,7 @@ namespace Graph
             DrawTarget.BeginDraw();
             DrawTarget.Clear(new RawColor4(0x70, 0x70, 0x70, 255));
             DrawTarget.FillRectangle(new RawRectangleF(0, 0, this.Width, this.Height), backgroundBrush);
-            DrawTarget.DrawText($"{this.Writer.LuaFunctions[targetFunc].ToString()} ({graphX},{graphY})", fontSmall, new RawRectangleF(1, 1, 350, 20), blackBrush);
+            DrawTarget.DrawText($"{this.Writer.LuaFunctions[targetFunc].ToString()} ({graphX},{graphY})", fontSmall, new RawRectangleF(1, 1, this.Width, 20), blackBrush);
             DrawTarget.DrawLine(new RawVector2(1, 18), new RawVector2(250, 18), blackBrush);
 
             // draw mouse snapline
@@ -215,12 +215,12 @@ namespace Graph
             GraphBlock.BlocksHeightOffset = 0;
             foreach (var b in blocks)
             {
-                count++;
+                //if (b.Lines.Count == 1 && b.Lines[0].Instr.OpCode == LuaOpcode.FORLOOP)
+                //    b.Text = "FORLOOP";
+
                 GBlocks.Add(new GraphBlock(b, this.Width, this.Height));
-                if (count > 30)
-                    break;
             }
-            GraphBlock.BlocksHeightOffset /= 2; // TODO: find out why its multiplied by two 
+            //GraphBlock.BlocksHeightOffset /= 2; // TODO: find out why its multiplied by two 
         }
 
         private void CreateArrows()
@@ -248,7 +248,8 @@ namespace Graph
                     //GB.BoundryBox.Right += thicc;
                     GArrows.Add(new GraphArrow(ref GBlocks)
                     {
-                        Brush = redBrush,
+                        //Brush = redBrush,
+                        Brush = greenBrush, // colors are reverse due to jump skip logic
                         Start = GB.Block.StartAddress,
                         End = GB.Block.JumpsNext
                     });
@@ -258,7 +259,8 @@ namespace Graph
                     //GArrows.Add(block.JumpsToBlock, new RawVector2(((box.Left + box.Right) / 2), box.Bottom)); // green, jump OK
                     GArrows.Add(new GraphArrow(ref GBlocks)
                     {
-                        Brush = greenBrush,
+                        //Brush = greenBrush,
+                        Brush = redBrush, // colors are reverse due to jump skip logic
                         Start = GB.Block.StartAddress,
                         End = GB.Block.JumpsTo
                     });

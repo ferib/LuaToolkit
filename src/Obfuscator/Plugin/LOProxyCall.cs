@@ -8,6 +8,7 @@ namespace LuaSharpVM.Obfuscator.Plugin
     public class LOProxyCall : LOPlugin
     {
         static string desc = "Adds proxy function that will try to find destination function by calculating crc32 checksum.";
+        private static string Name = "ProxyCalls";
 
         public LOProxyCall(ref LuaDecoder decoder) : base (ref decoder, desc)
         {
@@ -18,6 +19,16 @@ namespace LuaSharpVM.Obfuscator.Plugin
             // proxy_call will then get list of names (somehow) and calculate crc32 checksums
             // until it has a match, once there is a match, it calls the input of the checksum
             // NOTE: this heavly reduces performance, only use on non performance critical stuff
+        }
+
+        public override void Obfuscate()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override string GetName()
+        {
+            return Name;
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Linq;
 using LuaSharpVM.Core;
 using LuaSharpVM.Models;
 using LuaSharpVM.Decompiler;
@@ -11,55 +12,26 @@ namespace LuaSharpVM.Obfuscator
 {
     public class LuaObfuscator
     {
-        private LuaDecoder OriginalDecoder;
-        public LuaDecoder ObfuscatedDecoder;
-        private LuaDecompiler OriginalDecompiler;
-        private LuaDecompiler ObfuscatedDecompiler;
+        public LuaDecoder Decoder;
+        private LuaWriter Decompiler;
+        private LOSettings Settings;
         private byte[] ObfuscatedLuaC;
-        private byte[] OriginalLuaC;
 
         public LuaObfuscator(byte[] originalLuaC)
         {
-            this.OriginalLuaC = originalLuaC;
-            this.OriginalDecoder = new LuaDecoder(new LuaCFile(this.OriginalLuaC));
-            this.OriginalDecompiler = new LuaDecompiler(this.OriginalLuaC);
-            if(originalLuaC != null)
-                Obfuscate();
+            this.ObfuscatedLuaC = originalLuaC;
+            this.Decoder = new LuaDecoder(new LuaCFile(this.ObfuscatedLuaC));
+            this.Decompiler = new LuaWriter(ref this.Decoder);
         }
 
-        private void Obfuscate()
+        public string Obfuscate(string settings)
         {
-            //LOEncrypt encrypt = new LOEncrypt(ref OriginalDecoder.File);
-
-            //LOString obfString = new LOString(ref this.OriginalDecoder);
-            LODebug obfDebug = new LODebug(ref this.OriginalDecoder, LODebugLevel.RandomLow);
+            this.Settings = new LOSettings(ref this.Decoder, settings);
+            this.Settings.Execute();
 
             // add watermark
-            this.OriginalDecoder.File.Function.Constants.Add(new StringConstant("cromulon.io"));
+            this.Decoder.File.Function.Constants.Add(new StringConstant("cromulon.io"));
+            return this.Decompiler.LuaScript;
         }
-
-        public string DecompileOriginalLuaC()
-        {
-            if(this.OriginalDecompiler.Result == null)
-            {
-                this.OriginalDecompiler.Write(this.OriginalDecoder.File.Function);
-            }
-            return this.OriginalDecompiler.Result;
-        }
-
-        public string DecompileObfuscatedLuaC()
-        {
-            if(this.ObfuscatedDecoder == null && this.ObfuscatedLuaC != null && this.ObfuscatedDecompiler == null)
-            {
-                this.ObfuscatedDecoder = new LuaDecoder(new LuaCFile(this.ObfuscatedLuaC));
-                this.ObfuscatedDecompiler.Write(this.ObfuscatedDecoder.File.Function);
-            }
-            
-            if(this.ObfuscatedDecompiler != null)
-                return this.ObfuscatedDecompiler.Result;
-
-            return "NO RESULT";
-        }
-
     }
 }

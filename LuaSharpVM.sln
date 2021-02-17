@@ -13,6 +13,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Test", "demo\Test\Test.cspr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Graph", "demo\Graph\Graph.csproj", "{C10726C0-8D2C-4F92-9961-5008D1B6940E}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Recompiler", "demo\Recompiler\Recompiler.csproj", "{CE7FDAB8-2F8A-4E39-AFC9-900D3458B9CB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -31,6 +33,10 @@ Global
 		{C10726C0-8D2C-4F92-9961-5008D1B6940E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C10726C0-8D2C-4F92-9961-5008D1B6940E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C10726C0-8D2C-4F92-9961-5008D1B6940E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CE7FDAB8-2F8A-4E39-AFC9-900D3458B9CB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CE7FDAB8-2F8A-4E39-AFC9-900D3458B9CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CE7FDAB8-2F8A-4E39-AFC9-900D3458B9CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CE7FDAB8-2F8A-4E39-AFC9-900D3458B9CB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -39,6 +45,7 @@ Global
 		{3C38C968-E485-4154-B6BD-E8446651307F} = {96AC88C8-068C-4EE1-8189-BECC27BD318E}
 		{9A45374E-5548-4C3A-AF06-C31A962295DD} = {6645C52B-19A3-4114-81F8-DEBA70779569}
 		{C10726C0-8D2C-4F92-9961-5008D1B6940E} = {6645C52B-19A3-4114-81F8-DEBA70779569}
+		{CE7FDAB8-2F8A-4E39-AFC9-900D3458B9CB} = {6645C52B-19A3-4114-81F8-DEBA70779569}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {CA86C95D-BB88-475B-B999-4332121C087F}

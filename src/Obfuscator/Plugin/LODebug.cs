@@ -1,52 +1,57 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using LuaSharpVM.Core;
+﻿using LuaSharpVM.Core;
 using LuaSharpVM.Disassembler;
+using System;
+using System.Collections.Generic;
 
 namespace LuaSharpVM.Obfuscator.Plugin
 {
     public enum LODebugLevel
     {
         None = 0,
-        RandomLow,  // minimal random
-        RandomMedium, // more randomness to make it harder but may reveal the nonse
-        EraseAll, // play it safe and have it erase!
+        RandomLow,      // minimal random
+        RandomMedium,   // more randomness to make it harder but may reveal the nonse
+        EraseAll,       // play it safe and have it erase!
     }
     public class LODebug : LOPlugin
     {
         // Add custom instruction by replacing pairs of existing ones
         static string desc = "Randomizing/removing debug information.";
+        private static string Name = "DebugRandomizer";
         // NOTE: Have a semi-trusted debugging information may give the reverser 
         //       a harder time compared to giving no debugging information at all.
 
-        private LODebugLevel Level;
-
-        public LODebug(ref LuaDecoder decoder, LODebugLevel level) : base(ref decoder, desc)
+        public LODebug(ref LuaDecoder decoder) : base(ref decoder, desc)
         {
-            this.Level = level;
-            Obfuscate();
+
         }
 
-        private void Obfuscate()
+        public override void Obfuscate()
         {
-            Console.WriteLine(desc);
-            switch(this.Level)
+            for(int i = 0; i < base.Functions.Count; i++)
             {
-                case LODebugLevel.RandomLow:
-                    CounterAllDebugLines();
-                    RandomizeAllDebugLocals();
-                    break;
-                case LODebugLevel.RandomMedium:
-                    CounterAllDebugLines();
-                    RandomizeAllDebugLocals();
-                    EraseAllDebugUpvalues();
-                    break;
-                case LODebugLevel.EraseAll:
-                    EraseAllDebuginfo();
-                    break;
+                Console.WriteLine($"{base.Functions[i]}: {desc} ({(LODebugLevel)base.Levels[i]})");
+                switch ((LODebugLevel)base.Levels[i])
+                {
+                    case LODebugLevel.RandomLow:
+                        //RandomizeAllDebugLocals();
+                        RandomizeDebugLocals(base.Decoder.File.Function.Functions.Find(x => x.Name == base.Functions[i]), base.Levels[i]);
+                        break;
+                    case LODebugLevel.RandomMedium:
+                        //RandomizeAllDebugLocals();
+                        //EraseAllDebugUpvalues();
+                        RandomizeDebugLocals(base.Decoder.File.Function.Functions.Find(x => x.Name == base.Functions[i]), base.Levels[i]);
+                        EraseDebugUpvalues(base.Decoder.File.Function.Functions.Find(x => x.Name == base.Functions[i]), base.Levels[i]);
+                        break;
+                    case LODebugLevel.EraseAll:
+                        EraseAllDebuginfo();
+                        break;
+                }
             }
-            
+        }
+
+        public override string GetName()
+        {
+            return Name;
         }
 
         private void EraseAllDebuginfo()
@@ -61,65 +66,66 @@ namespace LuaSharpVM.Obfuscator.Plugin
                 f.DebugUpvalues.Clear();
             }
         }
+
         private void CounterAllDebugLines()
         {
-            CounterDebugLines(base.Decoder.File.Function);
-            foreach (var f in base.Decoder.File.Function.Functions)
-                CounterDebugLines(f);
+            //CounterDebugLines(base.Decoder.File.Function);
+            //foreach (var f in base.Decoder.File.Function.Functions)
+            //    CounterDebugLines(f);
         }
 
-        private void CounterDebugLines(LuaFunction func)
+        private void CounterDebugLines(LuaFunction func, int level)
         {
             Random rnd = new Random();
             int trigger = 24;
-            if (this.Level == LODebugLevel.RandomMedium)
+            if ((LODebugLevel)level == LODebugLevel.RandomMedium)
                 trigger = 60;
 
             for (int i = 0; i < base.Decoder.File.Function.DebugLines.Count; i++)
-                if(rnd.Next(0,100) > trigger)
+                if (rnd.Next(0, 100) > trigger)
                     base.Decoder.File.Function.DebugLines[i] += 1;
         }
 
         private void EraseAllDebugUpvalues()
         {
-            EraseDebugUpvalues(base.Decoder.File.Function);
-            foreach (var f in base.Decoder.File.Function.Functions)
-                EraseDebugUpvalues(f);
+            //EraseDebugUpvalues(base.Decoder.File.Function);
+            //foreach (var f in base.Decoder.File.Function.Functions)
+            //    EraseDebugUpvalues(f);
         }
-        
-        private void EraseDebugUpvalues(LuaFunction func)
+
+        private void EraseDebugUpvalues(LuaFunction func, int level)
         {
             for (int i = 0; i < base.Decoder.File.Function.DebugUpvalues.Count; i++)
-                    base.Decoder.File.Function.DebugUpvalues[i] = "";
+                base.Decoder.File.Function.DebugUpvalues[i] = "";
         }
 
         private void RandomizeAllDebugLocals()
         {
-            RandomizeDebugLocals(base.Decoder.File.Function);
-            foreach (var f in base.Decoder.File.Function.Functions)
-                RandomizeDebugLocals(f);
+            //RandomizeDebugLocals(base.Decoder.File.Function);
+            //foreach (var f in base.Decoder.File.Function.Functions)
+            //    RandomizeDebugLocals(f);
         }
 
-        private void RandomizeDebugLocals(LuaFunction func)
+        private void RandomizeDebugLocals(LuaFunction func, int level)
         {
             Random rnd = new Random();
-            List<string> rndPrefix = new List<string> { "is", "Get", "Set"}; // random prefix
+            List<string> rndPrefix = new List<string> { "is", "Get", "Set" }; // random prefix
 
             // collect randomPrefixes from existing locals
             for (int i = 0; i < func.DebugLocals.Count; i++)
             {
                 // iterate to find upercase or underscore to indicate when strings end
                 int start = 0;
-                for(int j = 1; j < func.DebugLocals[i].Name.Length; j++)
+                for (int j = 1; j < func.DebugLocals[i].Name.Length; j++)
                 {
-                    if(char.IsUpper(func.DebugLocals[i].Name[j]) && char.IsLower(func.DebugLocals[i].Name[j-1])
+                    if (char.IsUpper(func.DebugLocals[i].Name[j]) && char.IsLower(func.DebugLocals[i].Name[j - 1])
                         || func.DebugLocals[i].Name[j] == '_')
                     {
                         // split it!
                         string newWord = func.DebugLocals[i].Name.Substring(start, j - start);
-                        if(rndPrefix.FindIndex(x => x.ToUpper() == newWord.ToUpper()) == -1)
+                        if (rndPrefix.FindIndex(x => x.ToUpper() == newWord.ToUpper()) == -1)
                             rndPrefix.Add(newWord);
-                        start = j+1;
+                        start = j + 1;
                     }
                 }
             }
@@ -128,12 +134,12 @@ namespace LuaSharpVM.Obfuscator.Plugin
             {
                 string fakeLocal = "";
                 int count = rnd.Next(2, 5);
-                for(int j = 0; j < count; j++)
+                for (int j = 0; j < count; j++)
                     fakeLocal += rndPrefix[rnd.Next(0, rndPrefix.Count)];
                 func.DebugLocals[i].Name = fakeLocal;
 
                 int offset = 2; // not to much, return instructions are obviously to see when missaligned
-                if (this.Level == LODebugLevel.RandomMedium)
+                if ((LODebugLevel)level == LODebugLevel.RandomMedium)
                     offset += 11; // lets go a little crazy here for the skids
 
                 //////lets make sure they still align, people that reverse arent retarded afterall; No need to align, maybe I am retarded ?
