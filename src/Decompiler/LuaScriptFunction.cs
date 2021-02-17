@@ -14,7 +14,7 @@ namespace LuaSharpVM.Decompiler
         private LuaDecoder Decoder;
         private LuaFunction Func;
         private string Name;
-        public bool IsLocal = true;
+        public bool IsLocal = false;
         private List<string> Args;
         public List<LuaScriptLine> Lines;
 
@@ -36,6 +36,7 @@ namespace LuaSharpVM.Decompiler
             this.Decoder = decoder;
             this.Lines = new List<LuaScriptLine>();
             this.Blocks = new List<LuaScriptBlock>();
+            HandleUpvalues(); // get upvalues from parent
         }
 
         public override string ToString()
@@ -58,8 +59,20 @@ namespace LuaSharpVM.Decompiler
         {
             if (Func.Name != null && Func.Name != "")
                 return Func.Name;
-            if (this.Name == "") // unknonw
-                return "unknown" + Decoder.File.Function.Functions.IndexOf(Func);
+
+            if (this.Name == "") // unknownX
+            {
+                // TODO: prefix functions so we can distiguins one parent from another? (like: unknown_0_1)
+                var parent = GetParentFunction();
+                // TODO: get all parents?
+                int unkCount = -1;
+                for(int i = 0; i < parent.Functions.IndexOf(this.Func); i++)
+                {
+                    if (parent.Functions[i].ScriptFunction.IsLocal)
+                        unkCount++;
+                }
+                return "unknown" + (unkCount + 1); // should give right index?
+            }
             return this.Name;
         }
 
@@ -210,6 +223,7 @@ namespace LuaSharpVM.Decompiler
             if (parent == null)
                 return; // we in root UwU
 
+            // create Upvalues List from parent
             int functionIndex = parent.Functions.IndexOf(this.Func);
             for (int i = 0; i < parent.Instructions.Count; i++)
             {
@@ -252,13 +266,14 @@ namespace LuaSharpVM.Decompiler
                                 {
                                     // TODO
                                     LuaConstant cons;
-                                    cons = new StringConstant("unknown" + parent.Instructions[j].B);
+                                    cons = new StringConstant($"unknown{parent.Instructions[j].B}\0"); // NOTE: strip last character??
                                     this.Func.Upvalues.Add(cons);
+                                    this.IsLocal = true;
                                 }
                             }
                             else if (parent.Instructions[j].OpCode == LuaOpcode.SETTABLE)
                             {
-                                this.IsLocal = false;
+                                //this.IsLocal = true;
                                 this.Name = parent.Constants[parent.Instructions[j].C].ToString();
                                 this.Name = this.Name.Substring(1, this.Name.Length - 2);
                                 break; // job's done
@@ -279,18 +294,16 @@ namespace LuaSharpVM.Decompiler
 
                         break;
                     case LuaOpcode.SETUPVAL:
-                        // TODO:
+                        // NOTE: check all 'MOV 0 Bx' after CLOSURE & SETUPVALUE
+                        // NOTE: these are only used at runtime to set/get values?
                         var test2 = instr.Bx;
                         break;
                 }
             }
-            //parent.ScriptFunction.Get
-            //parent.get
         }
 
         public void Complete()
         {
-            HandleUpvalues();
             GenerateBlocks();
         }
 

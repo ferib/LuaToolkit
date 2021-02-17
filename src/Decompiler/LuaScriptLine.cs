@@ -84,8 +84,7 @@ namespace LuaSharpVM.Decompiler
                 case LuaOpcode.GETUPVAL:
                     this.Op1 = WriteIndex(Instr.A);
                     this.Op2 = " = ";
-                    this.Op3 = $"upvalue[{Instr.B}]";
-                    //this.Func.Get
+                    this.Op3 = this.Func.Upvalues[Instr.B].ToString().Substring(1, this.Func.Upvalues[Instr.B].ToString().Length - 2); // this is legit for prototypes etc
                     break;
                 case LuaOpcode.GETGLOBAL:
                     this.Op1 = $"{WriteIndex(Instr.A)} = _G[";
@@ -95,7 +94,7 @@ namespace LuaSharpVM.Decompiler
                 case LuaOpcode.GETTABLE:
                     this.Op1 = WriteIndex(Instr.A);
                     this.Op2 = " = ";
-                    this.Op3 = $"var{Instr.B}[{WriteIndex(Instr.C)}]"; // TODO: fix
+                    this.Op3 = $"var{Instr.B}[{WriteIndex(Instr.C)}]"; // TODO: fix???
                     break;
                 case LuaOpcode.SETGLOBAL:
                     this.Op1 = $"_G[{GetConstant(Instr.Bx)}]";
@@ -103,7 +102,8 @@ namespace LuaSharpVM.Decompiler
                     this.Op3 = $"var{Instr.A}";
                     break;
                 case LuaOpcode.SETUPVAL:
-                    this.Op1 = $"upvalue[{WriteIndex(Instr.B)}]";
+                    //this.Op1 = $"upvalue[{WriteIndex(Instr.B)}]"; TODO: Verify if below actually work
+                    this.Op1 = this.Func.Upvalues[Instr.B].ToString().Substring(1, this.Func.Upvalues[Instr.B].ToString().Length - 2);
                     this.Op2 = " = ";
                     this.Op3 = $"var[{GetConstant(Instr.A)}]";
                     break;

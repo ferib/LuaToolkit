@@ -108,7 +108,6 @@ namespace LuaSharpVM.Decompiler
                         string name = "";
                         string globalName = "";
                         bool isGlobal = false;
-                        int e = this.Decoder.File.Function.Instructions.Count-1;
 
                         int j = i - 1;
                         // Find GETGLOBAL
