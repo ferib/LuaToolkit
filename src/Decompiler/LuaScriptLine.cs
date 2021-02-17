@@ -321,15 +321,16 @@ namespace LuaSharpVM.Decompiler
                 case LuaOpcode.CLOSURE:
                     this.Op1 = $"{WriteIndex(Instr.A)}";
                     this.Op2 = " = ";
-                    this.Op3 = GetConstant(Instr.Bx).Substring(1, GetConstant(Instr.Bx).Length - 2);
-                    // set function in decoder, go by un named
-                    for(int i = 0; i < this.Func.Functions.Count; i++)
-                        if(this.Func.Functions[i].Name == "")
-                        {
-                            this.Func.Functions[i].Name = this.Op3;
-                            break;
-                        }
-                            
+                    this.Op3 = $"{WriteIndex(Instr.Bx)}";
+                    //this.Op3 = GetConstant(Instr.Bx).Substring(1, GetConstant(Instr.Bx).Length - 2);
+                    //// set function in decoder, go by un named
+                    //for(int i = 0; i < this.Func.Functions.Count; i++)
+                    //    if(this.Func.Functions[i].Name == "")
+                    //    {
+                    //        this.Func.Functions[i].Name = this.Op3;
+                    //        break;
+                    //    }
+
                     break;
                 case LuaOpcode.VARARG:
                     // TODO: this.Op1 = "..."; // B > 1 for fixed range, B 0 for unspecified

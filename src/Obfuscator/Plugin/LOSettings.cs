@@ -36,9 +36,9 @@ namespace LuaSharpVM.Obfuscator.Plugin
             //}
 
             // NOTE: test demo
-            AddSetting<LODebug>("Exports", 2);
-            AddSetting<LOString>("Exports", 2);
-            AddSetting<LOString>("anotherRandom", 2);
+            //AddSetting<LODebug>("Exports", 2);
+            //AddSetting<LOString>("Exports", 2);
+            //AddSetting<LOString>("anotherRandom", 2);
 
         }
 

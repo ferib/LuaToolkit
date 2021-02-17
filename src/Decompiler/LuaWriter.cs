@@ -30,6 +30,8 @@ namespace LuaSharpVM.Decompiler
 
         private void WriteFile()
         {
+            // Get function names from root
+            var names = GetFunctionNames();
             for (int i = 0; i < this.Decoder.File.Function.Functions.Count; i++)
             {
                 WriteFunction(this.Decoder.File.Function.Functions[i], 1);
@@ -41,7 +43,7 @@ namespace LuaSharpVM.Decompiler
                 f.Complete();
         }
 
-        private void WriteFunction(LuaFunction func, int dpth = 0)
+        private void WriteFunction(LuaFunction func, int dpth = 0, string name = "")
         {
             // TODO: move header in LuaScriptFunction class
             string funcName = "";
@@ -51,6 +53,9 @@ namespace LuaSharpVM.Decompiler
 
             if (dpth == 0)
                 funcName = null; // destroy header on root
+
+            if (funcName != null)
+                funcName = name; // TODO: remp fix, cleanup soonTM
 
             LuaScriptFunction newFunction = new LuaScriptFunction(funcName, args, ref func, ref this.Decoder);
             this.LuaFunctions.Add(newFunction);
@@ -64,6 +69,31 @@ namespace LuaSharpVM.Decompiler
                     Depth = dpth+1
                 });
             }
+        }
+
+        private List<string> GetFunctionNames()
+        {
+            List<string> names = new List<string>();
+            List<LuaInstruction> upvalues = new List<LuaInstruction>();
+
+            for(int i = 0; i < this.Decoder.File.Function.Instructions.Count; i++)
+            {
+                var instr = this.Decoder.File.Function.Instructions[i];
+                switch(instr.OpCode)
+                {
+                    case LuaOpcode.CLOSURE:
+                        string f = this.Decoder.File.Function.Constants[instr.Bx].ToString();
+                        int j = i - 1;
+                        //while(j >= 0)
+                        //{
+                        //    if(this.Decoder.File.Function.Instructions[j].OpCode != LuaOpcode.S)
+                        //}
+                        names.Add(f.Substring(1, f.Length - 2));
+                        break;
+                }
+            }
+
+            return names;
         }
 
         private string GetScript()
