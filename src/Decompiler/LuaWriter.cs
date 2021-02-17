@@ -31,10 +31,11 @@ namespace LuaSharpVM.Decompiler
         private void WriteFile()
         {
             // Get function names from root
-            var names = GetFunctionNames();
+            //var names = GetFunctionNames();
             for (int i = 0; i < this.Decoder.File.Function.Functions.Count; i++)
             {
-                WriteFunction(this.Decoder.File.Function.Functions[i], 1, names[i].Key, names[i].Value);
+                WriteFunction(this.Decoder.File.Function.Functions[i], 1);
+                //WriteFunction(this.Decoder.File.Function.Functions[i], 1, names[i].Key, names[i].Value);
             }
             WriteFunction(this.Decoder.File.Function);
 
@@ -89,6 +90,8 @@ namespace LuaSharpVM.Decompiler
 
         private List<KeyValuePair<string, bool>> GetFunctionNames()
         {
+            // NOTE: moving to LuaScriptFunction.HandleUpvalues()!!!
+            // TODO: move this over to NOT ONLY the root function!!
             List<KeyValuePair<string, bool>> names = new List<KeyValuePair<string, bool>>();
 
             // NOTE: Global functions use GETGLOBAL to get first parts, then
@@ -129,7 +132,21 @@ namespace LuaSharpVM.Decompiler
                         {
                             if (this.Decoder.File.Function.Instructions[j].OpCode == LuaOpcode.CLOSURE)
                                 break; // meh
-                            if (this.Decoder.File.Function.Instructions[j].OpCode == LuaOpcode.SETTABLE)
+
+                            if (this.Decoder.File.Function.Instructions[j].OpCode == LuaOpcode.MOVE)
+                            {
+                                // upvalues!
+                                if(this.Decoder.File.Function.Instructions[j].A == 0) // 0 = _ENV
+                                {
+                                    LuaConstant cons;
+                                    //if (this.Decoder.File.Function.Constants.Count > this.Decoder.File.Function.Instructions[j].B)
+                                    //    cons = this.Decoder.File.Function.Constants[this.Decoder.File.Function.Instructions[j].B];
+                                    //else
+                                        cons = new StringConstant("unknown" + this.Decoder.File.Function.Instructions[j].B);
+                                    this.Decoder.File.Function.Upvalues.Add(cons);
+                                }
+                            }
+                            else if (this.Decoder.File.Function.Instructions[j].OpCode == LuaOpcode.SETTABLE)
                             {
                                 isGlobal = true;
                                 name = this.Decoder.File.Function.Constants[this.Decoder.File.Function.Instructions[j].C].ToString();

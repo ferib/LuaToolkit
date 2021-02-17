@@ -85,6 +85,7 @@ namespace LuaSharpVM.Decompiler
                     this.Op1 = WriteIndex(Instr.A);
                     this.Op2 = " = ";
                     this.Op3 = $"upvalue[{Instr.B}]";
+                    //this.Func.Get
                     break;
                 case LuaOpcode.GETGLOBAL:
                     this.Op1 = $"{WriteIndex(Instr.A)} = _G[";

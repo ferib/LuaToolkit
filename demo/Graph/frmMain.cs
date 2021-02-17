@@ -51,6 +51,9 @@ namespace Graph
             if (activeGraph == null)
                 return;
 
+            if (lstFuncs.SelectedIndex == -1)
+                return; // this happens when u miss-click
+
             if (activeGraph.Writer.LuaFunctions.Count < lstFuncs.SelectedIndex)
                 return;
             activeGraph.TargetFunc = lstFuncs.SelectedIndex;

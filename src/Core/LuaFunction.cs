@@ -1,4 +1,5 @@
 ﻿using LuaSharpVM.Disassembler;
+using LuaSharpVM.Decompiler;
 using LuaSharpVM.Models;
 using System.Collections.Generic;
 
@@ -20,6 +21,7 @@ namespace LuaSharpVM.Core
         public List<int> DebugLines;
         public List<LuaLocal> DebugLocals;
         public List<string> DebugUpvalues;
+        public LuaScriptFunction ScriptFunction;
 
         public LuaFunction()
         {

@@ -32,6 +32,7 @@ namespace LuaSharpVM.Decompiler
             this.Name = name;
             this.Args = args;
             this.Func = func;
+            this.Func.ScriptFunction = this; // reference this for lateron
             this.Decoder = decoder;
             this.Lines = new List<LuaScriptLine>();
             this.Blocks = new List<LuaScriptBlock>();
@@ -60,6 +61,35 @@ namespace LuaSharpVM.Decompiler
             if (this.Name == "") // unknonw
                 return "unknown" + Decoder.File.Function.Functions.IndexOf(Func);
             return this.Name;
+        }
+
+        public LuaFunction GetParentFunction()
+        {
+            if(this.Decoder.File.Function == this.Func)
+                return null; // we root already
+
+            return FindParentFunction(this.Decoder.File.Function);
+        }
+
+        private LuaFunction FindParentFunction(LuaFunction function)
+        {
+            // NOTE: recursive, always nice to stackoverflow
+
+            // check if any the functions matches us
+            var target = function.Functions.IndexOf(this.Func);
+            if (target != -1)
+                return function;
+            else if (function == this.Func)
+                return null; // returns itself?
+
+            // no match? continue search
+            if (function.Functions.Count > 0)
+            {
+                var res = FindParentFunction(function);
+                if (res != null)
+                    return res; // parent
+            }
+            return null;
         }
 
 
@@ -174,34 +204,93 @@ namespace LuaSharpVM.Decompiler
 
         }
 
-        private void SetUpvalues()
+        private void HandleUpvalues()
         {
-            // TODO: set upvalues for functions defined in functions?
+            LuaFunction parent = GetParentFunction();
+            if (parent == null)
+                return; // we in root UwU
 
-            //// iterate instructions and set upvalues
-            //Dictionary<int, int> UpvalueConstants = new Dictionary<int, int>();
-            //for (int i = 0; i < this.Lines.Count; i++)
-            //{
-            //    var instr = this.Lines[i].Instr;
-            //    switch(instr.OpCode)
-            //    {
-            //        case LuaOpcode.SETUPVAL:
-            //            if (!UpvalueConstants.ContainsKey(instr.A))
-            //                UpvalueConstants.Add(instr.A, instr.B); // idk..
-            //            break;
-            //        case LuaOpcode.GETUPVAL:
-            //            //if (instr.B == 0)
-            //            //    this.Lines[i].Op3 = "self()";
-            //            //else
-            //            //    this.Lines[i].Op3 = this.Func.Constants[instr.B].ToString();
-            //            break;
-            //    }
-            //}
+            int functionIndex = parent.Functions.IndexOf(this.Func);
+            for (int i = 0; i < parent.Instructions.Count; i++)
+            {
+                var instr = parent.Instructions[i];
+                switch (instr.OpCode)
+                {
+                    case LuaOpcode.CLOSURE:
+                        if (instr.Bx != functionIndex)
+                            break;
+
+                        string globalName = "";
+                        this.IsLocal = true;
+                        int j = i - 1;
+                        // Find GETGLOBAL
+                        while (j >= 0)
+                        {
+                            if (parent.Instructions[j].OpCode == LuaOpcode.CLOSURE)
+                                break; // start of another closure
+
+                            if (parent.Instructions[j].OpCode == LuaOpcode.GETGLOBAL)
+                            {
+                                globalName = parent.Constants[j].ToString();
+                                globalName = globalName.Substring(1, globalName.Length - 2);
+                                break; // job's done
+                            }
+                            j++;
+                        }
+
+                        j = i + 1;
+                        // Find SETTABLE
+                        while (j < parent.Instructions.Count)
+                        {
+                            if (parent.Instructions[j].OpCode == LuaOpcode.CLOSURE)
+                                break; // meh
+
+                            if (parent.Instructions[j].OpCode == LuaOpcode.MOVE)
+                            {
+                                // upvalues!
+                                if (parent.Instructions[j].A == 0) // 0 = _ENV
+                                {
+                                    // TODO
+                                    LuaConstant cons;
+                                    cons = new StringConstant("unknown" + parent.Instructions[j].B);
+                                    this.Func.Upvalues.Add(cons);
+                                }
+                            }
+                            else if (parent.Instructions[j].OpCode == LuaOpcode.SETTABLE)
+                            {
+                                this.IsLocal = false;
+                                this.Name = parent.Constants[parent.Instructions[j].C].ToString();
+                                this.Name = this.Name.Substring(1, this.Name.Length - 2);
+                                break; // job's done
+                            }
+                            else if (parent.Instructions[j].OpCode == LuaOpcode.SETGLOBAL)
+                            {
+                                // is global!
+                                this.IsLocal = false;
+                                this.Name = parent.Constants[parent.Instructions[j].C].ToString();
+                                this.Name = this.Name.Substring(1, this.Name.Length - 2);
+                                break;
+                            }
+                            j++;
+                        }
+
+                        if (globalName != "")
+                            this.Name = globalName + ":" + this.Name;
+
+                        break;
+                    case LuaOpcode.SETUPVAL:
+                        // TODO:
+                        var test2 = instr.Bx;
+                        break;
+                }
+            }
+            //parent.ScriptFunction.Get
+            //parent.get
         }
 
         public void Complete()
         {
-            SetUpvalues();
+            HandleUpvalues();
             GenerateBlocks();
         }
 
