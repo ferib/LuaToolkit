@@ -220,7 +220,7 @@ namespace Graph
 
                 GBlocks.Add(new GraphBlock(b, this.Width, this.Height));
             }
-            GraphBlock.BlocksHeightOffset /= 2; // TODO: find out why its multiplied by two 
+            //GraphBlock.BlocksHeightOffset /= 2; // TODO: find out why its multiplied by two 
         }
 
         private void CreateArrows()

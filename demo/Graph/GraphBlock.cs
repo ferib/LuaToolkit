@@ -104,7 +104,7 @@ namespace Graph
         public void ApplyHeightOffset(int newHeight)
         {
             // rebase blocks
-            GraphBlock.BlocksHeightOffset -= this.BlockHeight;
+            GraphBlock.BlocksHeightOffset -= this.BlockHeight; // dafuq?
             GraphBlock.BlocksHeightOffset += newHeight;
             this.BlockHeight = newHeight;
             BoundryBox.Top += GraphBlock.BlocksHeightOffset;

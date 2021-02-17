@@ -43,11 +43,11 @@ namespace LuaSharpVM.Decompiler
                 return "-- root file\n\r";
 
             string args = "(";
-            for(int i = 0; i < this.Args.Count; i++)
+            for (int i = 0; i < this.Args.Count; i++)
             {
                 args += this.Args[i];
                 if (i < this.Args.Count - 1)
-                    args += ", "; 
+                    args += ", ";
             }
             args += ")";
             return (this.IsLocal ? "local" : "") + $"function {GetName()}{args}\n\r";
@@ -59,16 +59,16 @@ namespace LuaSharpVM.Decompiler
                 return Func.Name;
             return this.Name;
         }
-        
+
 
         private void GenerateBlocks()
         {
             int index = 0;
             this.Blocks.Clear();
-            while(index < this.Lines.Count)
-            { 
+            while (index < this.Lines.Count)
+            {
                 LuaScriptBlock b = new LuaScriptBlock(index, ref this.Decoder, ref this.Func);
-                while(index < this.Lines.Count)
+                while (index < this.Lines.Count)
                 {
                     if (b.AddScriptLine(this.Lines[index]))
                         break;
@@ -85,7 +85,7 @@ namespace LuaSharpVM.Decompiler
                 if (this.Blocks[i].JumpsTo == -1)
                     continue;
                 var targets = this.Blocks.FindAll(x => x.HasLineNumber(this.Blocks[i].JumpsTo));
-                if(targets.Count > 0)
+                if (targets.Count > 0)
                     BlockSplitLines.Add(new KeyValuePair<int, int>(this.Blocks.FindIndex(x => x.StartAddress == targets[0].StartAddress), this.Blocks[i].JumpsTo));
                 //foreach (var tb in targets)
                 //    BlockSplitLines.Add(new KeyValuePair<int, int>(this.Blocks.FindIndex(x => x.StartAddress == tb.StartAddress), i));
@@ -103,17 +103,17 @@ namespace LuaSharpVM.Decompiler
                     continue; // been there, done that
 
                 LuaScriptBlock splitBlock = new LuaScriptBlock(BlockSplitLines[i].Value, ref this.Decoder, ref this.Func);
-                for(int j = BlockSplitLines[i].Value - this.Blocks[BlockSplitLines[i].Key].StartAddress; j < this.Blocks[BlockSplitLines[i].Key].Lines.Count; j++)
+                for (int j = BlockSplitLines[i].Value - this.Blocks[BlockSplitLines[i].Key].StartAddress; j < this.Blocks[BlockSplitLines[i].Key].Lines.Count; j++)
                     splitBlock.Lines.Add(this.Blocks[BlockSplitLines[i].Key].Lines[j]); // copy from old to new
-                
+
                 // delete old lines
-                if(splitBlock.Lines.Count > 0)
+                if (splitBlock.Lines.Count > 0)
                     this.Blocks[BlockSplitLines[i].Key].Lines.RemoveRange(BlockSplitLines[i].Value - this.Blocks[BlockSplitLines[i].Key].StartAddress, splitBlock.Lines.Count);
 
-                this.Blocks.Insert(BlockSplitLines[i].Key+1, splitBlock); // insert new block after modified one
+                this.Blocks.Insert(BlockSplitLines[i].Key + 1, splitBlock); // insert new block after modified one
                 // update BlockSplitLines indexing
                 for (int j = i + 1; j < BlockSplitLines.Count; j++)
-                    BlockSplitLines[j] = new KeyValuePair<int, int>(BlockSplitLines[j].Key+1, BlockSplitLines[j].Value); // offset
+                    BlockSplitLines[j] = new KeyValuePair<int, int>(BlockSplitLines[j].Key + 1, BlockSplitLines[j].Value); // offset
             }
             // fix JumpsTo and JumpsNext ?
             this.Blocks.OrderBy(x => x.StartAddress);
@@ -146,7 +146,7 @@ namespace LuaSharpVM.Decompiler
                             break;
                         case LuaOpcode.JMP: // pc++
                             // check previous condition
-                            if(this.Blocks[i].Lines.Count > 1 && this.Blocks[i].Lines[this.Blocks[i].Lines.Count-2].IsCondition()) // check for IF
+                            if (this.Blocks[i].Lines.Count > 1 && this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 2].IsCondition()) // check for IF
                             {
                                 // if/test/testset
                                 this.Blocks[i].JumpsTo = (this.Blocks[i].StartAddress + this.Blocks[i].Lines.Count - 1) + (short)this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Instr.sBx + 1; // TODO: verify math
@@ -172,8 +172,32 @@ namespace LuaSharpVM.Decompiler
 
         }
 
+        private void SetUpvalues()
+        {
+            // iterate instructions and set upvalues
+            Dictionary<int, int> UpvalueConstants = new Dictionary<int, int>();
+            for (int i = 0; i < this.Lines.Count; i++)
+            {
+                var instr = this.Lines[i].Instr;
+                switch(instr.OpCode)
+                {
+                    case LuaOpcode.SETUPVAL:
+                        if (!UpvalueConstants.ContainsKey(instr.A))
+                            UpvalueConstants.Add(instr.A, instr.B); // idk..
+                        break;
+                    case LuaOpcode.GETUPVAL:
+                        //if (instr.B == 0)
+                        //    this.Lines[i].Op3 = "self()";
+                        //else
+                        //    this.Lines[i].Op3 = this.Func.Constants[instr.B].ToString();
+                        break;
+                }
+            }
+        }
+
         public void Complete()
         {
+            SetUpvalues();
             GenerateBlocks();
         }
 
