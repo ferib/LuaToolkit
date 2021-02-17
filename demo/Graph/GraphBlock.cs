@@ -60,14 +60,14 @@ namespace Graph
             BoundryBox.Left = frmWidth / 2; // start center?
             BoundryBox.Top = 30 - (Block.Lines.Count * 7); // start center?
             //BoundryBox.Top = 30 - (Block.Lines[Block.Lines.Count-2].Text.Length * 7); // start center?
-            BoundryBox.Bottom = 30 + (Block.Lines.Count * 7); // start center?
+            BoundryBox.Bottom = 30 + (Block.Lines.Count * 8); // start center?
             //BoundryBox.Bottom = 30 + (Block.Lines[Block.Lines.Count - 2].Text.Length * 7); // start center?
             int longestData = 0;
             BlockInnerString = "";
             foreach (var b in Block.Lines)
             {
                 string data = b.Text.Replace("\t", "");
-                if (data.Length > longestData)
+                if (data.Length > longestData || (data.Length == 0 && Block.Lines.Count == 1))
                 {
                     BoundryBox.Left = (frmWidth / 2) - (data.Length * 3) - 2; // move to left
                     BoundryBox.Right = (frmWidth / 2) + (data.Length * 4) + 1; // mov to right
@@ -113,6 +113,7 @@ namespace Graph
 
         public bool IsVisible(int width, int height)
         {
+            // TODO: bugfix
             return this.BoundryBox.Top - LastGraphY < height || this.BoundryBox.Bottom - LastGraphY < 0;
             //|| this.BoundryBox.Left - LastGraphX < 0 || this.BoundryBox.Right - LastGraphX < width; // TODO: fix this when im sober again
         }

@@ -182,7 +182,7 @@ namespace LuaSharpVM.Decompiler
             if (_text != null)
                 return _text; // stores end results
 
-            string result = this.ToString();
+            string result = this.ToString() + "\n\r";
             result += GenerateCode();
             return result;
         }
@@ -197,7 +197,7 @@ namespace LuaSharpVM.Decompiler
                 for(int i = 0; i < this.Blocks[b].Lines.Count; i++)
                     result += (this.Blocks[b].StartAddress + i).ToString("0000") + $": {new string(' ',tabLevel)}" + this.Blocks[b].Lines[i].Text;
                 
-                result += new string('-', 50) + $" ({this.Blocks[b].JumpsTo}) \n\r";
+                result += new string('-', 50) + $" ({this.Blocks[b].JumpsTo}) \n\r\n\r";
                 if (b == this.Blocks.Count - 1)
                     result += "\n\r"; // keep it clean?
             }
