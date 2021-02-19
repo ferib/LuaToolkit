@@ -129,34 +129,34 @@ namespace LuaSharpVM.Decompiler
                     break;
                 case LuaOpcode.ADD: // NOTE these can be both variables and constants!
                     this.Op1 = WriteIndex(Instr.A);
-                    this.Op2 = $" = var{Instr.B}";
-                    this.Op3 = $" + var{Instr.C}";
+                    this.Op2 = $" = {WriteConstant(Instr.B)}";
+                    this.Op3 = $" + {WriteConstant(Instr.C)}";
                     break;
                 case LuaOpcode.SUB:
                     this.Op1 = WriteIndex(Instr.A);
-                    this.Op2 = $" = var{Instr.B}";
-                    this.Op3 = $" - var{Instr.C}";
+                    this.Op2 = $" = {WriteConstant(Instr.B)}";
+                    this.Op3 = $" - {WriteConstant(Instr.C)}";
                     break;
                 case LuaOpcode.MUL:
                     this.Op1 = WriteIndex(Instr.A);
-                    this.Op2 = $" = var{Instr.B}";
-                    this.Op3 = $" * var{Instr.C}";
+                    this.Op2 = $" = {WriteConstant(Instr.B)}";
+                    this.Op3 = $" * {WriteConstant(Instr.C)}";
                     break;
                 case LuaOpcode.DIV:
                     this.Op1 = WriteIndex(Instr.A);
-                    this.Op2 = $" = var{Instr.B}";
-                    this.Op3 = $" / var{Instr.C}";
+                    this.Op2 = $" = {WriteConstant(Instr.B)}";
+                    this.Op3 = $" / {WriteConstant(Instr.C)}";
                     break;
                 case LuaOpcode.MOD:
                     this.Op1 = WriteIndex(Instr.A);
-                    this.Op2 = $" = var{Instr.B}";
-                    this.Op3 = $" % var{Instr.C}";
+                    this.Op2 = $" = {WriteConstant(Instr.B)}";
+                    this.Op3 = $" % {WriteConstant(Instr.C)}";
                     break;
                 case LuaOpcode.POW:
                     this.Op1 = WriteIndex(Instr.A);
-                    this.Op2 = $" = var{Instr.B}";
+                    this.Op2 = $" = {WriteConstant(Instr.B)}";
                     //this.Op3 = $" ^ var{Instr.C}"; // not always?
-                    this.Op3 = $" ^ var{Instr.C}"; // not always?
+                    this.Op3 = $" ^ {WriteConstant(Instr.C)}"; // not always?
                     break;
                 case LuaOpcode.UNM:
                     this.Op1 = WriteIndex(Instr.A);
@@ -376,6 +376,16 @@ namespace LuaSharpVM.Decompiler
                 return "\"unk" + index.ToString() + "\""; // happends with local functions
 
             return this.Func.Constants[index].ToString();
+        }
+
+        private string WriteConstant(int index, LuaFunction targetFunc = null)
+        {
+            if (targetFunc == null)
+                targetFunc = this.Func; // self
+            if (index > 255 && targetFunc.Constants[index - 256] != null)
+                return targetFunc.Constants[index - 256].ToString();
+            else
+                return WriteIndex(index);
         }
 
         private string WriteIndex(int value)

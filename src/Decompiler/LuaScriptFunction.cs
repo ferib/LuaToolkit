@@ -358,11 +358,11 @@ namespace LuaSharpVM.Decompiler
             {
                 // print block content
                 for(int i = 0; i < this.Blocks[b].Lines.Count; i++)
-                    result += (this.Blocks[b].StartAddress + i).ToString("0000") + $": {new string(' ',tabLevel)}" + this.Blocks[b].Lines[i].Text;
+                    result += (this.Blocks[b].StartAddress + i).ToString("0000") + $": {new string(' ',tabLevel)}" + this.Blocks[b].Lines[i].Text.Replace("\t","");
                 
-                result += new string('-', 50) + $" ({this.Blocks[b].JumpsTo}) \n\r\n\r";
+                result += new string('-', 50) + $" ({this.Blocks[b].JumpsTo}) \r\n";
                 if (b == this.Blocks.Count - 1)
-                    result += "\n\r"; // keep it clean?
+                    result += "\r\n"; // keep it clean?
             }
             return result;
         }
