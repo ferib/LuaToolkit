@@ -268,7 +268,6 @@ namespace LuaSharpVM.Decompiler
                                     LuaConstant cons;
                                     cons = new StringConstant($"unknown{parent.Instructions[j].B}\0"); // NOTE: strip last character??
                                     this.Func.Upvalues.Add(cons);
-                                    this.IsLocal = false;
                                 }
                             }
                             else if (parent.Instructions[j].OpCode == LuaOpcode.SETTABLE)
