@@ -43,7 +43,7 @@
             this.fileToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Size = new System.Drawing.Size(716, 24);
+            this.menuStrip1.Size = new System.Drawing.Size(784, 24);
             this.menuStrip1.TabIndex = 0;
             this.menuStrip1.Text = "menuStrip1";
             // 
@@ -68,7 +68,7 @@
             this.lstFuncs.FormattingEnabled = true;
             this.lstFuncs.Location = new System.Drawing.Point(0, 24);
             this.lstFuncs.Name = "lstFuncs";
-            this.lstFuncs.Size = new System.Drawing.Size(168, 194);
+            this.lstFuncs.Size = new System.Drawing.Size(236, 194);
             this.lstFuncs.TabIndex = 1;
             this.lstFuncs.SelectedIndexChanged += new System.EventHandler(this.listBox1_SelectedIndexChanged);
             // 
@@ -76,7 +76,7 @@
             // 
             this.txtLuaCode.Dock = System.Windows.Forms.DockStyle.Right;
             this.txtLuaCode.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtLuaCode.Location = new System.Drawing.Point(174, 24);
+            this.txtLuaCode.Location = new System.Drawing.Point(242, 24);
             this.txtLuaCode.Multiline = true;
             this.txtLuaCode.Name = "txtLuaCode";
             this.txtLuaCode.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
@@ -87,7 +87,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(716, 218);
+            this.ClientSize = new System.Drawing.Size(784, 218);
             this.Controls.Add(this.txtLuaCode);
             this.Controls.Add(this.lstFuncs);
             this.Controls.Add(this.menuStrip1);

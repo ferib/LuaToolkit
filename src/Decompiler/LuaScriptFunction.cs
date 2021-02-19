@@ -258,23 +258,26 @@ namespace LuaSharpVM.Decompiler
                             if (parent.Instructions[j].OpCode == LuaOpcode.CLOSURE)
                                 break; // start of another closure
 
-                            if (parent.Instructions[j].OpCode == LuaOpcode.GETGLOBAL)
+                            if (parent.Instructions[j].OpCode == LuaOpcode.GETGLOBAL && parent.Instructions[i].A == parent.Instructions[j].A)
                             {
-                                globalName = parent.Constants[j].ToString();
+                                globalName = GetConstant(parent.Instructions[j].B);
                                 globalName = globalName.Substring(1, globalName.Length - 2);
                                 break; // job's done
                             }
-                            j++;
+                            j--;
                         }
 
                         j = i + 1;
                         // Find SETTABLE
+                        bool closure = false;
+                        int setTableIndex = -1;
                         while (j < parent.Instructions.Count)
                         {
                             if (parent.Instructions[j].OpCode == LuaOpcode.CLOSURE)
-                                break; // meh
+                                closure = true; // stop MOVEs after closure, keep going for settable/setglobal
 
-                            if (parent.Instructions[j].OpCode == LuaOpcode.MOVE)
+
+                            if (parent.Instructions[j].OpCode == LuaOpcode.MOVE && !closure)
                             {
                                 // upvalues!
                                 if (parent.Instructions[j].A == 0) // 0 = _ENV
@@ -287,17 +290,32 @@ namespace LuaSharpVM.Decompiler
                             }
                             else if (parent.Instructions[j].OpCode == LuaOpcode.SETTABLE)
                             {
-                                this.IsLocal = false;
-                                this.Name = parent.Constants[parent.Instructions[j].C].ToString();
-                                this.Name = this.Name.Substring(1, this.Name.Length - 2);
-                                break; // job's done
+                                // check the source and desitnation of the SETTABLE to find out both local and global name
+                                if(setTableIndex == -1 && parent.Instructions[i].A == parent.Instructions[j].C) // SETTABLE x y == CLOSURE y ?  
+                                {
+                                    // find first part of the table
+                                    this.IsLocal = false;
+                                    this.Name = GetConstant(parent.Instructions[j].B, parent).ToString();
+                                    this.Name = this.Name.Substring(1, this.Name.Length - 2);
+                                    closure = true;
+                                    setTableIndex = j; // src
+                                }
+                                else if(setTableIndex > -1 && parent.Instructions[setTableIndex].A == parent.Instructions[j].C)
+                                {
+                                    // find second part of the table, which is the root/global
+                                    globalName = GetConstant(parent.Instructions[j].B, parent).ToString();
+                                    globalName = globalName.Substring(1, globalName.Length - 2);
+                                    break;
+                                }
                             }
-                            else if (parent.Instructions[j].OpCode == LuaOpcode.SETGLOBAL)
+                            else if (parent.Instructions[j].OpCode == LuaOpcode.SETGLOBAL && !closure && parent.Instructions[i].A == parent.Instructions[j].A) // CLOSURE x ? == SETGLOBAL x ?
                             {
                                 // is global!
                                 this.IsLocal = false;
-                                this.Name = parent.Constants[parent.Instructions[j].C].ToString();
+                                this.Name = GetConstant(parent.Instructions[j].C, parent).ToString();
+                                //this.Name = parent.Constants[parent.Instructions[j].C].ToString();
                                 this.Name = this.Name.Substring(1, this.Name.Length - 2);
+                                closure = true;
                                 break;
                             }
                             j++;
@@ -328,7 +346,7 @@ namespace LuaSharpVM.Decompiler
                 return _text; // stores end results
 
             string result = this.ToString();
-            result += GenerateCodeFlat();
+            result += GenerateCode();
             return result;
         }
 
@@ -349,10 +367,19 @@ namespace LuaSharpVM.Decompiler
             return result;
         }
 
+        private string GetConstant(int index, LuaFunction targetFunc = null)
+        {
+            if (targetFunc == null)
+                targetFunc = this.Func; // self
+            if (index > 255 && targetFunc.Constants[index - 256] != null)
+                return targetFunc.Constants[index - 256].ToString();
+            else
+                return targetFunc.Constants[index].ToString();
+        }
+
         private string GenerateCodeFlat()
         {
             string result = "";
-            int tabLevel = 0;
             for (int b = 0; b < this.Blocks.Count; b++)
             {
                 for (int i = 0; i < this.Blocks[b].Lines.Count; i++)
@@ -378,7 +405,7 @@ namespace LuaSharpVM.Decompiler
                 //string[] moreLines = lines[i].Split(';');	
                 bool postAdd = false;
                 bool postSub = false;
-                if (lines[i].StartsWith("if") || lines[i].StartsWith("function") || lines[i].StartsWith("for"))
+                if (lines[i].StartsWith("if") || lines[i].StartsWith("function") || lines[i].StartsWith("local function") || lines[i].StartsWith("for"))
                     postAdd = true;
                 else if (lines[i].StartsWith("else"))
                 {

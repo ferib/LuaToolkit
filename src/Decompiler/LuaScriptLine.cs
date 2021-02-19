@@ -127,7 +127,7 @@ namespace LuaSharpVM.Decompiler
                     // TODO fix, multiline?
                     this.NumberEnd++;
                     break;
-                case LuaOpcode.ADD:
+                case LuaOpcode.ADD: // NOTE these can be both variables and constants!
                     this.Op1 = WriteIndex(Instr.A);
                     this.Op2 = $" = var{Instr.B}";
                     this.Op3 = $" + var{Instr.C}";
@@ -155,7 +155,8 @@ namespace LuaSharpVM.Decompiler
                 case LuaOpcode.POW:
                     this.Op1 = WriteIndex(Instr.A);
                     this.Op2 = $" = var{Instr.B}";
-                    this.Op3 = $" ^ var{Instr.C}";
+                    //this.Op3 = $" ^ var{Instr.C}"; // not always?
+                    this.Op3 = $" ^ var{Instr.C}"; // not always?
                     break;
                 case LuaOpcode.UNM:
                     this.Op1 = WriteIndex(Instr.A);
