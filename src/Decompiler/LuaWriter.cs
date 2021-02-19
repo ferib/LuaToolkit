@@ -48,9 +48,6 @@ namespace LuaSharpVM.Decompiler
         {
             // TODO: move header in LuaScriptFunction class
             string funcName = "";
-            List<string> args = new List<string>();
-            for (int i = 0; i < func.ArgsCount; i++)
-                args.Add($"var{i}");
 
             if (dpth == 0)
                 funcName = null; // destroy header on root
@@ -58,7 +55,7 @@ namespace LuaSharpVM.Decompiler
             if (funcName != null)
                 funcName = name; // TODO: remp fix, cleanup soonTM
 
-            LuaScriptFunction newFunction = new LuaScriptFunction(funcName, args, ref func, ref this.Decoder);
+            LuaScriptFunction newFunction = new LuaScriptFunction(funcName, func.ArgsCount, ref func, ref this.Decoder);
             this.LuaFunctions.Add(newFunction);
             // TODO: move the above into a LuaScriptHeader or smthing
 

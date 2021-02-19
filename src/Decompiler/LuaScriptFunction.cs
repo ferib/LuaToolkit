@@ -15,10 +15,12 @@ namespace LuaSharpVM.Decompiler
         private LuaFunction Func;
         private string Name;
         public bool IsLocal = false;
-        private List<string> Args;
+        private List<int> Args;
+        private List<string> NameArgs;
         public List<LuaScriptLine> Lines;
 
         public List<LuaScriptBlock> Blocks;
+        public List<int> UsedLocals;
 
         private string _text;
 
@@ -27,16 +29,29 @@ namespace LuaSharpVM.Decompiler
             get { return GetText(); }
         }
 
-        public LuaScriptFunction(string name, List<string> args, ref LuaFunction func, ref LuaDecoder decoder)
+        public LuaScriptFunction(string name, int argsCount, ref LuaFunction func, ref LuaDecoder decoder)
         {
             this.Name = name;
-            this.Args = args;
             this.Func = func;
             this.Func.ScriptFunction = this; // reference this for lateron
             this.Decoder = decoder;
             this.Lines = new List<LuaScriptLine>();
             this.Blocks = new List<LuaScriptBlock>();
+            this.UsedLocals = new List<int>();
+            InitArgs(argsCount);
+            this.UsedLocals.AddRange(this.Args);
             HandleUpvalues(); // get upvalues from parent
+        }
+
+        private void InitArgs(int count)
+        {
+            this.Args = new List<int>();
+            this.NameArgs = new List<string>();
+            for (int i = 0; i < count; i++)
+            {
+                this.Args.Add(i);
+                this.NameArgs.Add($"var{i}");
+            }
         }
 
         public override string ToString()
@@ -45,10 +60,10 @@ namespace LuaSharpVM.Decompiler
                 return "-- root file\n\r";
 
             string args = "(";
-            for (int i = 0; i < this.Args.Count; i++)
+            for (int i = 0; i < this.NameArgs.Count; i++)
             {
-                args += this.Args[i];
-                if (i < this.Args.Count - 1)
+                args += this.NameArgs[i];
+                if (i < this.NameArgs.Count - 1)
                     args += ", ";
             }
             args += ")";

@@ -77,8 +77,11 @@ namespace LuaSharpVM.Decompiler
                 case LuaOpcode.LOADNIL:
                     for (int i = Instr.A; i < Instr.B + 1; ++i)
                     {
-                        this.Op2 += $"{WriteIndex(i)} = nil; "; // TODO: turn into new class? Nah, just beatify afterwards..
-                        this.NumberEnd++;
+                        this.Op2 += $"{WriteIndex(i)} = nil; "; // NOTE: wont conflict with 'local' keyword?
+
+                        //this.Op2 += $"{WriteIndex(i)}"; // NOTE: keep it clean? (TODO: figure out 'local' keyword)
+                        //if (i < Instr.B - 1)
+                        //    this.Op2 += ", "; // inline
                     }
                     break;
                 case LuaOpcode.GETUPVAL:
@@ -384,7 +387,14 @@ namespace LuaSharpVM.Decompiler
             else
             {
                 // TODO: check if local and not yet used!
-                return "var" + index;
+                if(this.Func.ScriptFunction.UsedLocals.Contains(value))
+                    return "var" + index;
+                else
+                {
+                    this.Func.ScriptFunction.UsedLocals.Add(value);
+                    return "local var" + index;
+                }
+                    
             }
         }
 
