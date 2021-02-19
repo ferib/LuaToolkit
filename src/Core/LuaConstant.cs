@@ -69,7 +69,12 @@ namespace LuaSharpVM.Core
         public override string ToString()
         {
             // substring to avoid printing out NULL character
-            return '\"' + Value.Substring(0, Value.Length - 1) + '\"'; // TODO: strip special characters & evade \' \" conflicts
+            // TODO: strip special characters
+            // string safeValue = Value.Replace("\\", "\\\\"); // figure this one out
+            if (Value.Contains("\'"))
+                return '\"' + Value.Substring(0, Value.Length - 1) + '\"';
+            else
+                return '\'' + Value.Substring(0, Value.Length - 1) + '\'';
         }
     }
 }
