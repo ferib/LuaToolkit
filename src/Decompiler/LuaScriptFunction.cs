@@ -319,6 +319,7 @@ namespace LuaSharpVM.Decompiler
         public void Complete()
         {
             GenerateBlocks();
+            Realign(); // complete?
         }
 
         public string GetText()
@@ -363,6 +364,60 @@ namespace LuaSharpVM.Decompiler
                     result += "\n\r"; // keep it clean?
             }
             return result;
+        }
+
+        private void Realign()
+        {
+            // text based because we did wanky things instead of respecting the list	
+            _text = GetText();
+            int tabCount = 1;
+            string[] lines = Text.Replace("\r", "").Replace("\t", "").Split('\n');
+            string newText = "";
+            for (int i = 0; i < lines.Length; i++)
+            {
+                //string[] moreLines = lines[i].Split(';');	
+                bool postAdd = false;
+                bool postSub = false;
+                if (lines[i].StartsWith("if") || lines[i].StartsWith("function") || lines[i].StartsWith("for"))
+                    postAdd = true;
+                else if (lines[i].StartsWith("else"))
+                {
+                    if (i < lines.Length - 1 && lines[i + 1].StartsWith("if"))
+                    {
+                        // elseif	
+                        newText += $"{new string('\t', tabCount - 1)}{lines[i]}{lines[i + 1]}\n\r";
+                        i += 1; // brrrr fuck y'all, i skip next one this way!	
+                        continue;
+                    }
+                    else
+                    {
+                        // else	
+                        tabCount -= 1;
+                        postAdd = true;
+                    }
+                }
+                else if (lines[i].StartsWith("end"))
+                    tabCount -= 1;
+
+                if (tabCount < 0)
+                    tabCount = 0;
+
+                if (lines[i].StartsWith("if"))
+                    newText += $"{new string('\t', tabCount)}{lines[i]}";
+                else if (lines[i].EndsWith("or") || lines[i].EndsWith("and") || lines[i].StartsWith(" not"))
+                    newText += $"{lines[i]}";
+                else
+                    newText += $"{new string('\t', tabCount)}{lines[i]}\n\r";
+
+                if (lines[i].EndsWith("then"))
+                    newText += "\n\r";
+
+                if (postAdd)
+                    tabCount += 1;
+                if (postSub)
+                    tabCount -= 1;
+            }
+            _text = newText;
         }
     }
 

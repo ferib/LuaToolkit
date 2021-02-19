@@ -71,10 +71,10 @@ namespace LuaSharpVM.Core
             // substring to avoid printing out NULL character
             // TODO: strip special characters
             // string safeValue = Value.Replace("\\", "\\\\"); // figure this one out
-            if (Value.Contains("\'"))
-                return '\"' + Value.Substring(0, Value.Length - 1) + '\"';
-            else
+            if (Value.Contains("\""))
                 return '\'' + Value.Substring(0, Value.Length - 1) + '\'';
+            else
+                return '\"' + Value.Substring(0, Value.Length - 1) + '\"';
         }
     }
 }
