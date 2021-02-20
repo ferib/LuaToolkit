@@ -83,7 +83,7 @@ namespace LuaSharpVM.Decompiler
             return this.StartAddress < index && index < this.StartAddress + this.lines.Count;
         }
 
-        public LuaScriptLine GetConditionLine() // second last line
+        public LuaScriptLine GetBranchLine() // second last line
         {
             if (this.Lines.Count > 0)
             {
@@ -96,7 +96,7 @@ namespace LuaSharpVM.Decompiler
             return null;
         }
 
-        public LuaScriptLine GetBranchLine() // last line
+        public LuaScriptLine GetConditionLine() // last line
         {
             if (this.Lines.Count > 1)
             {

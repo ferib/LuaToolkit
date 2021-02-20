@@ -175,6 +175,7 @@ namespace LuaSharpVM.Decompiler
                 for (int j = i + 1; j < BlockSplitLines.Count; j++)
                     BlockSplitLines[j] = new KeyValuePair<int, int>(BlockSplitLines[j].Key + 1, BlockSplitLines[j].Value); // offset
             }
+
             // fix JumpsTo and JumpsNext ?
             this.Blocks.OrderBy(x => x.StartAddress);
             for (int i = 0; i < this.Blocks.Count; i++)
@@ -190,8 +191,8 @@ namespace LuaSharpVM.Decompiler
                     continue;
                 }
                 // Conditions without JMP
-
                 if (this.Blocks[i].Lines.Count > 0)
+                {
                     switch (this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Instr.OpCode)
                     {
                         // TODO: check which instructions dont pick the next one
@@ -224,12 +225,44 @@ namespace LuaSharpVM.Decompiler
                             this.Blocks[i].JumpsNext = this.Blocks[i + 1].StartAddress;
                             break;
                     }
-                else
-                {
-                    var qwe = 123;
                 }
             }
 
+            // place end in the -1 blocks
+            for(int i = 1; i < this.Blocks.Count; i++)
+            {
+                // EVERY block has and END!
+                // place end if i-1 != FORPREP
+                // place end at FORLOOP (and TFORLOOP)
+                LuaScriptLine pcLine; // previous Condition Line
+                LuaScriptLine cLine; // Condition Line
+                var bLine = this.Blocks[i].GetBranchLine();
+                if(bLine != null)
+                    switch (bLine.Instr.OpCode)
+                    {
+                        case LuaOpcode.JMP: // TODO: fix single line ifs?
+                            var dest = this.Blocks.FindIndex(x => x.StartAddress == this.Blocks[i].JumpsTo);
+                            //this.Blocks[dest - 1].GetBranchLine().Op3 += " -- END";
+                            this.Blocks[dest - 1].GetBranchLine().Op3 += "\r\nend";
+                            break;
+                        case LuaOpcode.FORLOOP:
+                        case LuaOpcode.TFORLOOP:
+                            //this.Blocks[dest - 1].GetBranchLine().Op3 += " -- END";
+                            this.Blocks[i].GetBranchLine().Op3 += "\r\nend";
+                            break;
+                    }
+            }
+        }
+
+        // NOTE: OO?
+        private string GetConstant(int index, LuaFunction targetFunc = null)
+        {
+            if (targetFunc == null)
+                targetFunc = this.Func; // self
+            if (index > 255 && targetFunc.Constants[index - 256] != null)
+                return targetFunc.Constants[index - 256].ToString();
+            else
+                return targetFunc.Constants[index].ToString();
         }
 
         private void HandleUpvalues()
@@ -313,7 +346,6 @@ namespace LuaSharpVM.Decompiler
                                 // is global!
                                 this.IsLocal = false;
                                 this.Name = GetConstant(parent.Instructions[j].C, parent).ToString();
-                                //this.Name = parent.Constants[parent.Instructions[j].C].ToString();
                                 this.Name = this.Name.Substring(1, this.Name.Length - 2);
                                 closure = true;
                                 break;
@@ -346,7 +378,11 @@ namespace LuaSharpVM.Decompiler
                 return _text; // stores end results
 
             string result = this.ToString();
+#if DEBUG
             result += GenerateCode();
+#else
+            result += GenerateCodeFlat();
+#endif
             return result;
         }
 
@@ -367,16 +403,6 @@ namespace LuaSharpVM.Decompiler
             return result;
         }
 
-        private string GetConstant(int index, LuaFunction targetFunc = null)
-        {
-            if (targetFunc == null)
-                targetFunc = this.Func; // self
-            if (index > 255 && targetFunc.Constants[index - 256] != null)
-                return targetFunc.Constants[index - 256].ToString();
-            else
-                return targetFunc.Constants[index].ToString();
-        }
-
         private string GenerateCodeFlat()
         {
             string result = "";
@@ -384,7 +410,7 @@ namespace LuaSharpVM.Decompiler
             {
                 for (int i = 0; i < this.Blocks[b].Lines.Count; i++)
                 {
-                    result += this.Blocks[b].Lines[i].Text;
+                    result += this.Blocks[b].Lines[i].Text.Replace("\t","");
                 }
                
                 if (b == this.Blocks.Count - 1)

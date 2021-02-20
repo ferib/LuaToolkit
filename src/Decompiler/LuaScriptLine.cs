@@ -297,7 +297,7 @@ namespace LuaSharpVM.Decompiler
                     // A+1: max 
                     // A+2: +=
                     // A+3: external index
-                    this.Op1 = $"for {WriteIndex(Instr.A + 3)}={WriteIndex(Instr.A)},{WriteIndex(Instr.A + 1)},{WriteIndex(Instr.A + 2)} do";
+                    this.Op1 = $"for {WriteIndex(Instr.A + 3, false)}={WriteIndex(Instr.A)}, {WriteIndex(Instr.A + 1)}, {WriteIndex(Instr.A + 2)} do";
                     break;
                 case LuaOpcode.TFORLOOP:
                     this.Op1 = WriteIndex(Instr.A + 1) + ", " + WriteIndex(Instr.A + 2); // state
@@ -327,15 +327,6 @@ namespace LuaSharpVM.Decompiler
                     this.Op1 = $"{WriteIndex(Instr.A)}";
                     this.Op2 = " = ";
                     this.Op3 = $"{WriteIndex(Instr.Bx)}";
-                    //this.Op3 = GetConstant(Instr.Bx).Substring(1, GetConstant(Instr.Bx).Length - 2);
-                    //// set function in decoder, go by un named
-                    //for(int i = 0; i < this.Func.Functions.Count; i++)
-                    //    if(this.Func.Functions[i].Name == "")
-                    //    {
-                    //        this.Func.Functions[i].Name = this.Op3;
-                    //        break;
-                    //    }
-
                     break;
                 case LuaOpcode.VARARG:
                     // TODO: this.Op1 = "..."; // B > 1 for fixed range, B 0 for unspecified
@@ -345,7 +336,6 @@ namespace LuaSharpVM.Decompiler
                     this.Op2 = "_";
                     this.Op3 = Instr.OpCode.ToString();
                     break;
-                    // ez
             }
         }
 
@@ -373,7 +363,7 @@ namespace LuaSharpVM.Decompiler
         private string GetConstant(int index)
         {
             if (index >= this.Func.Constants.Count)
-                return "\"unk" + index.ToString() + "\""; // happends with local functions
+                return "\"unk" + index.ToString() + "\""; // indicates incorrect behavior
 
             return this.Func.Constants[index].ToString();
         }
@@ -388,7 +378,9 @@ namespace LuaSharpVM.Decompiler
                 return WriteIndex(index);
         }
 
-        private string WriteIndex(int value)
+
+        // NOTE: use this on LuaScriptFunction.GetConstant ??
+        public string WriteIndex(int value, bool useLocalKeyword = true)
         {
             bool constant = false;
             int index = ToIndex(value, out constant);
@@ -403,9 +395,11 @@ namespace LuaSharpVM.Decompiler
                 else
                 {
                     this.Func.ScriptFunction.UsedLocals.Add(value);
-                    return "local var" + index;
+                    if (useLocalKeyword)
+                        return "local var" + index;
+                    else
+                        return "var" + index;
                 }
-                    
             }
         }
 
@@ -441,9 +435,8 @@ namespace LuaSharpVM.Decompiler
                 case LuaOpcode.EQ:
                 case LuaOpcode.TEST:
                 case LuaOpcode.TESTSET:
-                case LuaOpcode.LOADBOOL: // untested
+                //case LuaOpcode.LOADBOOL: // untested
                     return true;
-                    break;
             }
             return false;
         }
@@ -467,10 +460,8 @@ namespace LuaSharpVM.Decompiler
             {
                 case LuaOpcode.MOVE: // anything else, sir?
                     return true;
-                    break;
             }
             return false;
         }
-
     }
 }
