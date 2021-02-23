@@ -287,13 +287,18 @@ namespace LuaSharpVM.Decompiler
                 for(int j = IfChainsStart[i]; j <= IfChainsEnd[i]; j++)
                 {
                     // prefix
-                    if (j == IfChainsStart[i])
-                        this.Blocks[j].GetConditionLine().Op1 = "if";
-                    else
+                    if (j != IfChainsStart[i])
                         this.Blocks[j].GetConditionLine().Op1 = "";
+
                     // postfix
                     if (j == IfChainsEnd[i])
+                    {
                         this.Blocks[j].GetConditionLine().Op3 = "then";
+                        // place else/end
+                        var endBlock = this.Blocks.Find(x => x.StartAddress == this.Blocks[j].JumpsTo); // whole chain jumps to same block?
+                        // TODO: consider ELSE
+                        endBlock.Lines[0].Op1 = "end\n\r" + endBlock.Lines[0].Op1; 
+                    }   
                     else
                     {
                         // postfix or/and
@@ -304,7 +309,15 @@ namespace LuaSharpVM.Decompiler
                     }
                 }
             }
+
+            // handle else/end
+            //for(int i = 0; i < IfChainsStart.Count; i++)
+            //{
+            //    // the amount of else/end != the amount of ifchains, but lets assume it is for now!
+
+            //}
             Console.WriteLine();
+
             /*
             // place end in the -1 blocks
             for(int i = 0; i < this.Blocks.Count; i++)
@@ -327,18 +340,18 @@ namespace LuaSharpVM.Decompiler
                             // 
                             break;
                         case LuaOpcode.JMP: // TODO: fix single line ifs?
-                            //dest = this.Blocks.FindIndex(x => x.StartAddress == this.Blocks[i].JumpsTo);
-                            //if(i == 0)
-                            //    this.Blocks[dest].Lines[0].Op1 = "--end\r\n" + this.Blocks[dest].Lines[0].Op1;
-                            //else
-                            //    this.Blocks[dest - 1].GetBranchLine().Op3 += "\r\n--end";
+                            dest = this.Blocks.FindIndex(x => x.StartAddress == this.Blocks[i].JumpsTo);
+                            if (i == 0)
+                                this.Blocks[dest].Lines[0].Op1 = "--end\r\n" + this.Blocks[dest].Lines[0].Op1;
+                            else
+                                this.Blocks[dest - 1].GetBranchLine().Op3 += "\r\n--end";
 
 
 
                             // NOTE: else/end
                             //       Check if previous block is jumping to this location and if next instruction is IF
-                            //if(i > 0)
-                            //    pcLine = this.Blocks[i-1].GetConditionLine()
+                            //if (i > 0)
+                            //    pcLine = this.Blocks[i - 1].GetConditionLine()
 
 
                             break;
@@ -347,7 +360,8 @@ namespace LuaSharpVM.Decompiler
                             this.Blocks[i].GetBranchLine().Op3 += "\r\n--end";
                             break;
                     }
-            }
+            
+            } 
             */
         }
 
