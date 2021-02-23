@@ -296,8 +296,8 @@ namespace LuaSharpVM.Decompiler
                         this.Blocks[j].GetConditionLine().Op3 = "then";
                         // place else/end
                         var endBlock = this.Blocks.Find(x => x.StartAddress == this.Blocks[j].JumpsTo); // whole chain jumps to same block?
-                        // TODO: consider ELSE
-                        endBlock.Lines[0].Op1 = "end\n\r" + endBlock.Lines[0].Op1; 
+                        // TODO: consider ELSE and end at JumpNext
+                        endBlock.Lines[0].Op1 = "end -- IF\n\r" + endBlock.Lines[0].Op1; 
                     }   
                     else
                     {
@@ -310,12 +310,17 @@ namespace LuaSharpVM.Decompiler
                 }
             }
 
-            // handle else/end
-            //for(int i = 0; i < IfChainsStart.Count; i++)
-            //{
-            //    // the amount of else/end != the amount of ifchains, but lets assume it is for now!
+            // handle FORLOOP and TFORLOOP
+            for (int i = 0; i < this.Blocks.Count; i++)
+            {
+                var bLine = this.Blocks[i].GetBranchLine();
+                if (bLine != null)
+                {
+                    if(bLine.Instr.OpCode == LuaOpcode.FORLOOP || bLine.Instr.OpCode == LuaOpcode.TFORLOOP)
+                        this.Blocks[i].GetBranchLine().Op3 += "\r\nend -- (T)FORLOOP";
+                }
 
-            //}
+            }
             Console.WriteLine();
 
             /*

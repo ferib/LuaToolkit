@@ -189,19 +189,28 @@ namespace LuaSharpVM.Decompiler
                 case LuaOpcode.EQ:
                     this.Op1 = $"if";
                     //this.Op2 = $" ({WriteIndex(Instr.B)} == {WriteIndex(Instr.C)}) ~= {Instr.A} "; // A = and/or
-                    this.Op2 = $" {WriteIndex(Instr.B)} == {WriteIndex(Instr.C)} ";
+                    if (Instr.A == 0)
+                        this.Op2 = $" {WriteIndex(Instr.B)} == {WriteIndex(Instr.C)} ";
+                    else
+                        this.Op2 = $" {WriteIndex(Instr.B)} ~= {WriteIndex(Instr.C)} ";
                     this.Op3 = $"then";
                     break;
                 case LuaOpcode.LT:
                     this.Op1 = $"if";
                     //this.Op2 = $"({WriteIndex(Instr.B)} < {WriteIndex(Instr.C)}) ~= {Instr.A} ";
-                    this.Op2 = $" {WriteIndex(Instr.B)} < {WriteIndex(Instr.C)} ";
+                    if(Instr.A == 0)
+                        this.Op2 = $" {WriteIndex(Instr.B)} < {WriteIndex(Instr.C)} ";
+                    else
+                        this.Op2 = $" {WriteIndex(Instr.B)} > {WriteIndex(Instr.C)} ";
                     this.Op3 = $"then";
                     break;
                 case LuaOpcode.LE:
                     this.Op1 = $"if";
                     //this.Op2 = $"  ({WriteIndex(Instr.B)} <= {WriteIndex(Instr.C)}) ~= {Instr.A} ";
-                    this.Op2 = $" {WriteIndex(Instr.B)} <= {WriteIndex(Instr.C)} ";
+                    if (Instr.A == 0)
+                        this.Op2 = $" {WriteIndex(Instr.B)} <= {WriteIndex(Instr.C)} ";
+                    else
+                        this.Op2 = $" {WriteIndex(Instr.B)} > {WriteIndex(Instr.C)} ";
                     this.Op3 = $"then";
                     break;
                 case LuaOpcode.TEST:
