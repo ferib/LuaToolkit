@@ -230,10 +230,11 @@ namespace LuaSharpVM.Decompiler
 
 
             // find if chains
-            List<string> IfChains = new List<string>();
+            List<int> IfChainsStart = new List<int>();
+            List<int> IfChainsEnd = new List<int>();
             int start = -1;
             int end = -1;
-            for(int i = 0; i < this.Blocks.Count; i++)
+            for(int i = 0; i < this.Blocks.Count; i+= 1)
             {
                 // find if chains
                 var src = this.Blocks[i].GetConditionLine();
@@ -259,36 +260,49 @@ namespace LuaSharpVM.Decompiler
                     }
                     // TODO: handle end blocks
                     end = index;
-                    IfChains.Add(start + "_" + end);
+                    IfChainsStart.Add(start);
+                    IfChainsEnd.Add(end);
+                    if (start != -1)
+                        i = end + 1; // TODO: this is bad, replace with while loop
                     start = -1;
                     end = -1;
-
-                    //var nextBlock = this.Blocks.Find(x => x.StartAddress == this.Blocks[i].JumpsNext);
-                    //if (nextBlock == null)
-                    //    continue;
-
-                    //var next = nextBlock.GetConditionLine();
-                    //if (next.IsCondition() && 
-                    //    (this.Blocks[i].JumpsTo == nextBlock.JumpsTo || this.Blocks[i].JumpsNext == nextBlock.StartAddress)) // shared jump/end || i-block jumps to start of nextBlock
-                    //{
-                    //    // both source and destination are IF's
-                    //    end = i+1;
-                    //}
-                    //else
-                    //{
-                    //    end = i;
-                    //    IfChains.Add(start + "_" + end);
-                    //    start = -1;
-                    //    end = -1;
-                    //}
+                    
                 }
                 else if(start != -1)
                 {
-                    IfChains.Add(start + "_" + end);
+                    IfChainsStart.Add(start);
+                    IfChainsEnd.Add(end);
+                    if (start != -1)
+                        i = end + 1; // TODO: this is bad, replace with while loop
                     start = -1;
                     end = - 1;
                 }
                     
+            }
+
+            // handle if chains
+            for(int i = 0; i < IfChainsStart.Count; i++)
+            {
+                // iterate over if chain
+                for(int j = IfChainsStart[i]; j <= IfChainsEnd[i]; j++)
+                {
+                    // prefix
+                    if (j == IfChainsStart[i])
+                        this.Blocks[j].GetConditionLine().Op1 = "if";
+                    else
+                        this.Blocks[j].GetConditionLine().Op1 = "";
+                    // postfix
+                    if (j == IfChainsEnd[i])
+                        this.Blocks[j].GetConditionLine().Op3 = "then";
+                    else
+                    {
+                        // postfix or/and
+                        if (this.Blocks[j].GetConditionLine().Instr.A == 1)
+                            this.Blocks[j].GetConditionLine().Op3 = "or";
+                        else
+                            this.Blocks[j].GetConditionLine().Op3 = "and";
+                    }
+                }
             }
             Console.WriteLine();
             /*
