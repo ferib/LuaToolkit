@@ -246,36 +246,41 @@ namespace LuaSharpVM.Decompiler
                     }
 
                     LuaScriptBlock endBlock = this.Blocks[i]; // find end of IF chain
-                    index = i+1;
+                    index = i;
                     while(index < this.Blocks.Count)
                     {
-                        var cl = this.Blocks[index].GetConditionLine();
-                        if (cl.IsCondition() && endBlock.JumpsNext == this.Blocks[index].StartAddress)
-                            endBlock = this.Blocks[index]; // increment endBlock
+                        var cl = this.Blocks[index+1].GetConditionLine();
+                        if (cl != null && cl.IsCondition() && 
+                            endBlock.JumpsNext == this.Blocks[index+1].StartAddress) // make sure next one is IF
+                            endBlock = this.Blocks[index+1]; // increment endBlock
                         else
                             break;
                         index++;
                     }
                     // TODO: handle end blocks
+                    end = index;
+                    IfChains.Add(start + "_" + end);
+                    start = -1;
+                    end = -1;
 
-                    var nextBlock = this.Blocks.Find(x => x.StartAddress == this.Blocks[i].JumpsNext);
-                    if (nextBlock == null)
-                        continue;
+                    //var nextBlock = this.Blocks.Find(x => x.StartAddress == this.Blocks[i].JumpsNext);
+                    //if (nextBlock == null)
+                    //    continue;
 
-                    var next = nextBlock.GetConditionLine();
-                    if (next.IsCondition() && 
-                        (this.Blocks[i].JumpsTo == nextBlock.JumpsTo || this.Blocks[i].JumpsNext == nextBlock.StartAddress)) // shared jump/end || i-block jumps to start of nextBlock
-                    {
-                        // both source and destination are IF's
-                        end = i+1;
-                    }
-                    else
-                    {
-                        end = i;
-                        IfChains.Add(start + "_" + end);
-                        start = -1;
-                        end = -1;
-                    }
+                    //var next = nextBlock.GetConditionLine();
+                    //if (next.IsCondition() && 
+                    //    (this.Blocks[i].JumpsTo == nextBlock.JumpsTo || this.Blocks[i].JumpsNext == nextBlock.StartAddress)) // shared jump/end || i-block jumps to start of nextBlock
+                    //{
+                    //    // both source and destination are IF's
+                    //    end = i+1;
+                    //}
+                    //else
+                    //{
+                    //    end = i;
+                    //    IfChains.Add(start + "_" + end);
+                    //    start = -1;
+                    //    end = -1;
+                    //}
                 }
                 else if(start != -1)
                 {

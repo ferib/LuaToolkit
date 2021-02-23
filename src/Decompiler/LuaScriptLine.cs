@@ -188,7 +188,7 @@ namespace LuaSharpVM.Decompiler
                     break;
                 case LuaOpcode.EQ:
                     this.Op1 = $"if";
-                    this.Op2 = $" ({WriteIndex(Instr.B)} == {WriteIndex(Instr.C)}) ~= {Instr.A} ";
+                    this.Op2 = $" ({WriteIndex(Instr.B)} == {WriteIndex(Instr.C)}) ~= {Instr.A} "; // A = and/or
                     this.Op3 = $"then";
                     break;
                 case LuaOpcode.LT:
@@ -203,11 +203,11 @@ namespace LuaSharpVM.Decompiler
                     break;
                 case LuaOpcode.TEST:
                     this.Op1 = $"if";
-                    this.Op2 = $" not var{Instr.A} <=> {Instr.C} ";
+                    this.Op2 = $" not var{Instr.A} ~= {Instr.C} ";
                     this.Op3 = $"then";
                     break;
                 case LuaOpcode.TESTSET:
-                    this.Op1 = $"if var{Instr.B} <=> {Instr.C} then; ";
+                    this.Op1 = $"if var{Instr.B} ~= {Instr.C} then; ";
                     this.Op2 = $"var{Instr.A} = ";
                     this.Op3 = $"var{Instr.B}; end";
                     break;
