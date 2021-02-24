@@ -151,7 +151,7 @@ namespace LuaSharpVM.Decompiler
                 //    BlockSplitLines.Add(new KeyValuePair<int, int>(this.Blocks.FindIndex(x => x.StartAddress == tb.StartAddress), i));
             }
 
-            BlockSplitLines = BlockSplitLines.OrderBy(x => x.Key).ToList();
+            BlockSplitLines = BlockSplitLines.OrderBy(x => x.Value).ToList(); // important to sort by lineNumber or other blocks wont get done otherwise
             // cut blocks and make new ones
             for (int i = 0; i < BlockSplitLines.Count; i++)
             {
@@ -173,7 +173,7 @@ namespace LuaSharpVM.Decompiler
                 this.Blocks.Insert(BlockSplitLines[i].Key + 1, splitBlock); // insert new block after modified one
                 // update BlockSplitLines indexing
                 for (int j = i + 1; j < BlockSplitLines.Count; j++)
-                    BlockSplitLines[j] = new KeyValuePair<int, int>(BlockSplitLines[j].Key + 1, BlockSplitLines[j].Value); // offset
+                    BlockSplitLines[j] = new KeyValuePair<int, int>(BlockSplitLines[j].Key + 1, BlockSplitLines[j].Value); // offset remaining blocks
             }
 
             // fix JumpsTo and JumpsNext ?
@@ -234,13 +234,13 @@ namespace LuaSharpVM.Decompiler
             List<int> IfChainsEnd = new List<int>();
             int start = -1;
             int end = -1;
-            for(int i = 0; i < this.Blocks.Count; i+= 1)
+            for (int i = 0; i < this.Blocks.Count; i += 1)
             {
                 // NOTE: Finding if chains is done by checking the JumpTo of each blok that ends with IF
                 // We will start iterating from the block index and work our way to the next, if the next
                 // block does not JumpTo the startBlock.JumpTo then we have no end yet and we will continue
                 // to look for the block that defines the end of that IF body.
-                
+
                 var src = this.Blocks[i].GetConditionLine();
                 if (src != null && src.IsCondition() && i < this.Blocks.Count - 1)
                 {
@@ -250,15 +250,18 @@ namespace LuaSharpVM.Decompiler
                         end = i;
                     }
 
-                    LuaScriptBlock startBlock = this.Blocks[start];
+                    LuaScriptBlock exitBlock = this.Blocks[start]; // a block that JumpsTo end of IF (usualy IF with AND (NO OR))
                     LuaScriptBlock endBlock = this.Blocks[i];
                     index = i;
-                    while(index < this.Blocks.Count)
+                    while (index < this.Blocks.Count)
                     {
-                        if(startBlock.JumpsTo != endBlock.JumpsTo)
-                            endBlock = this.Blocks[index + 1]; // continue search
-                        else
+                        //if (exitBlock.JumpsTo < endBlock.JumpsTo)
+                        //    exitBlock = endBlock;
+
+                        if (index != i && (exitBlock.JumpsTo == endBlock.JumpsTo || exitBlock.JumpsTo == endBlock.StartAddress)) // startaddress for timeout
                             break; // abort
+                        else
+                            endBlock = this.Blocks[index + 1]; // continue search
                         index++;
                     }
                     end = index;
@@ -268,41 +271,40 @@ namespace LuaSharpVM.Decompiler
                         i = end; // TODO: this is bad, replace with while loop
                     start = -1;
                     end = -1;
-                    
+
                 }
-                else if(start != -1)
+                else if (start != -1)
                 {
                     IfChainsStart.Add(start);
                     IfChainsEnd.Add(end);
                     if (start != -1)
                         i = end; // TODO: this is bad, replace with while loop
                     start = -1;
-                    end = - 1;
+                    end = -1;
                 }
-                    
+
             }
 
+            
             // handle if chains
-            for(int i = 0; i < IfChainsStart.Count; i++)
+            for (int i = 0; i < IfChainsStart.Count; i++)
             {
                 // iterate over if chain
-                for(int j = IfChainsStart[i]; j <= IfChainsEnd[i]; j++)
+                for (int j = IfChainsStart[i]; j < IfChainsEnd[i]; j++)
                 {
-                    // TODO: handle multi line blocks (2+)
 
-                    // prefix
-                    if (j != IfChainsStart[i])
-                        this.Blocks[j].GetConditionLine().Op1 = "";
+                    if (IfChainsEnd == null)
+                        continue;
 
-                    // postfix
-                    if (j == IfChainsEnd[i])
+                    if (j == IfChainsEnd[i] - 1)
                     {
                         this.Blocks[j].GetConditionLine().Op3 = "then";
                         // place else/end
                         var endBlock = this.Blocks.Find(x => x.StartAddress == this.Blocks[j].JumpsTo); // whole chain jumps to same block?
-                        // TODO: consider ELSE and end at JumpNext
-                        endBlock.Lines[0].Op1 = "end -- IF\n\r" + endBlock.Lines[0].Op1; 
-                    }   
+                                                                                                        // TODO: consider ELSE and end at JumpNext
+                        if (endBlock != null)
+                            endBlock.Lines[0].Op1 = "end -- IF\n\r" + endBlock.Lines[0].Op1;
+                    }
                     else
                     {
                         // postfix or/and
@@ -311,8 +313,13 @@ namespace LuaSharpVM.Decompiler
                         else
                             this.Blocks[j].GetConditionLine().Op3 = "and";
                     }
+                    // prefix
+                    if (j != IfChainsStart[i])
+                        this.Blocks[j].GetConditionLine().Op1 = "";
+
                 }
             }
+            
 
             // handle FORLOOP and TFORLOOP
             for (int i = 0; i < this.Blocks.Count; i++)
@@ -320,12 +327,13 @@ namespace LuaSharpVM.Decompiler
                 var bLine = this.Blocks[i].GetBranchLine();
                 if (bLine != null)
                 {
-                    if(bLine.Instr.OpCode == LuaOpcode.FORLOOP || bLine.Instr.OpCode == LuaOpcode.TFORLOOP)
+                    if (bLine.Instr.OpCode == LuaOpcode.FORLOOP || bLine.Instr.OpCode == LuaOpcode.TFORLOOP)
                         this.Blocks[i].GetBranchLine().Op3 += "\r\nend -- LOOP";
                 }
 
             }
             Console.WriteLine();
+
         }
 
         // NOTE: OO?
