@@ -236,7 +236,11 @@ namespace LuaSharpVM.Decompiler
             int end = -1;
             for(int i = 0; i < this.Blocks.Count; i+= 1)
             {
-                // find if chains
+                // NOTE: Finding if chains is done by checking the JumpTo of each blok that ends with IF
+                // We will start iterating from the block index and work our way to the next, if the next
+                // block does not JumpTo the startBlock.JumpTo then we have no end yet and we will continue
+                // to look for the block that defines the end of that IF body.
+                
                 var src = this.Blocks[i].GetConditionLine();
                 if (src != null && src.IsCondition() && i < this.Blocks.Count - 1)
                 {
@@ -246,24 +250,22 @@ namespace LuaSharpVM.Decompiler
                         end = i;
                     }
 
-                    LuaScriptBlock endBlock = this.Blocks[i]; // find end of IF chain
+                    LuaScriptBlock startBlock = this.Blocks[start];
+                    LuaScriptBlock endBlock = this.Blocks[i];
                     index = i;
                     while(index < this.Blocks.Count)
                     {
-                        var cl = this.Blocks[index+1].GetConditionLine();
-                        if (cl != null && cl.IsCondition() && 
-                            endBlock.JumpsNext == this.Blocks[index+1].StartAddress) // make sure next one is IF
-                            endBlock = this.Blocks[index+1]; // increment endBlock
+                        if(startBlock.JumpsTo != endBlock.JumpsTo)
+                            endBlock = this.Blocks[index + 1]; // continue search
                         else
-                            break;
+                            break; // abort
                         index++;
                     }
-                    // TODO: handle end blocks
                     end = index;
                     IfChainsStart.Add(start);
                     IfChainsEnd.Add(end);
                     if (start != -1)
-                        i = end + 1; // TODO: this is bad, replace with while loop
+                        i = end; // TODO: this is bad, replace with while loop
                     start = -1;
                     end = -1;
                     
@@ -273,7 +275,7 @@ namespace LuaSharpVM.Decompiler
                     IfChainsStart.Add(start);
                     IfChainsEnd.Add(end);
                     if (start != -1)
-                        i = end + 1; // TODO: this is bad, replace with while loop
+                        i = end; // TODO: this is bad, replace with while loop
                     start = -1;
                     end = - 1;
                 }
@@ -286,6 +288,8 @@ namespace LuaSharpVM.Decompiler
                 // iterate over if chain
                 for(int j = IfChainsStart[i]; j <= IfChainsEnd[i]; j++)
                 {
+                    // TODO: handle multi line blocks (2+)
+
                     // prefix
                     if (j != IfChainsStart[i])
                         this.Blocks[j].GetConditionLine().Op1 = "";
@@ -317,57 +321,11 @@ namespace LuaSharpVM.Decompiler
                 if (bLine != null)
                 {
                     if(bLine.Instr.OpCode == LuaOpcode.FORLOOP || bLine.Instr.OpCode == LuaOpcode.TFORLOOP)
-                        this.Blocks[i].GetBranchLine().Op3 += "\r\nend -- (T)FORLOOP";
+                        this.Blocks[i].GetBranchLine().Op3 += "\r\nend -- LOOP";
                 }
 
             }
             Console.WriteLine();
-
-            /*
-            // place end in the -1 blocks
-            for(int i = 0; i < this.Blocks.Count; i++)
-            {
-                // EVERY block has and END!
-                // place end if i-1 != FORPREP
-                // place end at FORLOOP (and TFORLOOP)
-                LuaScriptLine pcLine; // previous Condition Line
-                LuaScriptLine cLine; // Condition Line
-                int dest = -1;
-                var bLine = this.Blocks[i].GetBranchLine();
-                if(bLine != null)
-                    switch (bLine.Instr.OpCode)
-                    {
-                        // TODO: add logic for IF: else, elseif, or, and
-                        case LuaOpcode.LT:
-                        case LuaOpcode.LE:
-                        case LuaOpcode.EQ:
-                            // clear Op1 and replace Op3 with and/or when needed.
-                            // 
-                            break;
-                        case LuaOpcode.JMP: // TODO: fix single line ifs?
-                            dest = this.Blocks.FindIndex(x => x.StartAddress == this.Blocks[i].JumpsTo);
-                            if (i == 0)
-                                this.Blocks[dest].Lines[0].Op1 = "--end\r\n" + this.Blocks[dest].Lines[0].Op1;
-                            else
-                                this.Blocks[dest - 1].GetBranchLine().Op3 += "\r\n--end";
-
-
-
-                            // NOTE: else/end
-                            //       Check if previous block is jumping to this location and if next instruction is IF
-                            //if (i > 0)
-                            //    pcLine = this.Blocks[i - 1].GetConditionLine()
-
-
-                            break;
-                        case LuaOpcode.FORLOOP:
-                        case LuaOpcode.TFORLOOP:
-                            this.Blocks[i].GetBranchLine().Op3 += "\r\n--end";
-                            break;
-                    }
-            
-            } 
-            */
         }
 
         // NOTE: OO?
