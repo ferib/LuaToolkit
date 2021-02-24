@@ -433,7 +433,7 @@ namespace LuaSharpVM.Decompiler
             else if ((this.Op1 == "" || this.Op1  == null)
                 && (this.Op2 == "" || this.Op2 == null)
                 &&  (this.Op3 == "" || this.Op3 == null))
-                return "";
+                return "\r\n";
             else
                 return $"{tab}{Op1}{Op2}{Op3}\r\n";
         }

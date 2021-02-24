@@ -264,62 +264,115 @@ namespace LuaSharpVM.Decompiler
                             endBlock = this.Blocks[index + 1]; // continue search
                         index++;
                     }
-                    end = index;
+                    end = index-1;
                     IfChainsStart.Add(start);
                     IfChainsEnd.Add(end);
-                    if (start != -1)
-                        i = end; // TODO: this is bad, replace with while loop
                     start = -1;
                     end = -1;
-
                 }
                 else if (start != -1)
                 {
+                    end -= 1;
                     IfChainsStart.Add(start);
                     IfChainsEnd.Add(end);
-                    if (start != -1)
-                        i = end; // TODO: this is bad, replace with while loop
                     start = -1;
                     end = -1;
                 }
-
             }
 
-            
-            // handle if chains
+            // layer attempts
             for (int i = 0; i < IfChainsStart.Count; i++)
             {
-                // iterate over if chain
-                for (int j = IfChainsStart[i]; j < IfChainsEnd[i]; j++)
+                LuaScriptBlock StartBlock = this.Blocks[IfChainsStart[i]];
+                LuaScriptBlock luaScriptBlock = this.Blocks[IfChainsEnd[i]];
+
+
+
+            }
+
+            /*
+            // merge if chains
+            List<int> BlacklistIndex = new List<int>();
+            for (int i = 0; i < IfChainsStart.Count; i++)
+            {
+                // 0_3, 1_2, 4_5, 5_6
+                // 0, 1, 4, 5
+                // 3, 2, 5, 6
+
+                // take out over high level
+                // 0_3 -> 1_2
+                // 4_5
+                // 5_6
+                // 0_3, -(1_2), [4_5, 5_6]
+
+                // merge when start occours multiple times
+                List<int> currentIds = new List<int>();
+                for (int x = 0; x < IfChainsStart.Count; x++) // find all ifs with same start
+                    if (IfChainsStart[i] == IfChainsStart[x]) // check next
+                        currentIds.Add(x);
+
+                for (int x = 0; x < currentIds.Count; x++) // merge ifs
                 {
-
-                    if (IfChainsEnd == null)
-                        continue;
-
-                    if (j == IfChainsEnd[i] - 1)
+                    if (!this.Blocks[currentIds[x]].GetConditionLine().IsCondition())
                     {
-                        this.Blocks[j].GetConditionLine().Op3 = "then";
-                        // place else/end
-                        var endBlock = this.Blocks.Find(x => x.StartAddress == this.Blocks[j].JumpsTo); // whole chain jumps to same block?
-                                                                                                        // TODO: consider ELSE and end at JumpNext
-                        if (endBlock != null)
-                            endBlock.Lines[0].Op1 = "end -- IF\n\r" + endBlock.Lines[0].Op1;
+                        // end of block
+                        this.Blocks[currentIds[x]].GetBranchLine().Op3 += "\r\nend -- nocondition";
+                        continue; 
                     }
-                    else
+                        
+
+                    if(x == currentIds.Count-1)
+                    {
+                        // last if
+                        this.Blocks[currentIds[x]].GetConditionLine().Op3 = "then -- merged\r\n";
+                    }else
                     {
                         // postfix or/and
-                        if (this.Blocks[j].GetConditionLine().Instr.A == 1)
-                            this.Blocks[j].GetConditionLine().Op3 = "or";
-                        else
-                            this.Blocks[j].GetConditionLine().Op3 = "and";
+                        this.Blocks[currentIds[x]].GetConditionLine().Op3 = "and/or";
                     }
                     // prefix
-                    if (j != IfChainsStart[i])
-                        this.Blocks[j].GetConditionLine().Op1 = "";
-
+                    if(x != 0)
+                    {
+                        this.Blocks[currentIds[x]].GetConditionLine().Op1 = "";
+                    }
                 }
             }
-            
+            */
+
+            // handle if chains
+            //for (int i = 0; i < IfChainsStart.Count; i++)
+            //{
+            //    // iterate over if chain
+            //    for (int j = IfChainsStart[i]; j <= IfChainsEnd[i]; j++)
+            //    {
+
+            //        if (IfChainsEnd == null)
+            //            continue;
+
+            //        if (j == IfChainsEnd[i] - 1)
+            //        {
+            //            this.Blocks[j].GetConditionLine().Op3 = "then";
+            //            // place else/end
+            //            var endBlock = this.Blocks.Find(x => x.StartAddress == this.Blocks[j].JumpsTo); // whole chain jumps to same block?
+            //                                                                                            // TODO: consider ELSE and end at JumpNext
+            //            if (endBlock != null)
+            //                endBlock.Lines[0].Op1 = "end -- IF\n\r" + endBlock.Lines[0].Op1;
+            //        }
+            //        else
+            //        {
+            //            // postfix or/and
+            //            if (this.Blocks[j].GetConditionLine().Instr.A == 1)
+            //                this.Blocks[j].GetConditionLine().Op3 = "or";
+            //            else
+            //                this.Blocks[j].GetConditionLine().Op3 = "and";
+            //        }
+            //        // prefix
+            //        if (j != IfChainsStart[i])
+            //            this.Blocks[j].GetConditionLine().Op1 = "";
+
+            //    }
+            //}
+
 
             // handle FORLOOP and TFORLOOP
             for (int i = 0; i < this.Blocks.Count; i++)
