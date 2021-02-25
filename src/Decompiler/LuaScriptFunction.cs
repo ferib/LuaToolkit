@@ -296,22 +296,40 @@ namespace LuaSharpVM.Decompiler
             // layer attempts
             for (int i = 0; i < this.Blocks.Count; i++)
             {
-                ProcessBlockIf(this.Blocks[i]);
-            }
+                // IF: JMP != -1 && ELSE != -1
+                // ELSE: JMP != -1 && ELSE == -1
+                // ENDIF: JMP == -1 && ELSE != -1
+                // END: JMP == -1 && ELSE == -1
 
-            void ProcessBlockIf(LuaScriptBlock b)
-            {
-                if (b.Lines.Count <= 2)
-                    return;
-
-                if (b.GetBranchLine() != null && b.GetBranchLine().IsBranch())
+                if (this.Blocks[i].JumpsTo != -1 && this.Blocks[i].JumpsNext != -1)
                 {
+                    // merge
+                    int lastifIndex = -1;
+                    int bIndex = i+1; // search end of IF
+                    while(bIndex < this.Blocks.Count)
+                    {
+                        if (this.Blocks[bIndex].JumpsTo == -1 || this.Blocks[bIndex].JumpsNext == -1)
+                        {
+                            lastifIndex = bIndex-1;
+                            break; // IF found
+                        }
+                        bIndex++;
+                    }
+                    // TODO: find the bodyblock for the last IF and compare against previous IF to find merge chain,
+                    // re-do group IF's that do not match the ifbodyblock end/start-1 and figure out if its and/or 
+                    // depending on where the jump is set to. The last one should always be classified as 'and'
+                    // can be used to figure out the END of the ifbodyblock, we check others by keeping in mind
+                    // they can be both and/or, meaning ifbodyblock (and) || ifbodyblock-1 (or)
+                    var ifbodyBlock = this.Blocks.ToList().Single(x => x.StartAddress == this.Blocks[lastifIndex].JumpsTo);
 
-                }
-                else
-                {
-
-                }
+                    this.Blocks[i].Lines[0].Op1 = "-- IF\r\n" + this.Blocks[i].Lines[0].Op1;
+                }    
+                else if (this.Blocks[i].JumpsTo != -1 && this.Blocks[i].JumpsNext == -1)
+                    this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Op3 += "\r\nelse";
+                else if (this.Blocks[i].JumpsTo == -1 && this.Blocks[i].JumpsNext != -1)
+                    this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Op3 += "\r\nend -- ENDIF";
+                else if (this.Blocks[i].JumpsTo == -1 && this.Blocks[i].JumpsNext == -1)
+                    this.Blocks[i].Lines[0].Op3 += " -- END\r\n";
             }
 
             /*
