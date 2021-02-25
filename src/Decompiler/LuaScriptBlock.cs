@@ -117,18 +117,18 @@ namespace LuaSharpVM.Decompiler
             var sLastLine = this.lines[this.lines.Count - 1];
 
 
-            if (this.JumpsTo == -1 && this.JumpsNext != -1)
-                return $"{this.StartAddress.ToString("0000")}: JMP: {this.JumpsNext}";
+            //if (this.JumpsTo == -1 && this.JumpsNext != -1)
+            //    return $"{this.StartAddress.ToString("0000")}: JMP: {this.JumpsNext}";
 
             //if (this.JumpsTo != -1 && this.JumpsNext != -1)
                 return $"{this.StartAddress.ToString("0000")}: JMP: {this.JumpsTo}, ELSE: {this.JumpsNext}";
 
             // depriciated
-            if (sLastLine.Instr.OpCode == LuaOpcode.JMP)
-                return $"{this.StartAddress.ToString("0000")}: {this.lines[this.lines.Count - 2]} GOTO {this.JumpsTo}";
+            //if (sLastLine.Instr.OpCode == LuaOpcode.JMP)
+            //    return $"{this.StartAddress.ToString("0000")}: {this.lines[this.lines.Count - 2]} GOTO {this.JumpsTo}";
 
-            if(sLastLine.Instr.OpCode == LuaOpcode.FORLOOP || sLastLine.Instr.OpCode == LuaOpcode.TFORLOOP)
-                return $"{this.StartAddress.ToString("0000")}: (loop) GOTO {this.JumpsTo}";
+            //if(sLastLine.Instr.OpCode == LuaOpcode.FORLOOP || sLastLine.Instr.OpCode == LuaOpcode.TFORLOOP)
+            //    return $"{this.StartAddress.ToString("0000")}: (loop) GOTO {this.JumpsTo}";
 
             
 

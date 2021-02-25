@@ -217,7 +217,7 @@ namespace LuaSharpVM.Decompiler
                             {
                                 // unknown jump
                                 this.Blocks[i].JumpsTo = (this.Blocks[i].StartAddress + this.Blocks[i].Lines.Count - 1) + (short)this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Instr.sBx + 1; // TODO: verify math
-                                this.Blocks[i].JumpsNext = this.Blocks[i + 1].StartAddress;
+                                this.Blocks[i].JumpsNext = -1; // this.Blocks[i + 1].StartAddress;
                             }
                             break;
                         default:
@@ -250,19 +250,32 @@ namespace LuaSharpVM.Decompiler
                         end = i;
                     }
 
-                    LuaScriptBlock exitBlock = this.Blocks[start]; // a block that JumpsTo end of IF (usualy IF with AND (NO OR))
                     LuaScriptBlock endBlock = this.Blocks[i];
+                    LuaScriptBlock exitBlock = this.Blocks.Find(x => x.StartAddress == endBlock.JumpsTo);
                     index = i;
+                    var highestJump = -1;
                     while (index < this.Blocks.Count)
                     {
                         //if (exitBlock.JumpsTo < endBlock.JumpsTo)
                         //    exitBlock = endBlock;
 
-                        if (index != i && (exitBlock.JumpsTo == endBlock.JumpsTo || exitBlock.JumpsTo == endBlock.StartAddress)) // startaddress for timeout
+                        if (exitBlock == null || endBlock.JumpsTo > exitBlock.StartAddress)
+                            exitBlock = endBlock;
+
+                        if (index != i && !endBlock.GetConditionLine().IsCondition())
                             break; // abort
                         else
                             endBlock = this.Blocks[index + 1]; // continue search
-                        index++;
+                        index++; 
+                        
+                        //if (index != i && (
+                        //    (exitBlock.JumpsTo == endBlock.JumpsTo || exitBlock.JumpsTo == endBlock.StartAddress) || // and
+                        //    (exitBlock.JumpsTo == endBlock.JumpsTo || exitBlock.JumpsTo == endBlock.StartAddress) // or
+                        //    )) 
+                        //    break; // abort
+                        //else
+                        //    endBlock = this.Blocks[index + 1]; // continue search
+                        //index++;
                     }
                     end = index-1;
                     IfChainsStart.Add(start);
@@ -281,13 +294,24 @@ namespace LuaSharpVM.Decompiler
             }
 
             // layer attempts
-            for (int i = 0; i < IfChainsStart.Count; i++)
+            for (int i = 0; i < this.Blocks.Count; i++)
             {
-                LuaScriptBlock StartBlock = this.Blocks[IfChainsStart[i]];
-                LuaScriptBlock luaScriptBlock = this.Blocks[IfChainsEnd[i]];
+                ProcessBlockIf(this.Blocks[i]);
+            }
 
+            void ProcessBlockIf(LuaScriptBlock b)
+            {
+                if (b.Lines.Count <= 2)
+                    return;
 
+                if (b.GetBranchLine() != null && b.GetBranchLine().IsBranch())
+                {
 
+                }
+                else
+                {
+
+                }
             }
 
             /*

@@ -445,9 +445,9 @@ namespace LuaSharpVM.Decompiler
                 case LuaOpcode.LE:
                 case LuaOpcode.LT:
                 case LuaOpcode.EQ:
-                ////case LuaOpcode.TEST:
-                ////case LuaOpcode.TESTSET:
-                //case LuaOpcode.LOADBOOL: // untested
+                case LuaOpcode.TEST:
+                case LuaOpcode.TESTSET:
+                    //case LuaOpcode.LOADBOOL: // untested
                     return true;
             }
             return false;
