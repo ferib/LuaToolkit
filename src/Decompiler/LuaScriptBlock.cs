@@ -14,6 +14,8 @@ namespace LuaSharpVM.Decompiler
         public int JumpsTo = -1; // -1 will never happen or its inf loop (iirc)
         public int JumpsNext = -1; // the next instruction (if any)
         public int StartAddress;
+        public bool IsChainedIf = false;
+        public bool IsChainedIfStart = false;
 
         private int tabIndex;
         public int TabIndex
@@ -129,9 +131,16 @@ namespace LuaSharpVM.Decompiler
             List<string> result = new List<string>();
             // optimize block in one single line
 
+            for (int i = 0; i < this.Lines.Count-2; i++)
+            {
+                this.Lines[i].Op1 = "-- " + this.Lines[i].Op1;
+            }
+            return;
+
+
             int varA = -1;
             int varB = -1;
-            for(int i = this.Lines.Count-1; i >= 0; i++)
+            for (int i = this.Lines.Count - 1; i >= 0; i++)
             {
                 if (this.Lines[i].IsBranch())
                     continue; // dont care
@@ -147,13 +156,14 @@ namespace LuaSharpVM.Decompiler
                         varB = this.Lines[i].Instr.B;
 
                     continue;
-                }else if(this.Lines[i].Instr.OpCode == LuaOpcode.TAILCALL)
+                }
+                else if (this.Lines[i].Instr.OpCode == LuaOpcode.TAILCALL)
                 {
 
                 }
 
                 // NOTE: in theory, we should be able to completly optimize this IF block
-                switch(this.Lines[i].Instr.OpCode)
+                switch (this.Lines[i].Instr.OpCode)
                 {
                     case LuaOpcode.GETTABLE:
                         //if(this.Lines[i].Instr.A )

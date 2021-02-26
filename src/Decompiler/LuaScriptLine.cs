@@ -283,13 +283,13 @@ namespace LuaSharpVM.Decompiler
                 case LuaOpcode.TAILCALL:
                     // NOTE: C functions have 2 returns while Lua functions only have 1 return?
                     // Function Name
-                    this.Op1 = $"var{Instr.A}"; // func name only (used lateron)
-                    this.Op2 = $" = {Instr.A}";
+                    this.Op1 = $"return var{Instr.A}"; // func name only (used lateron)
+                    //this.Op2 = $"({Instr.A+1}";
                     // Function Args
                     if (Instr.B == 0)
                     {
                         // func parms range from A+1 to B (B = top of stack)
-                        this.Op3 = "(";
+                        this.Op3 = $"(";
                         for (int i = Instr.A; i < Instr.B; i++)
                         //for (int i = Instr.A; i < Instr.A + Instr.B - 1; ++i)
                         {
@@ -301,7 +301,7 @@ namespace LuaSharpVM.Decompiler
                     }
                     else
                     {
-                        this.Op3 = "(";
+                        this.Op3 = $"(";
                         for (int i = Instr.A; i < Instr.A + Instr.B - 1; i++)
                         //for (int i = Instr.A; i < Instr.A + Instr.B - 1; ++i)
                         {
@@ -378,9 +378,15 @@ namespace LuaSharpVM.Decompiler
                     this.Op3 = $"{WriteIndex(Instr.Bx)}";
                     break;
                 case LuaOpcode.VARARG:
+                    this.Op1 = "local ";
                     for (int i = Instr.A; i < Instr.B-1; i++)
-                        this.Op2 += $"{WriteIndex(i)} = nil; ";
-                    this.Op2 = ""; // NOTE: Do not print, just call for local?
+                    {
+                        WriteIndex(i); // NOTE: Do not print, just consume local?
+                        this.Op2 += $"var{i}";
+                        if (i < Instr.B - 2)
+                            this.Op2 += ", ";
+                    }
+                    this.Op2 += " = ..."; 
                     break;
                 default:
                     this.Op1 = "unk";

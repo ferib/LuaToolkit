@@ -263,43 +263,43 @@ namespace LuaSharpVM.Decompiler
                     // iterate from lastifIndex to i and split
                     int ifIndex = lastifIndex;
                     int previousifIndex = lastifIndex;
+                    if(!this.Blocks[i].IsChainedIf)
+                        this.Blocks[i].IsChainedIfStart = true; // start is start if not yet discovered?
                     while (ifIndex >= i)
                     {
-                        while (ifIndex >= i)
+                        // NOTE: not always the case??
+                        var ifbodyBlockEnd = this.Blocks.ToList().Single(x => x.StartAddress == this.Blocks[lastifIndex].JumpsTo); // end JMP
+                        var ifbodyBlockStart = this.Blocks[lastifIndex + 1]; // start +1
+                        if (this.Blocks[ifIndex].JumpsTo == ifbodyBlockEnd.StartAddress)
                         {
-                            // NOTE: not always the case??
-                            var ifbodyBlockEnd = this.Blocks.ToList().Single(x => x.StartAddress == this.Blocks[lastifIndex].JumpsTo); // end JMP
-                            var ifbodyBlockStart = this.Blocks[lastifIndex + 1]; // start +1
-                            if (this.Blocks[ifIndex].JumpsTo == ifbodyBlockEnd.StartAddress)
+                            // Jumps to end of IF body, AND!
+                            if (ifIndex != lastifIndex) // set condition unless last line (always and)
                             {
-                                // Jumps to end of IF body, AND!
-                                if (ifIndex != lastifIndex) // set condition unless last line (always and)
-                                {
-                                    this.Blocks[ifIndex].GetConditionLine().Op3 = "and";
-                                    this.Blocks[ifIndex + 1].GetConditionLine().Op1 = "";
-                                }
-                            }
-                            else if (this.Blocks[ifIndex].JumpsTo == ifbodyBlockStart.StartAddress) // jumps to next IF?
-                            {
-                                // Jumps to IF body, OR!
-                                this.Blocks[ifIndex].GetConditionLine().Op3 = "or";
-                                // erase other shit
+                                this.Blocks[ifIndex].GetConditionLine().Op3 = "and";
                                 this.Blocks[ifIndex + 1].GetConditionLine().Op1 = "";
                             }
-                            else
-                            {
-                                // place end keyword
-                                ifbodyBlockEnd.GetBranchLine().Op3 += "\r\nend -- ENDIF";
-                                lastifIndex = ifIndex;
-                                // merge?
-                                break;
-                            }
-                            //}
-                            //this.Blocks[i].Lines[0].Op1 = "-- IF\r\n" + this.Blocks[i].Lines[0].Op1;
-                            ifIndex--;
+                            this.Blocks[ifIndex].IsChainedIf = true; 
                         }
-                        // TODO: do some magical inlining!
-                        previousifIndex = lastifIndex;
+                        else if (this.Blocks[ifIndex].JumpsTo == ifbodyBlockStart.StartAddress) // jumps to next IF?
+                        {
+                            // Jumps to IF body, OR!
+                            this.Blocks[ifIndex].GetConditionLine().Op3 = "or";
+                            // erase other shit
+                            this.Blocks[ifIndex + 1].GetConditionLine().Op1 = "";
+                            this.Blocks[ifIndex].IsChainedIf = true; 
+                        }
+                        else
+                        {
+                            // place end keyword
+                            ifbodyBlockEnd.GetBranchLine().Op3 += "\r\nend -- ENDIF";
+                            lastifIndex = ifIndex;
+                            this.Blocks[ifIndex].IsChainedIfStart = true; // TODO: debug!!!!!!!!!!!!!
+                            // merge?
+                            continue;
+                        }
+                        //}
+                        //this.Blocks[i].Lines[0].Op1 = "-- IF\r\n" + this.Blocks[i].Lines[0].Op1;
+                        ifIndex--;
                     }
                 }
                 else if (this.Blocks[i].JumpsTo != -1 && this.Blocks[i].JumpsNext == -1)
@@ -328,6 +328,10 @@ namespace LuaSharpVM.Decompiler
 
         private void HandleUpvalues()
         {
+            // NOTE: Upvalues are used for function prototypes and are referenced to in a global scope
+            // My job is to generate a list of static available upvalues so that the decompiler can
+            // reference to them, they are commonly used for function calls that are in scope of the root function.
+
             LuaFunction parent = GetParentFunction();
             if (parent == null)
                 return; // we in root UwU
@@ -430,9 +434,49 @@ namespace LuaSharpVM.Decompiler
             }
         }
 
+        private void HandleTailcallReturns()
+        {
+            // NOTE: Tailcalls have 2 returns when C functions or 1 when Lua functions
+            // My job is to remove those RETURNS because they are only used in the Lua VM
+            for (int i = 0; i < this.Blocks.Count; i++)
+            {
+                for (int j = 0; j < this.Blocks[i].Lines.Count; j++)
+                {
+                    if(this.Blocks[i].Lines[j].Instr.OpCode == LuaOpcode.RETURN)
+                    {
+                        // check if previous 1/2 is a TAILCALL
+                        bool erase = false;
+                        if (j >= 1 && this.Blocks[i].Lines[j - 1].Instr.OpCode == LuaOpcode.TAILCALL)
+                            erase = true;
+                        else if (j >= 2 && this.Blocks[i].Lines[j - 2].Instr.OpCode == LuaOpcode.TAILCALL)
+                            erase = true;
+
+                        if (erase)
+                        {
+                            this.Blocks[i].Lines[j].Op1 = "-- TAILCALL RETURN"; // erase keyword
+                            this.Blocks[i].Lines[j].Op2 = ""; // erase variables
+                            //this.Blocks[i].Lines[j].Op3 = ""; // erase (dont erase this, contains else)
+                        }
+                    }
+                }
+            }
+        }
+
+        private void OptimizeConditions()
+        {
+            // NOTE: IF statements may have more then 2 instruction (IF, JMP) when they are chained
+            // My job is to optimize those merged IF blocks so that inline IFs are working fine
+
+            foreach (var b in this.Blocks)
+                if (b.GetConditionLine() != null && b.IsChainedIf && !b.IsChainedIfStart)
+                    b.Optimize(); // optimize IF only?
+        }
+
         public void Complete()
         {
             GenerateBlocks();
+            HandleTailcallReturns(); // fix returns
+            OptimizeConditions();
             Realign(); // complete?
         }
 
