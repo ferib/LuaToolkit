@@ -377,9 +377,11 @@ namespace LuaSharpVM.Decompiler
                     this.Op2 = " = ";
                     this.Op3 = $"{WriteIndex(Instr.Bx)}";
                     break;
-                //case LuaOpcode.VARARG:
-                //    // TODO: this.Op1 = "..."; // B > 1 for fixed range, B 0 for unspecified
-                //    break;
+                case LuaOpcode.VARARG:
+                    for (int i = Instr.A; i < Instr.B-1; i++)
+                        this.Op2 += $"{WriteIndex(i)} = nil; ";
+                    this.Op2 = ""; // NOTE: Do not print, just call for local?
+                    break;
                 default:
                     this.Op1 = "unk";
                     this.Op2 = "_";
@@ -466,7 +468,7 @@ namespace LuaSharpVM.Decompiler
             }
         }
 
-        private int ToIndex(int value, out bool isConstant)
+        public int ToIndex(int value, out bool isConstant)
         {
             // this is the logic from lua's source code (lopcodes.h)
             if (isConstant = (value & 1 << 8) != 0)

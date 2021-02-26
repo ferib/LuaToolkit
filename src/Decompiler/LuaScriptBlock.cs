@@ -117,9 +117,56 @@ namespace LuaSharpVM.Decompiler
             return null;
         }
 
+        // optimize IF or TAILCALL blocks
         public void Optimize()
         {
             // TODO: optimize for condition
+            if (this.Lines.Count <= 2)
+                return;
+            var cBlock = this.GetConditionLine();
+
+            string tmpResult = "";
+            List<string> result = new List<string>();
+            // optimize block in one single line
+
+            int varA = -1;
+            int varB = -1;
+            for(int i = this.Lines.Count-1; i >= 0; i++)
+            {
+                if (this.Lines[i].IsBranch())
+                    continue; // dont care
+                if (this.Lines[i].IsCondition())
+                {
+                    bool constant = false;
+                    this.Lines[i].ToIndex(this.Lines[i].Instr.A, out constant); // check if constant
+                    if (!constant)
+                        varA = this.Lines[i].Instr.A;
+
+                    this.Lines[i].ToIndex(this.Lines[i].Instr.B, out constant); // check if constant
+                    if (!constant)
+                        varB = this.Lines[i].Instr.B;
+
+                    continue;
+                }else if(this.Lines[i].Instr.OpCode == LuaOpcode.TAILCALL)
+                {
+
+                }
+
+                // NOTE: in theory, we should be able to completly optimize this IF block
+                switch(this.Lines[i].Instr.OpCode)
+                {
+                    case LuaOpcode.GETTABLE:
+                        //if(this.Lines[i].Instr.A )
+                        break;
+                    case LuaOpcode.MOVE:
+                        break;
+                    case LuaOpcode.CALL:
+                        break;
+                }
+                // GETTABLE
+                // MOVE
+                // CALL
+            }
         }
 
         public string ToString()
