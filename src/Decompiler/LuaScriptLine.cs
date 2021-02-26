@@ -275,7 +275,38 @@ namespace LuaSharpVM.Decompiler
                         this.Op3 += ")";
                     }
                     break;
-                // TAILCALL
+                case LuaOpcode.TAILCALL:
+                    // NOTE: C functions have 2 returns while Lua functions only have 1 return?
+                    // Function Name
+                    this.Op1 = $"var{Instr.A}"; // func name only (used lateron)
+                    this.Op2 = $" = {Instr.A}";
+                    // Function Args
+                    if (Instr.B == 0)
+                    {
+                        // func parms range from A+1 to B (B = top of stack)
+                        this.Op3 = "(";
+                        for (int i = Instr.A; i < Instr.B; i++)
+                        //for (int i = Instr.A; i < Instr.A + Instr.B - 1; ++i)
+                        {
+                            this.Op3 += $"var{i + 1}";
+                            if (i < Instr.A + Instr.B - 2)
+                                this.Op3 += ", ";
+                        }
+                        this.Op3 += ")";
+                    }
+                    else
+                    {
+                        this.Op3 = "(";
+                        for (int i = Instr.A; i < Instr.A + Instr.B - 1; i++)
+                        //for (int i = Instr.A; i < Instr.A + Instr.B - 1; ++i)
+                        {
+                            this.Op3 += $"var{i + 1}";
+                            if (i < Instr.A + Instr.B - 2)
+                                this.Op3 += ", ";
+                        }
+                        this.Op3 += ")";
+                    }
+                    break;
                 case LuaOpcode.RETURN:
                     // this gets overwritten by an 'end' afterwards in case its the last RETURN value of a func
                     this.Op1 = $"return";
@@ -340,9 +371,9 @@ namespace LuaSharpVM.Decompiler
                     this.Op2 = " = ";
                     this.Op3 = $"{WriteIndex(Instr.Bx)}";
                     break;
-                case LuaOpcode.VARARG:
-                    // TODO: this.Op1 = "..."; // B > 1 for fixed range, B 0 for unspecified
-                    break;
+                //case LuaOpcode.VARARG:
+                //    // TODO: this.Op1 = "..."; // B > 1 for fixed range, B 0 for unspecified
+                //    break;
                 default:
                     this.Op1 = "unk";
                     this.Op2 = "_";
