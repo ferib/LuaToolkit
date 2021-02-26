@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using LuaSharpVM.Core;
 using LuaSharpVM.Disassembler;
@@ -13,6 +14,9 @@ namespace LuaSharpVM.Decompiler
         public int JumpsTo = -1; // -1 will never happen or its inf loop (iirc)
         public int JumpsNext = -1; // the next instruction (if any)
         public int StartAddress;
+
+        public bool IsChainedIf = false; // True in case of reversing
+        public int ChanIndex = -1;
 
         private int tabIndex;
         public int TabIndex
@@ -60,6 +64,25 @@ namespace LuaSharpVM.Decompiler
                 return true;
             }
             return false;  
+        }
+
+        public void RewriteVariables(int offset)
+        {
+            // Rewrite the variables x by adding mov prefix+x = x and then replacing all x by prefix+x
+            List<int> changedVariables = new List<int>();
+            for(int i = 0; i < this.Lines.Count; i++)
+            {
+                LuaInstruction fake = new LuaInstruction(this.Lines[i].Instr.Data);
+                changedVariables.AddRange(fake.OffsetVariables(offset));
+                this.Lines[i].SetMain(fake);
+            }
+            var vars = changedVariables.Distinct();
+            foreach(var v in vars)
+            {
+                // TODO: add instr to start!
+            }
+
+
         }
 
         private void SetLines(List<LuaScriptLine> list)

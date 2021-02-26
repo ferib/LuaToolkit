@@ -4,6 +4,7 @@ using System.Text;
 using LuaSharpVM.Core;
 using LuaSharpVM.Models;
 using LuaSharpVM.Disassembler;
+using System.Linq;
 
 namespace LuaSharpVM.Decompiler
 {
@@ -55,9 +56,11 @@ namespace LuaSharpVM.Decompiler
             SetMain();
         }
 
-        private void SetMain()
+        public void SetMain(LuaInstruction Instr = null)
         {
-            switch (this.Instr.OpCode)
+            if (Instr == null)
+                Instr = this.Instr;
+            switch (Instr.OpCode)
             {
                 case LuaOpcode.MOVE:
                     this.Op1 = WriteIndex(Instr.A);
@@ -424,6 +427,20 @@ namespace LuaSharpVM.Decompiler
                 return WriteIndex(index);
         }
 
+        private LuaScriptBlock FindBlockOwner()
+        {
+            // NOTE: there are no blocks yet when creating lines!
+            bool match = false;
+            LuaScriptLine line;
+            foreach(var b in this.Func.ScriptFunction.Blocks)
+            {
+                line = b.Lines.Single(x => x == this);
+                if (line == null)
+                    continue;
+                return b;
+            }
+            return null;
+        }
 
         // NOTE: use this on LuaScriptFunction.GetConstant ??
         public string WriteIndex(int value, bool useLocalKeyword = true)
@@ -474,7 +491,6 @@ namespace LuaSharpVM.Decompiler
                     return $"{Op1}{Op2}{Op3}\r\n";
                 return $"{tab}{Op1}{Op2}{Op3}\r\n";
             }
-               
         }
 
         public bool IsCondition()

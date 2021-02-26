@@ -262,39 +262,46 @@ namespace LuaSharpVM.Decompiler
 
                     // iterate from lastifIndex to i and split
                     int ifIndex = lastifIndex;
-                    while(ifIndex >= i)
+                    int previousifIndex = lastifIndex;
+                    while (ifIndex >= i)
                     {
-                        // NOTE: not always the case??
-                        var ifbodyBlockEnd = this.Blocks.ToList().Single(x => x.StartAddress == this.Blocks[lastifIndex].JumpsTo); // end JMP
-                        var ifbodyBlockStart = this.Blocks[lastifIndex+1]; // start +1
-                        //for (int j = lastifIndex; j >= i; j--)
-                        //{
-                        if (this.Blocks[ifIndex].JumpsTo == ifbodyBlockEnd.StartAddress)
+                        while (ifIndex >= i)
                         {
-                            // Jumps to end of IF body, AND!
-                            if (ifIndex != lastifIndex) // set condition unless last line (always and)
+                            // NOTE: not always the case??
+                            var ifbodyBlockEnd = this.Blocks.ToList().Single(x => x.StartAddress == this.Blocks[lastifIndex].JumpsTo); // end JMP
+                            var ifbodyBlockStart = this.Blocks[lastifIndex + 1]; // start +1
+                            if (this.Blocks[ifIndex].JumpsTo == ifbodyBlockEnd.StartAddress)
                             {
-                                this.Blocks[ifIndex].GetConditionLine().Op3 = "and";
-                                this.Blocks[ifIndex + 1].GetConditionLine().Op1 = "";
+                                // Jumps to end of IF body, AND!
+                                if (ifIndex != lastifIndex) // set condition unless last line (always and)
+                                {
+                                    this.Blocks[ifIndex].GetConditionLine().Op3 = "and";
+                                    this.Blocks[ifIndex + 1].GetConditionLine().Op1 = "";
+                                }
+                                this.Blocks[ifIndex].IsChainedIf = true;
                             }
+                            else if (this.Blocks[ifIndex].JumpsTo == ifbodyBlockStart.StartAddress) // jumps to next IF?
+                            {
+                                // Jumps to IF body, OR!
+                                this.Blocks[ifIndex].GetConditionLine().Op3 = "or";
+                                // erase other shit
+                                this.Blocks[ifIndex + 1].GetConditionLine().Op1 = "";
+                                this.Blocks[ifIndex].IsChainedIf = true;
+                            }
+                            else
+                            {
+                                // place end keyword
+                                ifbodyBlockEnd.GetBranchLine().Op3 += "\r\nend -- ENDIF";
+                                lastifIndex = ifIndex;
+                                // merge?
+                                break;
+                            }
+                            //}
+                            //this.Blocks[i].Lines[0].Op1 = "-- IF\r\n" + this.Blocks[i].Lines[0].Op1;
+                            ifIndex--;
                         }
-                        else if (this.Blocks[ifIndex].JumpsTo == ifbodyBlockStart.StartAddress) // jumps to next IF?
-                        {
-                            // Jumps to IF body, OR!
-                            this.Blocks[ifIndex].GetConditionLine().Op3 = "or";
-                            // erase other shit
-                            this.Blocks[ifIndex + 1].GetConditionLine().Op1 = "";
-                        }
-                        else
-                        {
-                            // place end keyword
-                            ifbodyBlockEnd.GetBranchLine().Op3 += "\r\nend -- ENDIF";
-                            lastifIndex = ifIndex;
-                            continue;
-                        }
-                        //}
-                        //this.Blocks[i].Lines[0].Op1 = "-- IF\r\n" + this.Blocks[i].Lines[0].Op1;
-                        ifIndex--;
+                        // TODO: do some magical inlining!
+                        previousifIndex = lastifIndex;
                     }
                 }
                 else if (this.Blocks[i].JumpsTo != -1 && this.Blocks[i].JumpsNext == -1)
