@@ -278,7 +278,6 @@ namespace LuaSharpVM.Decompiler
                                     this.Blocks[ifIndex].GetConditionLine().Op3 = "and";
                                     this.Blocks[ifIndex + 1].GetConditionLine().Op1 = "";
                                 }
-                                this.Blocks[ifIndex].IsChainedIf = true;
                             }
                             else if (this.Blocks[ifIndex].JumpsTo == ifbodyBlockStart.StartAddress) // jumps to next IF?
                             {
@@ -286,7 +285,6 @@ namespace LuaSharpVM.Decompiler
                                 this.Blocks[ifIndex].GetConditionLine().Op3 = "or";
                                 // erase other shit
                                 this.Blocks[ifIndex + 1].GetConditionLine().Op1 = "";
-                                this.Blocks[ifIndex].IsChainedIf = true;
                             }
                             else
                             {

@@ -15,9 +15,6 @@ namespace LuaSharpVM.Decompiler
         public int JumpsNext = -1; // the next instruction (if any)
         public int StartAddress;
 
-        public bool IsChainedIf = false; // True in case of reversing
-        public int ChanIndex = -1;
-
         private int tabIndex;
         public int TabIndex
         {
@@ -56,7 +53,7 @@ namespace LuaSharpVM.Decompiler
 
         public bool AddScriptLine(LuaScriptLine l)
         {
-            // NOTE: this only checks for outgoing, we need to split incommmings to!!
+            // this only checks for outgoing, we split incommmings somwhere else
             this.lines.Add(l);
             if (l.IsBranch())
             {
@@ -109,53 +106,25 @@ namespace LuaSharpVM.Decompiler
         public LuaScriptLine GetBranchLine() // second last line
         {
             if (this.Lines.Count > 0)
-            {
-                //if (this.Lines[this.lines.Count - 1].IsBranch()) // last line for JMP, test, testset, etc
-                    return this.Lines[this.lines.Count - 1];
-                //else if (this.Lines[this.lines.Count - 2].IsBranch()) // IF before JMP
-                //    return this.Lines[this.lines.Count - 2];
-
-            }
+                return this.Lines[this.lines.Count - 1];
             return null;
         }
 
         public LuaScriptLine GetConditionLine() // last line
         {
             if (this.Lines.Count > 1)
-            {
-                //if (this.Lines[this.lines.Count - 1].IsBranch()) // last line for JMP, test, testset, etc
                 return this.Lines[this.lines.Count - 2];
-                //else if (this.Lines[this.lines.Count - 2].IsBranch()) // IF before JMP
-                //    return this.Lines[this.lines.Count - 2];
-
-            }
             return null;
+        }
+
+        public void Optimize()
+        {
+            // TODO: optimize for condition
         }
 
         public string ToString()
         {
-            //if (this.lines.Count < 2 || (this.JumpsTo == -1 && this.JumpsNext == -1))
-            //    return $"{this.StartAddress.ToString("0000")}: {this.lines[0]};
-
-            var sLastLine = this.lines[this.lines.Count - 1];
-
-
-            //if (this.JumpsTo == -1 && this.JumpsNext != -1)
-            //    return $"{this.StartAddress.ToString("0000")}: JMP: {this.JumpsNext}";
-
-            //if (this.JumpsTo != -1 && this.JumpsNext != -1)
-                return $"{this.StartAddress.ToString("0000")}: JMP: {this.JumpsTo}, ELSE: {this.JumpsNext}";
-
-            // depriciated
-            //if (sLastLine.Instr.OpCode == LuaOpcode.JMP)
-            //    return $"{this.StartAddress.ToString("0000")}: {this.lines[this.lines.Count - 2]} GOTO {this.JumpsTo}";
-
-            //if(sLastLine.Instr.OpCode == LuaOpcode.FORLOOP || sLastLine.Instr.OpCode == LuaOpcode.TFORLOOP)
-            //    return $"{this.StartAddress.ToString("0000")}: (loop) GOTO {this.JumpsTo}";
-
-            
-
-            return $"{this.StartAddress.ToString("0000")}: UNK_GOTO {this.JumpsTo}";
+            return $"{this.StartAddress.ToString("0000")}: JMP: {this.JumpsTo}, ELSE: {this.JumpsNext}";
         }
     }
 }
