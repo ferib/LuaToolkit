@@ -262,20 +262,14 @@ namespace LuaSharpVM.Decompiler
                         if (exitBlock == null || endBlock.JumpsTo > exitBlock.StartAddress)
                             exitBlock = endBlock;
 
-                        if (index != i && !endBlock.GetConditionLine().IsCondition())
+                        if (endBlock.GetConditionLine() == null)
+                            break;
+
+                        if (index != i && !endBlock.GetConditionLine().IsCondition()) // NOTE: null check
                             break; // abort
                         else
                             endBlock = this.Blocks[index + 1]; // continue search
                         index++; 
-                        
-                        //if (index != i && (
-                        //    (exitBlock.JumpsTo == endBlock.JumpsTo || exitBlock.JumpsTo == endBlock.StartAddress) || // and
-                        //    (exitBlock.JumpsTo == endBlock.JumpsTo || exitBlock.JumpsTo == endBlock.StartAddress) // or
-                        //    )) 
-                        //    break; // abort
-                        //else
-                        //    endBlock = this.Blocks[index + 1]; // continue search
-                        //index++;
                     }
                     end = index-1;
                     IfChainsStart.Add(start);
@@ -300,17 +294,19 @@ namespace LuaSharpVM.Decompiler
                 // ELSE: JMP != -1 && ELSE == -1
                 // ENDIF: JMP == -1 && ELSE != -1
                 // END: JMP == -1 && ELSE == -1
-
-                if (this.Blocks[i].JumpsTo != -1 && this.Blocks[i].JumpsNext != -1)
+                if (this.Blocks[i].GetBranchLine() != null && 
+                    (this.Blocks[i].GetBranchLine().Instr.OpCode == LuaOpcode.FORLOOP || this.Blocks[i].GetBranchLine().Instr.OpCode == LuaOpcode.TFORLOOP))
+                    this.Blocks[i].GetBranchLine().Text = "end -- ENDLOOP\r\n";
+                else if (this.Blocks[i].JumpsTo != -1 && this.Blocks[i].JumpsNext != -1)
                 {
                     // merge
                     int lastifIndex = -1;
-                    int bIndex = i+1; // search end of IF
-                    while(bIndex < this.Blocks.Count)
+                    int bIndex = i + 1; // search end of IF
+                    while (bIndex < this.Blocks.Count)
                     {
                         if (this.Blocks[bIndex].JumpsTo == -1 || this.Blocks[bIndex].JumpsNext == -1)
                         {
-                            lastifIndex = bIndex-1;
+                            lastifIndex = bIndex - 1;
                             break; // IF found
                         }
                         bIndex++;
@@ -321,142 +317,57 @@ namespace LuaSharpVM.Decompiler
                     // can be used to figure out the END of the ifbodyblock, we check others by keeping in mind
                     // they can be both and/or, meaning ifbodyblock (and) || ifbodyblock-1 (or)
 
+                    // TODO: make sure code is optimized or we will clusterfuck the merged ifs!
+
                     // iterate from lastifIndex to i and split
-                    int lastMatch = lastifIndex;
-                    var ifbodyBlockEnd = this.Blocks.ToList().Single(x => x.StartAddress == this.Blocks[lastifIndex].JumpsTo);
-                    var ifbodyBlockStart = this.Blocks[this.Blocks.IndexOf(ifbodyBlockEnd) - 1]; // block before ifbodyBlockEnd
-                    for (int j = lastifIndex; j >= i; j--)
+                    int ifIndex = lastifIndex;
+                    while(ifIndex >= i)
                     {
-                        if(this.Blocks[j].JumpsTo == ifbodyBlockEnd.StartAddress)
+                        // NOTE: not always the case??
+                        var ifbodyBlockEnd = this.Blocks.ToList().Single(x => x.StartAddress == this.Blocks[lastifIndex].JumpsTo); // end JMP
+                        var ifbodyBlockStart = this.Blocks[lastifIndex+1]; // start +1
+                        //for (int j = lastifIndex; j >= i; j--)
+                        //{
+                        if (this.Blocks[ifIndex].JumpsTo == ifbodyBlockEnd.StartAddress)
                         {
                             // Jumps to end of IF body, AND!
-                            Console.WriteLine("and");
-                            if (j != lastifIndex) // set condition unless last line (always and)
+                            if (ifIndex != lastifIndex) // set condition unless last line (always and)
                             {
-                                this.Blocks[j].GetConditionLine().Op3 = "and";
-                                this.Blocks[j + 1].GetConditionLine().Op1 = "";
-                            }  
+                                this.Blocks[ifIndex].GetConditionLine().Op3 = "and";
+                                this.Blocks[ifIndex + 1].GetConditionLine().Op1 = "";
+                            }
                         }
-                        else if(this.Blocks[j].JumpsTo == ifbodyBlockStart.StartAddress)
+                        else if (this.Blocks[ifIndex].JumpsTo == ifbodyBlockStart.StartAddress) // jumps to next IF?
                         {
                             // Jumps to IF body, OR!
-                            Console.WriteLine("or");
-                            this.Blocks[j].GetConditionLine().Op3 = "or";
+                            this.Blocks[ifIndex].GetConditionLine().Op3 = "or";
                             // erase other shit
-                            this.Blocks[j + 1].GetConditionLine().Op1 = "";
+                            this.Blocks[ifIndex + 1].GetConditionLine().Op1 = "";
                         }
                         else
                         {
                             // not part of the ifchain uwu, regroup!
                             Console.WriteLine("reeee");
-                            // TOOD: re-group
+                            // place end keyword
+                            ifbodyBlockEnd.GetBranchLine().Op3 += "\r\nend -- ENDIF";
+                            lastifIndex = ifIndex;
+                            continue;
                         }
+                        //}
+                        //this.Blocks[i].Lines[0].Op1 = "-- IF\r\n" + this.Blocks[i].Lines[0].Op1;
+                        ifIndex--;
                     }
-                    //this.Blocks[i].Lines[0].Op1 = "-- IF\r\n" + this.Blocks[i].Lines[0].Op1;
-                }    
+                }
                 else if (this.Blocks[i].JumpsTo != -1 && this.Blocks[i].JumpsNext == -1)
                     this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Op3 += "\r\nelse";
-                else if (this.Blocks[i].JumpsTo == -1 && this.Blocks[i].JumpsNext != -1)
+                else if (this.Blocks[i].JumpsTo == -1 && this.Blocks[i].JumpsNext != -1 && this.Blocks[i].GetBranchLine() != null
+                    && this.Blocks[i].GetBranchLine().Instr.OpCode != LuaOpcode.FORPREP) // also make sure if condifition is set (no forloop)
                     this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Op3 += "\r\nend -- ENDIF";
                 else if (this.Blocks[i].JumpsTo == -1 && this.Blocks[i].JumpsNext == -1)
-                    this.Blocks[i].Lines[0].Op3 += " -- END\r\n";
+                    this.Blocks[i].GetBranchLine().Op3 += " -- END\r\n"; // already taken care of
             }
 
-            /*
-            // merge if chains
-            List<int> BlacklistIndex = new List<int>();
-            for (int i = 0; i < IfChainsStart.Count; i++)
-            {
-                // 0_3, 1_2, 4_5, 5_6
-                // 0, 1, 4, 5
-                // 3, 2, 5, 6
-
-                // take out over high level
-                // 0_3 -> 1_2
-                // 4_5
-                // 5_6
-                // 0_3, -(1_2), [4_5, 5_6]
-
-                // merge when start occours multiple times
-                List<int> currentIds = new List<int>();
-                for (int x = 0; x < IfChainsStart.Count; x++) // find all ifs with same start
-                    if (IfChainsStart[i] == IfChainsStart[x]) // check next
-                        currentIds.Add(x);
-
-                for (int x = 0; x < currentIds.Count; x++) // merge ifs
-                {
-                    if (!this.Blocks[currentIds[x]].GetConditionLine().IsCondition())
-                    {
-                        // end of block
-                        this.Blocks[currentIds[x]].GetBranchLine().Op3 += "\r\nend -- nocondition";
-                        continue; 
-                    }
-                        
-
-                    if(x == currentIds.Count-1)
-                    {
-                        // last if
-                        this.Blocks[currentIds[x]].GetConditionLine().Op3 = "then -- merged\r\n";
-                    }else
-                    {
-                        // postfix or/and
-                        this.Blocks[currentIds[x]].GetConditionLine().Op3 = "and/or";
-                    }
-                    // prefix
-                    if(x != 0)
-                    {
-                        this.Blocks[currentIds[x]].GetConditionLine().Op1 = "";
-                    }
-                }
-            }
-            */
-
-            // handle if chains
-            //for (int i = 0; i < IfChainsStart.Count; i++)
-            //{
-            //    // iterate over if chain
-            //    for (int j = IfChainsStart[i]; j <= IfChainsEnd[i]; j++)
-            //    {
-
-            //        if (IfChainsEnd == null)
-            //            continue;
-
-            //        if (j == IfChainsEnd[i] - 1)
-            //        {
-            //            this.Blocks[j].GetConditionLine().Op3 = "then";
-            //            // place else/end
-            //            var endBlock = this.Blocks.Find(x => x.StartAddress == this.Blocks[j].JumpsTo); // whole chain jumps to same block?
-            //                                                                                            // TODO: consider ELSE and end at JumpNext
-            //            if (endBlock != null)
-            //                endBlock.Lines[0].Op1 = "end -- IF\n\r" + endBlock.Lines[0].Op1;
-            //        }
-            //        else
-            //        {
-            //            // postfix or/and
-            //            if (this.Blocks[j].GetConditionLine().Instr.A == 1)
-            //                this.Blocks[j].GetConditionLine().Op3 = "or";
-            //            else
-            //                this.Blocks[j].GetConditionLine().Op3 = "and";
-            //        }
-            //        // prefix
-            //        if (j != IfChainsStart[i])
-            //            this.Blocks[j].GetConditionLine().Op1 = "";
-
-            //    }
-            //}
-
-
-            // handle FORLOOP and TFORLOOP
-            for (int i = 0; i < this.Blocks.Count; i++)
-            {
-                var bLine = this.Blocks[i].GetBranchLine();
-                if (bLine != null)
-                {
-                    if (bLine.Instr.OpCode == LuaOpcode.FORLOOP || bLine.Instr.OpCode == LuaOpcode.TFORLOOP)
-                        this.Blocks[i].GetBranchLine().Op3 += "\r\nend -- LOOP";
-                }
-
-            }
+            
             Console.WriteLine();
 
         }
@@ -468,8 +379,10 @@ namespace LuaSharpVM.Decompiler
                 targetFunc = this.Func; // self
             if (index > 255 && targetFunc.Constants[index - 256] != null)
                 return targetFunc.Constants[index - 256].ToString();
-            else
+            else if (targetFunc.Constants.Count > index)
                 return targetFunc.Constants[index].ToString();
+            else
+                return "unk" + index;
         }
 
         private void HandleUpvalues()

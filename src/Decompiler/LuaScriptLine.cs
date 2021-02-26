@@ -430,12 +430,19 @@ namespace LuaSharpVM.Decompiler
             string tab = new string('\t', Depth); // NOTE: singple space for debugging
             if (this.Instr == null)
                 return $"{tab}{Op1}\r\n"; // wildcard
-            else if ((this.Op1 == "" || this.Op1  == null)
+            else if (this.IsBranch())
+                return "";
+            else if ((this.Op1 == "" || this.Op1 == null)
                 && (this.Op2 == "" || this.Op2 == null)
-                &&  (this.Op3 == "" || this.Op3 == null))
+                && (this.Op3 == "" || this.Op3 == null))
                 return "\r\n";
             else
+            {
+                if (IsCondition() && !Op1.Contains("if"))
+                    return $"{Op1}{Op2}{Op3}\r\n";
                 return $"{tab}{Op1}{Op2}{Op3}\r\n";
+            }
+               
         }
 
         public bool IsCondition()

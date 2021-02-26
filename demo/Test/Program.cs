@@ -15,7 +15,8 @@ namespace Test
         static void Main(string[] args)
         {
             Console.WriteLine("[+] LuaSharpVM\r\n");
-            LuaObfuscator o = new LuaObfuscator(File.ReadAllBytes(@"L:\Projects\LuaBytcodeInterpreter\lua_installer\files\test_if.luac"));
+            //LuaObfuscator o = new LuaObfuscator(File.ReadAllBytes(@"L:\Projects\LuaBytcodeInterpreter\lua_installer\files\test_if.luac"));
+            LuaObfuscator o = new LuaObfuscator(File.ReadAllBytes(@"L:\Projects\LuaBytcodeInterpreter\lua_installer\files\protection.luac"));
 
             // show original lua
             Console.ForegroundColor = ConsoleColor.DarkYellow;
