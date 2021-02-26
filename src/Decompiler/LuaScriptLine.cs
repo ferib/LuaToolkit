@@ -37,7 +37,7 @@ namespace LuaSharpVM.Decompiler
         private string _text;
         public string Text
         {
-            get { if (_text == null) { return ToString(); } else { return _text; }; }
+            get { if (_text == null || _text == "") { return ToString(); } else { return _text; }; }
             set { _text = value; }
         }
 
@@ -369,6 +369,7 @@ namespace LuaSharpVM.Decompiler
                     // has no impact on the decompiler?
                     break;
                 case LuaOpcode.CLOSURE:
+                    // 
                     this.Op1 = $"{WriteIndex(Instr.A)}";
                     this.Op2 = " = ";
                     this.Op3 = $"{WriteIndex(Instr.Bx)}";
@@ -463,8 +464,6 @@ namespace LuaSharpVM.Decompiler
             string tab = new string('\t', Depth); // NOTE: singple space for debugging
             if (this.Instr == null)
                 return $"{tab}{Op1}\r\n"; // wildcard
-            else if (this.IsBranch())
-                return "";
             else if ((this.Op1 == "" || this.Op1 == null)
                 && (this.Op2 == "" || this.Op2 == null)
                 && (this.Op3 == "" || this.Op3 == null))

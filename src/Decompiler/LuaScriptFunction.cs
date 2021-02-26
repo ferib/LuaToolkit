@@ -228,65 +228,6 @@ namespace LuaSharpVM.Decompiler
                 }
             }
 
-
-            // find if chains
-            List<int> IfChainsStart = new List<int>();
-            List<int> IfChainsEnd = new List<int>();
-            int start = -1;
-            int end = -1;
-            for (int i = 0; i < this.Blocks.Count; i += 1)
-            {
-                // NOTE: Finding if chains is done by checking the JumpTo of each blok that ends with IF
-                // We will start iterating from the block index and work our way to the next, if the next
-                // block does not JumpTo the startBlock.JumpTo then we have no end yet and we will continue
-                // to look for the block that defines the end of that IF body.
-
-                var src = this.Blocks[i].GetConditionLine();
-                if (src != null && src.IsCondition() && i < this.Blocks.Count - 1)
-                {
-                    if (start == -1)
-                    {
-                        start = i;
-                        end = i;
-                    }
-
-                    LuaScriptBlock endBlock = this.Blocks[i];
-                    LuaScriptBlock exitBlock = this.Blocks.Find(x => x.StartAddress == endBlock.JumpsTo);
-                    index = i;
-                    var highestJump = -1;
-                    while (index < this.Blocks.Count)
-                    {
-                        //if (exitBlock.JumpsTo < endBlock.JumpsTo)
-                        //    exitBlock = endBlock;
-
-                        if (exitBlock == null || endBlock.JumpsTo > exitBlock.StartAddress)
-                            exitBlock = endBlock;
-
-                        if (endBlock.GetConditionLine() == null)
-                            break;
-
-                        if (index != i && !endBlock.GetConditionLine().IsCondition()) // NOTE: null check
-                            break; // abort
-                        else
-                            endBlock = this.Blocks[index + 1]; // continue search
-                        index++; 
-                    }
-                    end = index-1;
-                    IfChainsStart.Add(start);
-                    IfChainsEnd.Add(end);
-                    start = -1;
-                    end = -1;
-                }
-                else if (start != -1)
-                {
-                    end -= 1;
-                    IfChainsStart.Add(start);
-                    IfChainsEnd.Add(end);
-                    start = -1;
-                    end = -1;
-                }
-            }
-
             // layer attempts
             for (int i = 0; i < this.Blocks.Count; i++)
             {
@@ -346,8 +287,6 @@ namespace LuaSharpVM.Decompiler
                         }
                         else
                         {
-                            // not part of the ifchain uwu, regroup!
-                            Console.WriteLine("reeee");
                             // place end keyword
                             ifbodyBlockEnd.GetBranchLine().Op3 += "\r\nend -- ENDIF";
                             lastifIndex = ifIndex;
@@ -359,16 +298,13 @@ namespace LuaSharpVM.Decompiler
                     }
                 }
                 else if (this.Blocks[i].JumpsTo != -1 && this.Blocks[i].JumpsNext == -1)
-                    this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Op3 += "\r\nelse";
+                    this.Blocks[i].GetBranchLine().Op3 += "else"; // for some reason this needs to be forced like this? (probs from then overwrite)
                 else if (this.Blocks[i].JumpsTo == -1 && this.Blocks[i].JumpsNext != -1 && this.Blocks[i].GetBranchLine() != null
                     && this.Blocks[i].GetBranchLine().Instr.OpCode != LuaOpcode.FORPREP) // also make sure if condifition is set (no forloop)
                     this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Op3 += "\r\nend -- ENDIF";
                 else if (this.Blocks[i].JumpsTo == -1 && this.Blocks[i].JumpsNext == -1)
                     this.Blocks[i].GetBranchLine().Op3 += " -- END\r\n"; // already taken care of
             }
-
-            
-            Console.WriteLine();
 
         }
 
@@ -395,6 +331,7 @@ namespace LuaSharpVM.Decompiler
             int functionIndex = parent.Functions.IndexOf(this.Func);
             for (int i = 0; i < parent.Instructions.Count; i++)
             {
+                // TODO: bugfix
                 var instr = parent.Instructions[i];
                 switch (instr.OpCode)
                 {
@@ -447,6 +384,8 @@ namespace LuaSharpVM.Decompiler
                                 if(setTableIndex == -1 && parent.Instructions[i].A == parent.Instructions[j].C) // SETTABLE x y == CLOSURE y ?  
                                 {
                                     // find first part of the table
+                                 
+                                    // TODO: bugfix false locals
                                     this.IsLocal = false;
                                     this.Name = GetConstant(parent.Instructions[j].B, parent).ToString();
                                     this.Name = this.Name.Substring(1, this.Name.Length - 2);
@@ -473,8 +412,8 @@ namespace LuaSharpVM.Decompiler
                             j++;
                         }
 
-                        if (globalName != "")
-                            this.Name = globalName + ":" + this.Name;
+                        //if (globalName != "")
+                        //    this.Name = globalName + ":" + this.Name;
 
                         break;
                     case LuaOpcode.SETUPVAL:

@@ -96,6 +96,7 @@ namespace LuaSharpVM.Disassembler
             int count = GetInt(); // 4 or 8?
             for (int i = 0; i < count; i++)
             {
+                // TODO: handle CLOSURE??
                 LuaInstruction instr = new LuaInstruction(GetInt());
                 Instructions.Add(instr);
             }
