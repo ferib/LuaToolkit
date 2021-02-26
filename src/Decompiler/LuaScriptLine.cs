@@ -121,11 +121,13 @@ namespace LuaSharpVM.Decompiler
                     this.Op3 = "{}";
                     break;
                 case LuaOpcode.SELF:
-                    this.Op1 = WriteIndex(Instr.A);
-                    this.Op2 = " = ";
-                    this.Op3 = $"var{Instr.B}; {WriteIndex(Instr.A)} = var{Instr.B}[{WriteIndex(Instr.C)}]";
+                    this.Op1 = $"{WriteIndex(Instr.A+1)} = {WriteIndex(Instr.B)}; "; // set self
+                    this.Op2 = $"{WriteIndex(Instr.A)} = ";
+                    this.Op3 = $"var{Instr.B}[{WriteIndex(Instr.C)}]";
+                    // A = element
+                    // B = ref to table
+                    // C = methode itself
                     // TODO fix, multiline?
-                    this.NumberEnd++;
                     break;
                 case LuaOpcode.ADD: // NOTE these can be both variables and constants!
                     this.Op1 = WriteIndex(Instr.A);
