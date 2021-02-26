@@ -320,9 +320,39 @@ namespace LuaSharpVM.Decompiler
                     // depending on where the jump is set to. The last one should always be classified as 'and'
                     // can be used to figure out the END of the ifbodyblock, we check others by keeping in mind
                     // they can be both and/or, meaning ifbodyblock (and) || ifbodyblock-1 (or)
-                    var ifbodyBlock = this.Blocks.ToList().Single(x => x.StartAddress == this.Blocks[lastifIndex].JumpsTo);
 
-                    this.Blocks[i].Lines[0].Op1 = "-- IF\r\n" + this.Blocks[i].Lines[0].Op1;
+                    // iterate from lastifIndex to i and split
+                    int lastMatch = lastifIndex;
+                    var ifbodyBlockEnd = this.Blocks.ToList().Single(x => x.StartAddress == this.Blocks[lastifIndex].JumpsTo);
+                    var ifbodyBlockStart = this.Blocks[this.Blocks.IndexOf(ifbodyBlockEnd) - 1]; // block before ifbodyBlockEnd
+                    for (int j = lastifIndex; j >= i; j--)
+                    {
+                        if(this.Blocks[j].JumpsTo == ifbodyBlockEnd.StartAddress)
+                        {
+                            // Jumps to end of IF body, AND!
+                            Console.WriteLine("and");
+                            if (j != lastifIndex) // set condition unless last line (always and)
+                            {
+                                this.Blocks[j].GetConditionLine().Op3 = "and";
+                                this.Blocks[j + 1].GetConditionLine().Op1 = "";
+                            }  
+                        }
+                        else if(this.Blocks[j].JumpsTo == ifbodyBlockStart.StartAddress)
+                        {
+                            // Jumps to IF body, OR!
+                            Console.WriteLine("or");
+                            this.Blocks[j].GetConditionLine().Op3 = "or";
+                            // erase other shit
+                            this.Blocks[j + 1].GetConditionLine().Op1 = "";
+                        }
+                        else
+                        {
+                            // not part of the ifchain uwu, regroup!
+                            Console.WriteLine("reeee");
+                            // TOOD: re-group
+                        }
+                    }
+                    //this.Blocks[i].Lines[0].Op1 = "-- IF\r\n" + this.Blocks[i].Lines[0].Op1;
                 }    
                 else if (this.Blocks[i].JumpsTo != -1 && this.Blocks[i].JumpsNext == -1)
                     this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Op3 += "\r\nelse";
