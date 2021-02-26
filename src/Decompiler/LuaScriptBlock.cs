@@ -15,6 +15,7 @@ namespace LuaSharpVM.Decompiler
         public int JumpsNext = -1; // the next instruction (if any)
         public int StartAddress;
         public bool IsChainedIf = false;
+        public int IfChainIndex = -1;
         public bool IsChainedIfStart = false;
 
         private int tabIndex;

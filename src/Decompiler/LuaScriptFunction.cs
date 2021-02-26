@@ -263,8 +263,8 @@ namespace LuaSharpVM.Decompiler
                     // iterate from lastifIndex to i and split
                     int ifIndex = lastifIndex;
                     int previousifIndex = lastifIndex;
-                    if(!this.Blocks[i].IsChainedIf)
-                        this.Blocks[i].IsChainedIfStart = true; // start is start if not yet discovered?
+                    if(this.Blocks[i].IfChainIndex == -1)
+                        this.Blocks[i].IfChainIndex = 0; // start is start if not yet discovered?
                     while (ifIndex >= i)
                     {
                         // NOTE: not always the case??
@@ -278,7 +278,8 @@ namespace LuaSharpVM.Decompiler
                                 this.Blocks[ifIndex].GetConditionLine().Op3 = "and";
                                 this.Blocks[ifIndex + 1].GetConditionLine().Op1 = "";
                             }
-                            this.Blocks[ifIndex].IsChainedIf = true; 
+                            if(this.Blocks[ifIndex].IfChainIndex == -1)
+                                this.Blocks[ifIndex].IfChainIndex = ifIndex - i; //set index
                         }
                         else if (this.Blocks[ifIndex].JumpsTo == ifbodyBlockStart.StartAddress) // jumps to next IF?
                         {
@@ -286,14 +287,16 @@ namespace LuaSharpVM.Decompiler
                             this.Blocks[ifIndex].GetConditionLine().Op3 = "or";
                             // erase other shit
                             this.Blocks[ifIndex + 1].GetConditionLine().Op1 = "";
-                            this.Blocks[ifIndex].IsChainedIf = true; 
+                            if (this.Blocks[ifIndex].IfChainIndex == -1)
+                                this.Blocks[ifIndex].IfChainIndex = ifIndex - i; //set index
                         }
                         else
                         {
                             // place end keyword
                             ifbodyBlockEnd.GetBranchLine().Op3 += "\r\nend -- ENDIF";
                             lastifIndex = ifIndex;
-                            this.Blocks[ifIndex].IsChainedIfStart = true; // TODO: debug!!!!!!!!!!!!!
+                            if (this.Blocks[ifIndex].IfChainIndex == -1) // TODO: debug!!!!!!!!!!!!!
+                                this.Blocks[ifIndex].IfChainIndex = 0; //set index
                             // merge?
                             continue;
                         }
@@ -462,21 +465,23 @@ namespace LuaSharpVM.Decompiler
             }
         }
 
-        private void OptimizeConditions()
+        private void OutlineConditions()
         {
             // NOTE: IF statements may have more then 2 instruction (IF, JMP) when they are chained
             // My job is to optimize those merged IF blocks so that inline IFs are working fine
 
             foreach (var b in this.Blocks)
-                if (b.GetConditionLine() != null && b.IsChainedIf && !b.IsChainedIfStart)
-                    b.Optimize(); // optimize IF only?
+                if (b.GetConditionLine() != null && b.IfChainIndex > 0)
+                    b.Optimize();
+                //if (b.GetConditionLine() != null && b.IsChainedIf && !b.IsChainedIfStart)
+                //    b.Optimize(); // optimize IF only?
         }
 
         public void Complete()
         {
             GenerateBlocks();
             HandleTailcallReturns(); // fix returns
-            OptimizeConditions();
+            OutlineConditions();
             Realign(); // complete?
         }
 
