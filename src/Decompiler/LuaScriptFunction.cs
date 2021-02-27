@@ -282,17 +282,29 @@ namespace LuaSharpVM.Decompiler
                             {
                                 //isOr = true;
                                 //isAnd = true; // IDK what to pick?
-                                if (ifIndex != lastifIndex) // set condition unless last line (always and)
+
+                                // TODO: add some more logic to determine where the jump goes to and decide wether its or/and
+                                bool jmpsToStart = this.Blocks[ifIndex].JumpsTo == ifbodyBlockStart.StartAddress; // is or?
+                                if(jmpsToStart)
                                 {
-                                    if(this.Blocks[ifIndex].GetConditionLine().Instr.A == 1)
+                                    if (ifIndex != lastifIndex)
                                         this.Blocks[ifIndex].GetConditionLine().Op3 = "or";
-                                    else
-                                        this.Blocks[ifIndex].GetConditionLine().Op3 = "and";
-                                    this.Blocks[ifIndex + 1].GetConditionLine().Op1 = "";
-                                    break;
+                                    if(this.Blocks[ifIndex].GetConditionLine().Instr.A == 0)
+                                        this.Blocks[ifIndex].GetConditionLine().Op2 = this.Blocks[ifIndex].GetConditionLine().Op2.Replace("==", "~=");
                                 }
+                                else
+                                {
+                                    if(ifIndex != lastifIndex)
+                                        this.Blocks[ifIndex].GetConditionLine().Op3 = "and";
+                                    if (this.Blocks[ifIndex].GetConditionLine().Instr.A == 1)
+                                        this.Blocks[ifIndex].GetConditionLine().Op2 = this.Blocks[ifIndex].GetConditionLine().Op2.Replace("==", "~=");
+                                }
+
+                                if (ifIndex != lastifIndex)
+                                    this.Blocks[ifIndex + 1].GetConditionLine().Op1 = "";
                                 if (this.Blocks[ifIndex].IfChainIndex == -1)
                                     this.Blocks[ifIndex].IfChainIndex = ifIndex - i; //set index TODO: numbers are NOT correct after rebase!
+                                break;
                             }
                             cIndex--;
                         }
@@ -366,7 +378,7 @@ namespace LuaSharpVM.Decompiler
                         ifIndex--;
                     }
                     
-                    // TODO: fix chainIndex Numbers!!
+                    // TODO: fix chainIndex Numbers, they wont start from 0 if they got interrupted
                 }
                 else if (this.Blocks[i].JumpsTo != -1 && this.Blocks[i].JumpsNext == -1)
                     this.Blocks[i].GetBranchLine().Op3 += "else"; // for some reason this needs to be forced like this? (probs from then overwrite)
