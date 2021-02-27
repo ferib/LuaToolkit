@@ -137,10 +137,13 @@ namespace LuaSharpVM.Decompiler
             int varA = -1;
             int varB = -1;
 
-            if ((cLine.Instr.A & 1 << 8) == 0) // not const
+            if (cLine.Instr.OpCode == LuaOpcode.TEST || cLine.Instr.OpCode == LuaOpcode.TESTSET) // only use A?
                 varA = cLine.Instr.A;
-            if ((cLine.Instr.B & 1 << 8) == 0) // not const
-                varB = cLine.Instr.A;
+            else
+                if ((cLine.Instr.B & 1 << 8) == 0) // not const
+                    varA = cLine.Instr.B;
+                if ((cLine.Instr.C & 1 << 8) == 0) // not const
+                    varB = cLine.Instr.C;
 
             // transplants lines
             List<LuaScriptLine> tLines = new List<LuaScriptLine>();
@@ -162,9 +165,22 @@ namespace LuaSharpVM.Decompiler
             }
             tLines.AddRange(this.Lines.GetRange(0, this.Lines.Count - 2)); // copy transplants
             this.Lines.RemoveRange(0, this.Lines.Count - 2); // remove transplants
-
             var thisIndex = this.Func.ScriptFunction.Blocks.IndexOf(this);
             this.Func.ScriptFunction.Blocks[thisIndex - this.IfChainIndex].Lines.InsertRange(this.Func.ScriptFunction.Blocks[thisIndex - this.IfChainIndex].Lines.Count - 2, tLines); // complete transplant
+
+            // add copys to restore
+            // NOTE: this plan is failure, we need to copy the variables to multiple locations, IF Body and IF End block.
+            // the variables can already be overwritten by then!
+
+            //if(this.Func.ScriptFunction.Blocks.Count > thisIndex+1 && this.Func.ScriptFunction.Blocks[thisIndex+1].IfChainIndex == -1)
+            //{
+            //    if (varA != -1)
+            //        this.Lines.Add(new LuaScriptLine($"var{varA} = var{this.IfChainIndex}{varA}"));
+            //    //tLines.Add(new LuaScriptLine($"var{varA} = var{this.IfChainIndex}{varA}"));
+            //    if (varB != -1)
+            //        this.Lines.Add(new LuaScriptLine($"var{varB} = var{this.IfChainIndex}{varB}"));
+            //    //tLines.Add(new LuaScriptLine($"var{varB} = var{this.IfChainIndex}{varB}"));
+            //}
         }
 
         public string ToString()
