@@ -220,7 +220,10 @@ namespace LuaSharpVM.Decompiler
                     break;
                 case LuaOpcode.TEST:
                     this.Op1 = $"if";
-                    this.Op2 = $" not var{Instr.A} ~= {Instr.C} ";
+                    if(Instr.C == 1)
+                        this.Op2 = $" not var{Instr.A} ";
+                    else
+                        this.Op2 = $" var{Instr.A} ";
                     this.Op3 = $"then";
                     break;
                 case LuaOpcode.TESTSET:
