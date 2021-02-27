@@ -81,8 +81,6 @@ namespace LuaSharpVM.Decompiler
             {
                 // TODO: add instr to start!
             }
-
-
         }
 
         private void SetLines(List<LuaScriptLine> list)
@@ -126,58 +124,47 @@ namespace LuaSharpVM.Decompiler
             // TODO: optimize for condition
             if (this.Lines.Count <= 2)
                 return;
-            var cBlock = this.GetConditionLine();
+            var cLine = this.GetConditionLine();
 
             string tmpResult = "";
             List<string> result = new List<string>();
             // optimize block in one single line
 
-            for (int i = 0; i < this.Lines.Count-2; i++)
-            {
-                this.Lines[i].Op1 = "-- " + this.Lines[i].Op1;
-            }
-            return;
-
+            // get branch info
+            if (!cLine.IsCondition())
+                return;
 
             int varA = -1;
             int varB = -1;
-            for (int i = this.Lines.Count - 1; i >= 0; i++)
+
+            if ((cLine.Instr.A & 1 << 8) == 0) // not const
+                varA = cLine.Instr.A;
+            if ((cLine.Instr.B & 1 << 8) == 0) // not const
+                varB = cLine.Instr.A;
+
+            // transplants lines
+            List<LuaScriptLine> tLines = new List<LuaScriptLine>();
+            for (int i = this.Lines.Count - 2; i >= 0; i--)
             {
-                if (this.Lines[i].IsBranch())
-                    continue; // dont care
-                if (this.Lines[i].IsCondition())
+                // NOTE: Text bugs out, TOOD: fix Text
+                if (varA != -1)
                 {
-                    bool constant = false;
-                    this.Lines[i].ToIndex(this.Lines[i].Instr.A, out constant); // check if constant
-                    if (!constant)
-                        varA = this.Lines[i].Instr.A;
-
-                    this.Lines[i].ToIndex(this.Lines[i].Instr.B, out constant); // check if constant
-                    if (!constant)
-                        varB = this.Lines[i].Instr.B;
-
-                    continue;
-                }
-                else if (this.Lines[i].Instr.OpCode == LuaOpcode.TAILCALL)
+                    this.Lines[i].Op1 = this.Lines[i].Op1.Replace("var" + varA, "var" + this.IfChainIndex + varA);
+                    this.Lines[i].Op2 = this.Lines[i].Op2.Replace("var" + varA, "var" + this.IfChainIndex + varA);
+                    this.Lines[i].Op3 = this.Lines[i].Op3.Replace("var" + varA, "var" + this.IfChainIndex + varA);
+                } 
+                if (varB != -1)
                 {
-
+                    this.Lines[i].Op1 = this.Lines[i].Op1.Replace("var" + varB, "var" + this.IfChainIndex + varB);
+                    this.Lines[i].Op2 = this.Lines[i].Op2.Replace("var" + varB, "var" + this.IfChainIndex + varB);
+                    this.Lines[i].Op3 = this.Lines[i].Op3.Replace("var" + varB, "var" + this.IfChainIndex + varB);
                 }
-
-                // NOTE: in theory, we should be able to completly optimize this IF block
-                switch (this.Lines[i].Instr.OpCode)
-                {
-                    case LuaOpcode.GETTABLE:
-                        //if(this.Lines[i].Instr.A )
-                        break;
-                    case LuaOpcode.MOVE:
-                        break;
-                    case LuaOpcode.CALL:
-                        break;
-                }
-                // GETTABLE
-                // MOVE
-                // CALL
             }
+            tLines.AddRange(this.Lines.GetRange(0, this.Lines.Count - 2)); // copy transplants
+            this.Lines.RemoveRange(0, this.Lines.Count - 2); // remove transplants
+
+            var thisIndex = this.Func.ScriptFunction.Blocks.IndexOf(this);
+            this.Func.ScriptFunction.Blocks[thisIndex - this.IfChainIndex].Lines.InsertRange(this.Func.ScriptFunction.Blocks[thisIndex - this.IfChainIndex].Lines.Count - 2, tLines); // complete transplant
         }
 
         public string ToString()

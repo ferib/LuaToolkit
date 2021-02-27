@@ -473,8 +473,6 @@ namespace LuaSharpVM.Decompiler
             foreach (var b in this.Blocks)
                 if (b.GetConditionLine() != null && b.IfChainIndex > 0)
                     b.Optimize();
-                //if (b.GetConditionLine() != null && b.IsChainedIf && !b.IsChainedIfStart)
-                //    b.Optimize(); // optimize IF only?
         }
 
         public void Complete()
