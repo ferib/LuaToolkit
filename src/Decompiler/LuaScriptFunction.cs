@@ -480,7 +480,9 @@ namespace LuaSharpVM.Decompiler
             GenerateBlocks();
             HandleTailcallReturns(); // fix returns
             OutlineConditions();
+#if !DEBUG
             Realign(); // complete?
+#endif
         }
 
         public string GetText()

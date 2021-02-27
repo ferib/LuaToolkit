@@ -486,7 +486,21 @@ namespace LuaSharpVM.Decompiler
         public override string ToString()
         {
             // TODO: leave tab to another level?
-            string tab = new string('\t', Depth); // NOTE: singple space for debugging
+            string tab = "";// new string('\t', Depth); // NOTE: singple space for debugging
+#if DEBUG
+            if (this.Instr == null)
+                return $"{this.Instr.ToString().PadRight(19)} {tab}{Op1}\r\n"; // wildcard
+            else if ((this.Op1 == "" || this.Op1 == null)
+                && (this.Op2 == "" || this.Op2 == null)
+                && (this.Op3 == "" || this.Op3 == null))
+                return $"{this.Instr.ToString().PadRight(19)}\r\n";
+            else
+            {
+                if (IsCondition() && !Op1.Contains("if"))
+                    return $"{this.Instr.ToString().PadRight(19)} {Op1}{Op2}{Op3}\r\n";
+                return $"{this.Instr.ToString().PadRight(19)} {tab}{Op1}{Op2}{Op3}\r\n";
+            }
+#else
             if (this.Instr == null)
                 return $"{tab}{Op1}\r\n"; // wildcard
             else if ((this.Op1 == "" || this.Op1 == null)
@@ -499,6 +513,7 @@ namespace LuaSharpVM.Decompiler
                     return $"{Op1}{Op2}{Op3}\r\n";
                 return $"{tab}{Op1}{Op2}{Op3}\r\n";
             }
+#endif
         }
 
         public bool IsCondition()
