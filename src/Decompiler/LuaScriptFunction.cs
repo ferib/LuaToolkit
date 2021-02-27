@@ -238,7 +238,7 @@ namespace LuaSharpVM.Decompiler
                 if (this.Blocks[i].GetBranchLine() != null && 
                     (this.Blocks[i].GetBranchLine().Instr.OpCode == LuaOpcode.FORLOOP || this.Blocks[i].GetBranchLine().Instr.OpCode == LuaOpcode.TFORLOOP))
                     this.Blocks[i].GetBranchLine().Text = "end -- ENDLOOP\r\n";
-                else if (this.Blocks[i].JumpsTo != -1 && this.Blocks[i].JumpsNext != -1)
+                else if (this.Blocks[i].JumpsTo != -1 && this.Blocks[i].JumpsNext != -1) // IF detected
                 {
                     // merge
                     int lastifIndex = -1;
@@ -258,52 +258,115 @@ namespace LuaSharpVM.Decompiler
                     // can be used to figure out the END of the ifbodyblock, we check others by keeping in mind
                     // they can be both and/or, meaning ifbodyblock (and) || ifbodyblock-1 (or)
 
-                    // TODO: make sure code is optimized or we will clusterfuck the merged ifs!
-
                     // iterate from lastifIndex to i and split
                     int ifIndex = lastifIndex;
                     int previousifIndex = lastifIndex;
-                    if(this.Blocks[i].IfChainIndex == -1)
+                    if (this.Blocks[i].IfChainIndex == -1)
                         this.Blocks[i].IfChainIndex = 0; // start is start if not yet discovered?
+                    else
+                        continue;
                     while (ifIndex >= i)
                     {
                         // NOTE: not always the case??
                         var ifbodyBlockEnd = this.Blocks.ToList().Single(x => x.StartAddress == this.Blocks[lastifIndex].JumpsTo); // end JMP
                         var ifbodyBlockStart = this.Blocks[lastifIndex + 1]; // start +1
-                        if (this.Blocks[ifIndex].JumpsTo == ifbodyBlockEnd.StartAddress)
+
+                        // NOTE: iterate from end to here to which block it JMPs to
+                        //bool isOr = false;
+                        //bool isAnd = false;
+                        int cIndex = this.Blocks.IndexOf(ifbodyBlockEnd); // start from endblock
+                        //while (cIndex > ifIndex && !isOr && !isAnd)
+                        while (cIndex > ifIndex)
                         {
-                            // Jumps to end of IF body, AND!
-                            if (ifIndex != lastifIndex) // set condition unless last line (always and)
+                            if(this.Blocks[ifIndex].JumpsTo == this.Blocks[cIndex].StartAddress)
                             {
-                                this.Blocks[ifIndex].GetConditionLine().Op3 = "and";
-                                this.Blocks[ifIndex + 1].GetConditionLine().Op1 = "";
+                                //isOr = true;
+                                //isAnd = true; // IDK what to pick?
+                                if (ifIndex != lastifIndex) // set condition unless last line (always and)
+                                {
+                                    if(this.Blocks[ifIndex].GetConditionLine().Instr.A == 1)
+                                        this.Blocks[ifIndex].GetConditionLine().Op3 = "or";
+                                    else
+                                        this.Blocks[ifIndex].GetConditionLine().Op3 = "and";
+                                    this.Blocks[ifIndex + 1].GetConditionLine().Op1 = "";
+                                    break;
+                                }
+                                if (this.Blocks[ifIndex].IfChainIndex == -1)
+                                    this.Blocks[ifIndex].IfChainIndex = ifIndex - i; //set index TODO: numbers are NOT correct after rebase!
                             }
-                            if(this.Blocks[ifIndex].IfChainIndex == -1)
-                                this.Blocks[ifIndex].IfChainIndex = ifIndex - i; //set index
+                            cIndex--;
                         }
-                        else if (this.Blocks[ifIndex].JumpsTo == ifbodyBlockStart.StartAddress) // jumps to next IF?
-                        {
-                            // Jumps to IF body, OR!
-                            this.Blocks[ifIndex].GetConditionLine().Op3 = "or";
-                            // erase other shit
-                            this.Blocks[ifIndex + 1].GetConditionLine().Op1 = "";
-                            if (this.Blocks[ifIndex].IfChainIndex == -1)
-                                this.Blocks[ifIndex].IfChainIndex = ifIndex - i; //set index
-                        }
-                        else
-                        {
-                            // place end keyword
-                            ifbodyBlockEnd.GetBranchLine().Op3 += "\r\nend -- ENDIF";
-                            lastifIndex = ifIndex;
-                            if (this.Blocks[ifIndex].IfChainIndex == -1) // TODO: debug!!!!!!!!!!!!!
-                                this.Blocks[ifIndex].IfChainIndex = 0; //set index
-                            // merge?
-                            continue;
-                        }
+
+                        //// hanlde results
+                        //if(isAnd)
+                        //{
+                        //    // Jumps to end of IF body, AND!
+                        //    if (ifIndex != lastifIndex) // set condition unless last line (always and)
+                        //    {
+                        //        this.Blocks[ifIndex].GetConditionLine().Op3 = "and";
+                        //        this.Blocks[ifIndex + 1].GetConditionLine().Op1 = "";
+                        //    }
+                        //    if (this.Blocks[ifIndex].IfChainIndex == -1)
+                        //        this.Blocks[ifIndex].IfChainIndex = ifIndex - i; //set index TODO: numbers are NOT correct after rebase!
+                        //}
+                        //else if(isOr)
+                        //{
+                        //    // Jumps to IF body, OR!
+                        //    this.Blocks[ifIndex].GetConditionLine().Op3 = "or"; // TODO: A is set? invert!
+
+                        //    // erase other shit
+                        //    this.Blocks[ifIndex + 1].GetConditionLine().Op1 = "";
+                        //    if (this.Blocks[ifIndex].IfChainIndex == -1)
+                        //        this.Blocks[ifIndex].IfChainIndex = ifIndex - i; //set index TODO: numbers are NOT correct after rebase!
+                        //}
+                        //else
+                        //{
+                        //    // end
+                        //    ifbodyBlockEnd.GetBranchLine().Op3 += "\r\nend -- ENDIF";
+                        //    lastifIndex = ifIndex;
+                        //    if (this.Blocks[ifIndex].IfChainIndex == -1) // TODO: debug!!!!!!!!!!!!!
+                        //        this.Blocks[ifIndex].IfChainIndex = 0; //set index
+                        //    // merge?
+                        //    continue;
+                        //}
+
+                        ////if (this.Blocks[ifIndex].JumpsTo == ifbodyBlockEnd.StartAddress)
+                        ////{
+                        ////    // Jumps to end of IF body, AND!
+                        ////    if (ifIndex != lastifIndex) // set condition unless last line (always and)
+                        ////    {
+                        ////        this.Blocks[ifIndex].GetConditionLine().Op3 = "and";
+                        ////        this.Blocks[ifIndex + 1].GetConditionLine().Op1 = "";
+                        ////    }
+                        ////    if(this.Blocks[ifIndex].IfChainIndex == -1)
+                        ////        this.Blocks[ifIndex].IfChainIndex = ifIndex - i; //set index TODO: numbers are NOT correct after rebase!
+                        ////}
+                        ////else if (this.Blocks[ifIndex].JumpsTo == ifbodyBlockStart.StartAddress) // jumps to next IF?
+                        ////{
+                        ////    // Jumps to IF body, OR!
+                        ////        this.Blocks[ifIndex].GetConditionLine().Op3 = "or"; // TODO: A is set? invert!
+
+                        ////    // erase other shit
+                        ////    this.Blocks[ifIndex + 1].GetConditionLine().Op1 = "";
+                        ////    if (this.Blocks[ifIndex].IfChainIndex == -1)
+                        ////        this.Blocks[ifIndex].IfChainIndex = ifIndex - i; //set index TODO: numbers are NOT correct after rebase!
+                        ////}
+                        ////else
+                        ////{
+                        ////    // place end keyword
+                        ////    ifbodyBlockEnd.GetBranchLine().Op3 += "\r\nend -- ENDIF";
+                        ////    lastifIndex = ifIndex;
+                        ////    if (this.Blocks[ifIndex].IfChainIndex == -1) // TODO: debug!!!!!!!!!!!!!
+                        ////        this.Blocks[ifIndex].IfChainIndex = 0; //set index
+                        ////    // merge?
+                        ////    continue;
+                        ////}
                         //}
                         //this.Blocks[i].Lines[0].Op1 = "-- IF\r\n" + this.Blocks[i].Lines[0].Op1;
                         ifIndex--;
                     }
+                    
+                    // TODO: fix chainIndex Numbers!!
                 }
                 else if (this.Blocks[i].JumpsTo != -1 && this.Blocks[i].JumpsNext == -1)
                     this.Blocks[i].GetBranchLine().Op3 += "else"; // for some reason this needs to be forced like this? (probs from then overwrite)
