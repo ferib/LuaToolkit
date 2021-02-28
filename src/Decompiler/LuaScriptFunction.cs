@@ -237,7 +237,13 @@ namespace LuaSharpVM.Decompiler
                 // END: JMP == -1 && ELSE == -1
                 if (this.Blocks[i].GetBranchLine() != null && 
                     (this.Blocks[i].GetBranchLine().Instr.OpCode == LuaOpcode.FORLOOP || this.Blocks[i].GetBranchLine().Instr.OpCode == LuaOpcode.TFORLOOP))
+                {
+#if DEBUG
                     this.Blocks[i].GetBranchLine().Text = "end -- ENDLOOP\r\n";
+#else
+                    this.Blocks[i].GetBranchLine().Text = "end\r\n";
+#endif
+                }     
                 else if (this.Blocks[i].JumpsTo != -1 && this.Blocks[i].JumpsNext != -1) // IF detected
                 {
                     // merge
@@ -319,25 +325,34 @@ namespace LuaSharpVM.Decompiler
                             }
                                 
                             lastifIndex = ifIndex; // new IF end found!
-                        }
-                            
+                        } 
                     }
-                    
-                    // TODO: fix chainIndex Numbers, they wont start from 0 if they got interrupted
                 }
                 else if (this.Blocks[i].JumpsTo != -1 && this.Blocks[i].JumpsNext == -1)
-                    this.Blocks[i].GetBranchLine().Op3 += "else"; // for some reason this needs to be forced like this? (probs from then overwrite)
+                {
+#if DEBUG
+                    this.Blocks[i].GetBranchLine().Op3 += "else -- ELSE";
+#else
+                    this.Blocks[i].GetBranchLine().Op3 += "else";
+#endif
+                }  
                 else if (this.Blocks[i].JumpsTo == -1 && this.Blocks[i].JumpsNext != -1 && this.Blocks[i].GetBranchLine() != null
                     && this.Blocks[i].GetBranchLine().Instr.OpCode != LuaOpcode.FORPREP) // also make sure if condifition is set (no forloop)
+                {
+#if DEBUG
                     this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Op3 += "\r\nend -- ENDIF";
+#else
+                    this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Op3 += "\r\nend";
+#endif
+                }
+                    
                 else if (this.Blocks[i].JumpsTo == -1 && this.Blocks[i].JumpsNext == -1)
+                {
+#if DEBUG
                     this.Blocks[i].GetBranchLine().Op3 += " -- END\r\n"; // already taken care of
-            }
-
-            // cleanup ifmerge indexing
-            for (int i = 0; i < this.Blocks.Count-1; i++)
-            {
-                //if(this.Blocks[i].IfChainIndex != -1)
+#endif
+                }
+                    
             }
         }
 

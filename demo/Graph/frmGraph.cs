@@ -158,18 +158,47 @@ namespace Graph
         private void ReInitialise()
         {
             CreateBlocks(this.Writer.LuaFunctions[TargetFunc].Blocks);
-            foreach(var gb in GBlocks)
+            foreach (var gb in GBlocks)
             {
                 // remap jumps from address to block
                 for (int i = 0; i < this.GBlocks.Count; i++)
                 {
-                    if (this.GBlocks[i].Block.HasLineNumber(gb.Block.JumpsTo))
+                    if (gb.Block.JumpsTo != -1 && this.GBlocks[i].Block.HasLineNumber(gb.Block.JumpsTo))
                         gb.JumpsToBlock = i;
-                    if (this.GBlocks[i].Block.HasLineNumber(gb.Block.JumpsNext))
+                    if (gb.Block.JumpsNext != -1 && this.GBlocks[i].Block.HasLineNumber(gb.Block.JumpsNext))
                         gb.JumpsNextBlock = i;
                 }
             }
-           
+
+            // Merge blocks so that multi/merged IF's are in one block
+            List<GraphBlock> cisBlocks = GBlocks.FindAll(x => x.Block.IfChainIndex == 0); // chained if start Blocks
+            foreach(GraphBlock cisb in cisBlocks)
+            {
+                int startIndex = GBlocks.IndexOf(cisb);
+                var startBlock = GBlocks[startIndex].Block;
+                int index = startIndex+1;
+                while (GBlocks[index].Block.IfChainIndex > 0 && index < GBlocks.Count-1) 
+                {
+                    var cLine = GBlocks[index].Block.GetConditionLine();
+                    if(cLine != null)
+                        startBlock.GetConditionLine().Text = startBlock.GetConditionLine().Text.Replace("\r\n", "").Replace("\t","") + cLine.Text;
+                    GBlocks[index].Block.Lines.Clear(); // empty
+
+                    // TODO: jumpTo = (ifchain < 1)+1; jumpNext = (ifchain < 1)
+
+                    if (GBlocks[index + 1].Block.IfChainIndex < 1)
+                    {
+                        cisb.Block.JumpsNext = GBlocks.Single(x => x.Block.StartAddress == GBlocks[index + 1].Block.StartAddress).Block.StartAddress; // NOTE: hacky fix
+                        //cisb.Block.JumpsTo = GBlocks.Single(x => x.Block.StartAddress == GBlocks[index + 2].Block.StartAddress).Block.StartAddress; // NOTE: hacky fix
+                        cisb.Block.JumpsTo = GBlocks[index].Block.JumpsTo; // NOTE: this is always right? cuz it calculated before?
+                        // NOTE: index+2 is not always right, block can spawn in the middle? (use JumpTo from last block?)
+                    }
+
+                    index++;
+                } 
+            }
+            GBlocks.RemoveAll(x => x.Block.Lines.Count == 0); // remove emptied blocks
+
             CreateArrows();
         }
 
@@ -229,9 +258,11 @@ namespace Graph
             // TODO: dont render all blocks
 
             // TODO: add thicc-nes
+            // TODO: add 'points' so arrow end/start dont share start/destination
             // add arrow dict with block offsets if needed
             foreach (var GB in GBlocks)
             {
+                // TODO: use both Block Index or Address Number for lines (merged block use block!)
                 var thicc = GB.GetBlockWidth();
                 if (GB.Block.JumpsTo == -1 && GB.Block.JumpsNext != -1)
                 {
