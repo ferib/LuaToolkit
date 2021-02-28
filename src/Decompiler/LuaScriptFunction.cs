@@ -228,7 +228,7 @@ namespace LuaSharpVM.Decompiler
                 }
             }
 
-            // layer attempts
+            // if merge
             for (int i = 0; i < this.Blocks.Count; i++)
             {
                 // IF: JMP != -1 && ELSE != -1
@@ -260,11 +260,9 @@ namespace LuaSharpVM.Decompiler
 
                     // iterate from lastifIndex to i and split
                     int ifIndex = lastifIndex;
-                    int previousifIndex = lastifIndex;
-                    if (this.Blocks[i].IfChainIndex == -1)
-                        this.Blocks[i].IfChainIndex = 0; // start is start if not yet discovered?
-                    else
-                        continue;
+                    if (this.Blocks[i].IfChainIndex != -1)
+                        continue; // skip if already discovered
+
                     while (ifIndex >= i)
                     {
                         // NOTE: not always the case??
@@ -272,18 +270,14 @@ namespace LuaSharpVM.Decompiler
                         var ifbodyBlockStart = this.Blocks[lastifIndex + 1]; // start +1
 
                         // NOTE: iterate from end to here to which block it JMPs to
-                        //bool isOr = false;
-                        //bool isAnd = false;
+                        bool found = false;
                         int cIndex = this.Blocks.IndexOf(ifbodyBlockEnd); // start from endblock
-                        //while (cIndex > ifIndex && !isOr && !isAnd)
                         while (cIndex > ifIndex)
                         {
-                            if(this.Blocks[ifIndex].JumpsTo == this.Blocks[cIndex].StartAddress)
+                            // scan if's
+                            if (this.Blocks[ifIndex].JumpsTo == this.Blocks[cIndex].StartAddress)
                             {
-                                //isOr = true;
-                                //isAnd = true; // IDK what to pick?
-
-                                // TODO: add some more logic to determine where the jump goes to and decide wether its or/and
+                                found = true;
                                 bool jmpsToStart = this.Blocks[ifIndex].JumpsTo == ifbodyBlockStart.StartAddress; // is or?
                                 if(jmpsToStart)
                                 {
@@ -303,79 +297,30 @@ namespace LuaSharpVM.Decompiler
                                 if (ifIndex != lastifIndex)
                                     this.Blocks[ifIndex + 1].GetConditionLine().Op1 = "";
                                 if (this.Blocks[ifIndex].IfChainIndex == -1)
-                                    this.Blocks[ifIndex].IfChainIndex = ifIndex - i; //set index TODO: numbers are NOT correct after rebase!
+                                    this.Blocks[ifIndex].IfChainIndex = ifIndex - i; // NOTE: numbers are NOT correct after rebase!
                                 break;
                             }
                             cIndex--;
                         }
-
-                        //// hanlde results
-                        //if(isAnd)
-                        //{
-                        //    // Jumps to end of IF body, AND!
-                        //    if (ifIndex != lastifIndex) // set condition unless last line (always and)
-                        //    {
-                        //        this.Blocks[ifIndex].GetConditionLine().Op3 = "and";
-                        //        this.Blocks[ifIndex + 1].GetConditionLine().Op1 = "";
-                        //    }
-                        //    if (this.Blocks[ifIndex].IfChainIndex == -1)
-                        //        this.Blocks[ifIndex].IfChainIndex = ifIndex - i; //set index TODO: numbers are NOT correct after rebase!
-                        //}
-                        //else if(isOr)
-                        //{
-                        //    // Jumps to IF body, OR!
-                        //    this.Blocks[ifIndex].GetConditionLine().Op3 = "or"; // TODO: A is set? invert!
-
-                        //    // erase other shit
-                        //    this.Blocks[ifIndex + 1].GetConditionLine().Op1 = "";
-                        //    if (this.Blocks[ifIndex].IfChainIndex == -1)
-                        //        this.Blocks[ifIndex].IfChainIndex = ifIndex - i; //set index TODO: numbers are NOT correct after rebase!
-                        //}
-                        //else
-                        //{
-                        //    // end
-                        //    ifbodyBlockEnd.GetBranchLine().Op3 += "\r\nend -- ENDIF";
-                        //    lastifIndex = ifIndex;
-                        //    if (this.Blocks[ifIndex].IfChainIndex == -1) // TODO: debug!!!!!!!!!!!!!
-                        //        this.Blocks[ifIndex].IfChainIndex = 0; //set index
-                        //    // merge?
-                        //    continue;
-                        //}
-
-                        ////if (this.Blocks[ifIndex].JumpsTo == ifbodyBlockEnd.StartAddress)
-                        ////{
-                        ////    // Jumps to end of IF body, AND!
-                        ////    if (ifIndex != lastifIndex) // set condition unless last line (always and)
-                        ////    {
-                        ////        this.Blocks[ifIndex].GetConditionLine().Op3 = "and";
-                        ////        this.Blocks[ifIndex + 1].GetConditionLine().Op1 = "";
-                        ////    }
-                        ////    if(this.Blocks[ifIndex].IfChainIndex == -1)
-                        ////        this.Blocks[ifIndex].IfChainIndex = ifIndex - i; //set index TODO: numbers are NOT correct after rebase!
-                        ////}
-                        ////else if (this.Blocks[ifIndex].JumpsTo == ifbodyBlockStart.StartAddress) // jumps to next IF?
-                        ////{
-                        ////    // Jumps to IF body, OR!
-                        ////        this.Blocks[ifIndex].GetConditionLine().Op3 = "or"; // TODO: A is set? invert!
-
-                        ////    // erase other shit
-                        ////    this.Blocks[ifIndex + 1].GetConditionLine().Op1 = "";
-                        ////    if (this.Blocks[ifIndex].IfChainIndex == -1)
-                        ////        this.Blocks[ifIndex].IfChainIndex = ifIndex - i; //set index TODO: numbers are NOT correct after rebase!
-                        ////}
-                        ////else
-                        ////{
-                        ////    // place end keyword
-                        ////    ifbodyBlockEnd.GetBranchLine().Op3 += "\r\nend -- ENDIF";
-                        ////    lastifIndex = ifIndex;
-                        ////    if (this.Blocks[ifIndex].IfChainIndex == -1) // TODO: debug!!!!!!!!!!!!!
-                        ////        this.Blocks[ifIndex].IfChainIndex = 0; //set index
-                        ////    // merge?
-                        ////    continue;
-                        ////}
-                        //}
-                        //this.Blocks[i].Lines[0].Op1 = "-- IF\r\n" + this.Blocks[i].Lines[0].Op1;
                         ifIndex--;
+                        if (!found)
+                        {
+                            ifIndex++;
+                            if (this.Blocks[ifIndex + 1].IfChainIndex != -1)
+                            {
+                                // cleanup existing end of merged ifchain
+                                int ifIndexFix = ifIndex + 1;
+                                do
+                                {
+                                    this.Blocks[ifIndexFix].IfChainIndex = ifIndexFix - ifIndex-1; // rebase
+                                    ifIndexFix++;
+                                }
+                                while (this.Blocks[ifIndexFix].IfChainIndex != -1);
+                            }
+                                
+                            lastifIndex = ifIndex; // new IF end found!
+                        }
+                            
                     }
                     
                     // TODO: fix chainIndex Numbers, they wont start from 0 if they got interrupted
@@ -389,6 +334,11 @@ namespace LuaSharpVM.Decompiler
                     this.Blocks[i].GetBranchLine().Op3 += " -- END\r\n"; // already taken care of
             }
 
+            // cleanup ifmerge indexing
+            for (int i = 0; i < this.Blocks.Count-1; i++)
+            {
+                //if(this.Blocks[i].IfChainIndex != -1)
+            }
         }
 
         // NOTE: OO?
