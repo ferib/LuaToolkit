@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using LuaSharpVM.Core;
 using LuaSharpVM.Disassembler;
@@ -13,6 +14,9 @@ namespace LuaSharpVM.Decompiler
         public int JumpsTo = -1; // -1 will never happen or its inf loop (iirc)
         public int JumpsNext = -1; // the next instruction (if any)
         public int StartAddress;
+        public bool IsChainedIf = false;
+        public int IfChainIndex = -1;
+        public bool IsChainedIfStart = false;
 
         private int tabIndex;
         public int TabIndex
@@ -52,7 +56,7 @@ namespace LuaSharpVM.Decompiler
 
         public bool AddScriptLine(LuaScriptLine l)
         {
-            // NOTE: this only checks for outgoing, we need to split incommmings to!!
+            // this only checks for outgoing, we split incommmings somwhere else
             this.lines.Add(l);
             if (l.IsBranch())
             {
@@ -60,6 +64,23 @@ namespace LuaSharpVM.Decompiler
                 return true;
             }
             return false;  
+        }
+
+        public void RewriteVariables(int offset)
+        {
+            // Rewrite the variables x by adding mov prefix+x = x and then replacing all x by prefix+x
+            List<int> changedVariables = new List<int>();
+            for(int i = 0; i < this.Lines.Count; i++)
+            {
+                LuaInstruction fake = new LuaInstruction(this.Lines[i].Instr.Data);
+                changedVariables.AddRange(fake.OffsetVariables(offset));
+                this.Lines[i].SetMain(fake);
+            }
+            var vars = changedVariables.Distinct();
+            foreach(var v in vars)
+            {
+                // TODO: add instr to start!
+            }
         }
 
         private void SetLines(List<LuaScriptLine> list)
@@ -83,56 +104,88 @@ namespace LuaSharpVM.Decompiler
             return this.StartAddress < index && index < this.StartAddress + this.lines.Count;
         }
 
-        public LuaScriptLine GetConditionLine() // second last line
+        public LuaScriptLine GetBranchLine() // second last line
         {
             if (this.Lines.Count > 0)
-            {
-                //if (this.Lines[this.lines.Count - 1].IsBranch()) // last line for JMP, test, testset, etc
-                    return this.Lines[this.lines.Count - 1];
-                //else if (this.Lines[this.lines.Count - 2].IsBranch()) // IF before JMP
-                //    return this.Lines[this.lines.Count - 2];
-
-            }
+                return this.Lines[this.lines.Count - 1];
             return null;
         }
 
-        public LuaScriptLine GetBranchLine() // last line
+        public LuaScriptLine GetConditionLine() // last line
         {
             if (this.Lines.Count > 1)
-            {
-                //if (this.Lines[this.lines.Count - 1].IsBranch()) // last line for JMP, test, testset, etc
                 return this.Lines[this.lines.Count - 2];
-                //else if (this.Lines[this.lines.Count - 2].IsBranch()) // IF before JMP
-                //    return this.Lines[this.lines.Count - 2];
-
-            }
             return null;
+        }
+
+        // optimize IF or TAILCALL blocks
+        public void Optimize()
+        {
+            // TODO: optimize for condition
+            if (this.Lines.Count <= 2)
+                return;
+            var cLine = this.GetConditionLine();
+
+            string tmpResult = "";
+            List<string> result = new List<string>();
+            // optimize block in one single line
+
+            // get branch info
+            if (!cLine.IsCondition())
+                return;
+
+            int varA = -1;
+            int varB = -1;
+
+            if (cLine.Instr.OpCode == LuaOpcode.TEST || cLine.Instr.OpCode == LuaOpcode.TESTSET) // only use A?
+                varA = cLine.Instr.A;
+            else
+                if ((cLine.Instr.B & 1 << 8) == 0) // not const
+                    varA = cLine.Instr.B;
+                if ((cLine.Instr.C & 1 << 8) == 0) // not const
+                    varB = cLine.Instr.C;
+
+            // transplants lines
+            List<LuaScriptLine> tLines = new List<LuaScriptLine>();
+            for (int i = this.Lines.Count - 2; i >= 0; i--)
+            {
+                // NOTE: Text bugs out, TOOD: fix Text
+                if (varA != -1)
+                {
+                    this.Lines[i].Op1 = this.Lines[i].Op1.Replace("var" + varA, "var" + this.IfChainIndex + varA);
+                    this.Lines[i].Op2 = this.Lines[i].Op2.Replace("var" + varA, "var" + this.IfChainIndex + varA);
+                    this.Lines[i].Op3 = this.Lines[i].Op3.Replace("var" + varA, "var" + this.IfChainIndex + varA);
+                } 
+                if (varB != -1)
+                {
+                    this.Lines[i].Op1 = this.Lines[i].Op1.Replace("var" + varB, "var" + this.IfChainIndex + varB);
+                    this.Lines[i].Op2 = this.Lines[i].Op2.Replace("var" + varB, "var" + this.IfChainIndex + varB);
+                    this.Lines[i].Op3 = this.Lines[i].Op3.Replace("var" + varB, "var" + this.IfChainIndex + varB);
+                }
+            }
+            tLines.AddRange(this.Lines.GetRange(0, this.Lines.Count - 2)); // copy transplants
+            this.Lines.RemoveRange(0, this.Lines.Count - 2); // remove transplants
+            var thisIndex = this.Func.ScriptFunction.Blocks.IndexOf(this);
+            this.Func.ScriptFunction.Blocks[thisIndex - this.IfChainIndex].Lines.InsertRange(this.Func.ScriptFunction.Blocks[thisIndex - this.IfChainIndex].Lines.Count - 2, tLines); // complete transplant
+
+            // add copys to restore
+            // NOTE: this plan is failure, we need to copy the variables to multiple locations, IF Body and IF End block.
+            // the variables can already be overwritten by then!
+
+            //if(this.Func.ScriptFunction.Blocks.Count > thisIndex+1 && this.Func.ScriptFunction.Blocks[thisIndex+1].IfChainIndex == -1)
+            //{
+            //    if (varA != -1)
+            //        this.Lines.Add(new LuaScriptLine($"var{varA} = var{this.IfChainIndex}{varA}"));
+            //    //tLines.Add(new LuaScriptLine($"var{varA} = var{this.IfChainIndex}{varA}"));
+            //    if (varB != -1)
+            //        this.Lines.Add(new LuaScriptLine($"var{varB} = var{this.IfChainIndex}{varB}"));
+            //    //tLines.Add(new LuaScriptLine($"var{varB} = var{this.IfChainIndex}{varB}"));
+            //}
         }
 
         public string ToString()
         {
-            //if (this.lines.Count < 2 || (this.JumpsTo == -1 && this.JumpsNext == -1))
-            //    return $"{this.StartAddress.ToString("0000")}: {this.lines[0]};
-
-            var sLastLine = this.lines[this.lines.Count - 1];
-
-
-            if (this.JumpsTo == -1 && this.JumpsNext != -1)
-                return $"{this.StartAddress.ToString("0000")}: JMP: {this.JumpsNext}";
-
-            //if (this.JumpsTo != -1 && this.JumpsNext != -1)
-                return $"{this.StartAddress.ToString("0000")}: JMP: {this.JumpsTo}, ELSE: {this.JumpsNext}";
-
-            // depriciated
-            if (sLastLine.Instr.OpCode == LuaOpcode.JMP)
-                return $"{this.StartAddress.ToString("0000")}: {this.lines[this.lines.Count - 2]} GOTO {this.JumpsTo}";
-
-            if(sLastLine.Instr.OpCode == LuaOpcode.FORLOOP || sLastLine.Instr.OpCode == LuaOpcode.TFORLOOP)
-                return $"{this.StartAddress.ToString("0000")}: (loop) GOTO {this.JumpsTo}";
-
-            
-
-            return $"{this.StartAddress.ToString("0000")}: UNK_GOTO {this.JumpsTo}";
+            return $"{this.StartAddress.ToString("0000")}: JMP: {this.JumpsTo}, ELSE: {this.JumpsNext}";
         }
     }
 }

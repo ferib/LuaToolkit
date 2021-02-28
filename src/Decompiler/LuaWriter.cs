@@ -30,6 +30,7 @@ namespace LuaSharpVM.Decompiler
 
         private void WriteFile()
         {
+            // NOTE: old code            
             // Get function names from root
             //var names = GetFunctionNames();
             for (int i = 0; i < this.Decoder.File.Function.Functions.Count; i++)
@@ -42,15 +43,12 @@ namespace LuaSharpVM.Decompiler
             // allign/format/whatever each function
             foreach (var f in this.LuaFunctions)
                 f.Complete();
+
         }
 
         private void WriteFunction(LuaFunction func, int dpth = 0, string name = "", bool isGlobal = false)
         {
-            // TODO: move header in LuaScriptFunction class
             string funcName = "";
-            List<string> args = new List<string>();
-            for (int i = 0; i < func.ArgsCount; i++)
-                args.Add($"var{i}");
 
             if (dpth == 0)
                 funcName = null; // destroy header on root
@@ -58,7 +56,7 @@ namespace LuaSharpVM.Decompiler
             if (funcName != null)
                 funcName = name; // TODO: remp fix, cleanup soonTM
 
-            LuaScriptFunction newFunction = new LuaScriptFunction(funcName, args, ref func, ref this.Decoder);
+            LuaScriptFunction newFunction = new LuaScriptFunction(funcName, func.ArgsCount, ref func, ref this.Decoder);
             this.LuaFunctions.Add(newFunction);
             // TODO: move the above into a LuaScriptHeader or smthing
 

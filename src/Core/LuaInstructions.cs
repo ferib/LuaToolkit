@@ -1,4 +1,5 @@
 ﻿using LuaSharpVM.Models;
+using System.Collections.Generic;
 
 namespace LuaSharpVM.Core
 {
@@ -22,19 +23,19 @@ namespace LuaSharpVM.Core
         public int A
         {
             get;
-            private set;
+            set;
         }
 
         public int B
         {
             get;
-            private set;
+            set;
         }
 
         public int C
         {
             get;
-            private set;
+            set;
         }
 
         public int Bx
@@ -57,6 +58,73 @@ namespace LuaSharpVM.Core
         {
             get;
             private set;
+        }
+
+        public List<int> OffsetVariables(int offset)
+        {
+            List<int> originals = new List<int>();
+
+            // offsets the variables (if any)
+            bool NoC = false;
+            bool NoB = false;
+            bool NoA = false;
+
+            // TODO: Complete list
+            switch (this.OpCode)
+            {
+                case LuaOpcode.JMP:
+                case LuaOpcode.CLOSE:
+                case LuaOpcode.GETUPVAL:
+                case LuaOpcode.SETUPVAL:
+                    NoA = true;
+                    break;
+            }
+            switch (this.OpCode)
+            {
+                case LuaOpcode.JMP:
+                case LuaOpcode.CLOSE:
+                case LuaOpcode.GETUPVAL:
+                case LuaOpcode.SETUPVAL:
+                case LuaOpcode.CALL:
+                case LuaOpcode.TAILCALL:
+                    NoB = true;
+                    break;
+            }
+            switch (this.OpCode)
+            {
+                case LuaOpcode.MOVE:
+                case LuaOpcode.LOADNIL:
+                case LuaOpcode.GETUPVAL:
+                case LuaOpcode.SETUPVAL:
+                case LuaOpcode.UNM:
+                case LuaOpcode.NOT:
+                case LuaOpcode.LEN:
+                case LuaOpcode.RETURN:
+                case LuaOpcode.VARARG:
+                case LuaOpcode.CALL:
+                case LuaOpcode.TAILCALL:
+                    NoC = true;
+                    break;
+            }
+
+            // TODO: check if value is NOT constant
+            if (!NoA && this.A < 256)
+            {
+                originals.Add(this.A);
+                this.A += offset;
+            }
+            if (!NoB && this.B < 256)
+            {
+                this.B += offset;
+                originals.Add(this.B);
+            }
+                
+            if (!NoC && this.C < 256)
+            {
+                this.C += offset;
+                originals.Add(this.C);
+            }
+            return originals;
         }
 
         public LuaInstruction(int data)

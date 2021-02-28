@@ -4,6 +4,7 @@ using System.Text;
 using LuaSharpVM.Core;
 using LuaSharpVM.Models;
 using LuaSharpVM.Disassembler;
+using System.Linq;
 
 namespace LuaSharpVM.Decompiler
 {
@@ -37,7 +38,7 @@ namespace LuaSharpVM.Decompiler
         private string _text;
         public string Text
         {
-            get { if (_text == null) { return ToString(); } else { return _text; }; }
+            get { if (_text == null || _text == "") { return ToString(); } else { return _text; }; }
             set { _text = value; }
         }
 
@@ -55,9 +56,11 @@ namespace LuaSharpVM.Decompiler
             SetMain();
         }
 
-        private void SetMain()
+        public void SetMain(LuaInstruction Instr = null)
         {
-            switch (this.Instr.OpCode)
+            if (Instr == null)
+                Instr = this.Instr;
+            switch (Instr.OpCode)
             {
                 case LuaOpcode.MOVE:
                     this.Op1 = WriteIndex(Instr.A);
@@ -77,8 +80,11 @@ namespace LuaSharpVM.Decompiler
                 case LuaOpcode.LOADNIL:
                     for (int i = Instr.A; i < Instr.B + 1; ++i)
                     {
-                        this.Op2 += $"{WriteIndex(i)} = nil; "; // TODO: turn into new class? Nah, just beatify afterwards..
-                        this.NumberEnd++;
+                        this.Op2 += $"{WriteIndex(i)} = nil; "; // NOTE: wont conflict with 'local' keyword?
+
+                        //this.Op2 += $"{WriteIndex(i)}"; // NOTE: keep it clean? (TODO: figure out 'local' keyword)
+                        //if (i < Instr.B - 1)
+                        //    this.Op2 += ", "; // inline
                     }
                     break;
                 case LuaOpcode.GETUPVAL:
@@ -118,41 +124,44 @@ namespace LuaSharpVM.Decompiler
                     this.Op3 = "{}";
                     break;
                 case LuaOpcode.SELF:
-                    this.Op1 = WriteIndex(Instr.A);
-                    this.Op2 = " = ";
-                    this.Op3 = $"var{Instr.B}; {WriteIndex(Instr.A)} = var{Instr.B}[{WriteIndex(Instr.C)}]";
+                    this.Op1 = $"{WriteIndex(Instr.A+1)} = {WriteIndex(Instr.B)}; "; // set self
+                    this.Op2 = $"{WriteIndex(Instr.A)} = ";
+                    this.Op3 = $"var{Instr.B}[{WriteIndex(Instr.C)}]";
+                    // A = element
+                    // B = ref to table
+                    // C = methode itself
                     // TODO fix, multiline?
-                    this.NumberEnd++;
                     break;
-                case LuaOpcode.ADD:
+                case LuaOpcode.ADD: // NOTE these can be both variables and constants!
                     this.Op1 = WriteIndex(Instr.A);
-                    this.Op2 = $" = var{Instr.B}";
-                    this.Op3 = $" + var{Instr.C}";
+                    this.Op2 = $" = {WriteConstant(Instr.B)}";
+                    this.Op3 = $" + {WriteConstant(Instr.C)}";
                     break;
                 case LuaOpcode.SUB:
                     this.Op1 = WriteIndex(Instr.A);
-                    this.Op2 = $" = var{Instr.B}";
-                    this.Op3 = $" - var{Instr.C}";
+                    this.Op2 = $" = {WriteConstant(Instr.B)}";
+                    this.Op3 = $" - {WriteConstant(Instr.C)}";
                     break;
                 case LuaOpcode.MUL:
                     this.Op1 = WriteIndex(Instr.A);
-                    this.Op2 = $" = var{Instr.B}";
-                    this.Op3 = $" * var{Instr.C}";
+                    this.Op2 = $" = {WriteConstant(Instr.B)}";
+                    this.Op3 = $" * {WriteConstant(Instr.C)}";
                     break;
                 case LuaOpcode.DIV:
                     this.Op1 = WriteIndex(Instr.A);
-                    this.Op2 = $" = var{Instr.B}";
-                    this.Op3 = $" / var{Instr.C}";
+                    this.Op2 = $" = {WriteConstant(Instr.B)}";
+                    this.Op3 = $" / {WriteConstant(Instr.C)}";
                     break;
                 case LuaOpcode.MOD:
                     this.Op1 = WriteIndex(Instr.A);
-                    this.Op2 = $" = var{Instr.B}";
-                    this.Op3 = $" % var{Instr.C}";
+                    this.Op2 = $" = {WriteConstant(Instr.B)}";
+                    this.Op3 = $" % {WriteConstant(Instr.C)}";
                     break;
                 case LuaOpcode.POW:
                     this.Op1 = WriteIndex(Instr.A);
-                    this.Op2 = $" = var{Instr.B}";
-                    this.Op3 = $" ^ var{Instr.C}";
+                    this.Op2 = $" = {WriteConstant(Instr.B)}";
+                    //this.Op3 = $" ^ var{Instr.C}"; // not always?
+                    this.Op3 = $" ^ {WriteConstant(Instr.C)}"; // not always?
                     break;
                 case LuaOpcode.UNM:
                     this.Op1 = WriteIndex(Instr.A);
@@ -184,26 +193,41 @@ namespace LuaSharpVM.Decompiler
                     break;
                 case LuaOpcode.EQ:
                     this.Op1 = $"if";
-                    this.Op2 = $" ({WriteIndex(Instr.B)} == {WriteIndex(Instr.C)}) ~= {Instr.A} ";
+                    //this.Op2 = $" ({WriteIndex(Instr.B)} == {WriteIndex(Instr.C)}) ~= {Instr.A} "; // A = and/or
+                    //if (Instr.A == 0)
+                        this.Op2 = $" {WriteIndex(Instr.B)} == {WriteIndex(Instr.C)} ";
+                    //else
+                    //    this.Op2 = $" {WriteIndex(Instr.B)} ~= {WriteIndex(Instr.C)} ";
                     this.Op3 = $"then";
                     break;
                 case LuaOpcode.LT:
                     this.Op1 = $"if";
-                    this.Op2 = $"({WriteIndex(Instr.B)} < {WriteIndex(Instr.C)}) ~= {Instr.A} ";
+                    //this.Op2 = $"({WriteIndex(Instr.B)} < {WriteIndex(Instr.C)}) ~= {Instr.A} ";
+                    //if(Instr.A == 0)
+                        this.Op2 = $" {WriteIndex(Instr.B)} < {WriteIndex(Instr.C)} ";
+                    //else
+                    //    this.Op2 = $" {WriteIndex(Instr.B)} > {WriteIndex(Instr.C)} ";
                     this.Op3 = $"then";
                     break;
                 case LuaOpcode.LE:
                     this.Op1 = $"if";
-                    this.Op2 = $"  ({WriteIndex(Instr.B)} <= {WriteIndex(Instr.C)}) ~= {Instr.A} ";
+                    //this.Op2 = $"  ({WriteIndex(Instr.B)} <= {WriteIndex(Instr.C)}) ~= {Instr.A} ";
+                    //if (Instr.A == 0)
+                        this.Op2 = $" {WriteIndex(Instr.B)} <= {WriteIndex(Instr.C)} ";
+                    //else
+                    //    this.Op2 = $" {WriteIndex(Instr.B)} >= {WriteIndex(Instr.C)} ";
                     this.Op3 = $"then";
                     break;
                 case LuaOpcode.TEST:
                     this.Op1 = $"if";
-                    this.Op2 = $" not var{Instr.A} <=> {Instr.C} ";
+                    if(Instr.C == 1)
+                        this.Op2 = $" not var{Instr.A} ";
+                    else
+                        this.Op2 = $" var{Instr.A} ";
                     this.Op3 = $"then";
                     break;
                 case LuaOpcode.TESTSET:
-                    this.Op1 = $"if var{Instr.B} <=> {Instr.C} then; ";
+                    this.Op1 = $"if var{Instr.B} ~= {Instr.C} then; ";
                     this.Op2 = $"var{Instr.A} = ";
                     this.Op3 = $"var{Instr.B}; end";
                     break;
@@ -259,7 +283,38 @@ namespace LuaSharpVM.Decompiler
                         this.Op3 += ")";
                     }
                     break;
-                // TAILCALL
+                case LuaOpcode.TAILCALL:
+                    // NOTE: C functions have 2 returns while Lua functions only have 1 return?
+                    // Function Name
+                    this.Op1 = $"return var{Instr.A}"; // func name only (used lateron)
+                    //this.Op2 = $"({Instr.A+1}";
+                    // Function Args
+                    if (Instr.B == 0)
+                    {
+                        // func parms range from A+1 to B (B = top of stack)
+                        this.Op3 = $"(";
+                        for (int i = Instr.A; i < Instr.B; i++)
+                        //for (int i = Instr.A; i < Instr.A + Instr.B - 1; ++i)
+                        {
+                            this.Op3 += $"var{i + 1}";
+                            if (i < Instr.A + Instr.B - 2)
+                                this.Op3 += ", ";
+                        }
+                        this.Op3 += ")";
+                    }
+                    else
+                    {
+                        this.Op3 = $"(";
+                        for (int i = Instr.A; i < Instr.A + Instr.B - 1; i++)
+                        //for (int i = Instr.A; i < Instr.A + Instr.B - 1; ++i)
+                        {
+                            this.Op3 += $"var{i + 1}";
+                            if (i < Instr.A + Instr.B - 2)
+                                this.Op3 += ", ";
+                        }
+                        this.Op3 += ")";
+                    }
+                    break;
                 case LuaOpcode.RETURN:
                     // this gets overwritten by an 'end' afterwards in case its the last RETURN value of a func
                     this.Op1 = $"return";
@@ -293,7 +348,7 @@ namespace LuaSharpVM.Decompiler
                     // A+1: max 
                     // A+2: +=
                     // A+3: external index
-                    this.Op1 = $"for {WriteIndex(Instr.A + 3)}={WriteIndex(Instr.A)},{WriteIndex(Instr.A + 1)},{WriteIndex(Instr.A + 2)} do";
+                    this.Op1 = $"for {WriteIndex(Instr.A + 3, false)}={WriteIndex(Instr.A)}, {WriteIndex(Instr.A + 1)}, {WriteIndex(Instr.A + 2)} do";
                     break;
                 case LuaOpcode.TFORLOOP:
                     this.Op1 = WriteIndex(Instr.A + 1) + ", " + WriteIndex(Instr.A + 2); // state
@@ -320,28 +375,27 @@ namespace LuaSharpVM.Decompiler
                     // has no impact on the decompiler?
                     break;
                 case LuaOpcode.CLOSURE:
+                    // 
                     this.Op1 = $"{WriteIndex(Instr.A)}";
                     this.Op2 = " = ";
                     this.Op3 = $"{WriteIndex(Instr.Bx)}";
-                    //this.Op3 = GetConstant(Instr.Bx).Substring(1, GetConstant(Instr.Bx).Length - 2);
-                    //// set function in decoder, go by un named
-                    //for(int i = 0; i < this.Func.Functions.Count; i++)
-                    //    if(this.Func.Functions[i].Name == "")
-                    //    {
-                    //        this.Func.Functions[i].Name = this.Op3;
-                    //        break;
-                    //    }
-
                     break;
                 case LuaOpcode.VARARG:
-                    // TODO: this.Op1 = "..."; // B > 1 for fixed range, B 0 for unspecified
+                    this.Op1 = "local ";
+                    for (int i = Instr.A; i < Instr.B-1; i++)
+                    {
+                        WriteIndex(i); // NOTE: Do not print, just consume local?
+                        this.Op2 += $"var{i}";
+                        if (i < Instr.B - 2)
+                            this.Op2 += ", ";
+                    }
+                    this.Op2 += " = ..."; 
                     break;
                 default:
                     this.Op1 = "unk";
                     this.Op2 = "_";
                     this.Op3 = Instr.OpCode.ToString();
                     break;
-                    // ez
             }
         }
 
@@ -369,12 +423,38 @@ namespace LuaSharpVM.Decompiler
         private string GetConstant(int index)
         {
             if (index >= this.Func.Constants.Count)
-                return "\"unk" + index.ToString() + "\""; // happends with local functions
+                return "\"unk" + index.ToString() + "\""; // indicates incorrect behavior
 
             return this.Func.Constants[index].ToString();
         }
 
-        private string WriteIndex(int value)
+        private string WriteConstant(int index, LuaFunction targetFunc = null)
+        {
+            if (targetFunc == null)
+                targetFunc = this.Func; // self
+            if (index > 255 && targetFunc.Constants[index - 256] != null)
+                return targetFunc.Constants[index - 256].ToString();
+            else
+                return WriteIndex(index);
+        }
+
+        private LuaScriptBlock FindBlockOwner()
+        {
+            // NOTE: there are no blocks yet when creating lines!
+            bool match = false;
+            LuaScriptLine line;
+            foreach(var b in this.Func.ScriptFunction.Blocks)
+            {
+                line = b.Lines.Single(x => x == this);
+                if (line == null)
+                    continue;
+                return b;
+            }
+            return null;
+        }
+
+        // NOTE: use this on LuaScriptFunction.GetConstant ??
+        public string WriteIndex(int value, bool useLocalKeyword = true)
         {
             bool constant = false;
             int index = ToIndex(value, out constant);
@@ -384,11 +464,20 @@ namespace LuaSharpVM.Decompiler
             else
             {
                 // TODO: check if local and not yet used!
-                return "var" + index;
+                if(this.Func.ScriptFunction.UsedLocals.Contains(value))
+                    return "var" + index;
+                else
+                {
+                    this.Func.ScriptFunction.UsedLocals.Add(value);
+                    if (useLocalKeyword)
+                        return "local var" + index;
+                    else
+                        return "var" + index;
+                }
             }
         }
 
-        private int ToIndex(int value, out bool isConstant)
+        public int ToIndex(int value, out bool isConstant)
         {
             // this is the logic from lua's source code (lopcodes.h)
             if (isConstant = (value & 1 << 8) != 0)
@@ -400,15 +489,34 @@ namespace LuaSharpVM.Decompiler
         public override string ToString()
         {
             // TODO: leave tab to another level?
-            string tab = new string('\t', Depth); // NOTE: singple space for debugging
+            string tab = "";// new string('\t', Depth); // NOTE: singple space for debugging
+#if DEBUG
+            if (this.Instr == null)
+                return $"{this.Instr.ToString().PadRight(19)} {tab}{Op1}\r\n"; // wildcard
+            else if ((this.Op1 == "" || this.Op1 == null)
+                && (this.Op2 == "" || this.Op2 == null)
+                && (this.Op3 == "" || this.Op3 == null))
+                return $"{this.Instr.ToString().PadRight(19)}\r\n";
+            else
+            {
+                if (IsCondition() && !Op1.Contains("if"))
+                    return $"{this.Instr.ToString().PadRight(19)} {Op1}{Op2}{Op3}\r\n";
+                return $"{this.Instr.ToString().PadRight(19)} {tab}{Op1}{Op2}{Op3}\r\n";
+            }
+#else
             if (this.Instr == null)
                 return $"{tab}{Op1}\r\n"; // wildcard
-            else if ((this.Op1 == "" || this.Op1  == null)
+            else if ((this.Op1 == "" || this.Op1 == null)
                 && (this.Op2 == "" || this.Op2 == null)
-                &&  (this.Op3 == "" || this.Op3 == null))
-                return "";
+                && (this.Op3 == "" || this.Op3 == null))
+                return "\r\n";
             else
+            {
+                if (IsCondition() && !Op1.Contains("if"))
+                    return $"{Op1}{Op2}{Op3}\r\n";
                 return $"{tab}{Op1}{Op2}{Op3}\r\n";
+            }
+#endif
         }
 
         public bool IsCondition()
@@ -420,9 +528,8 @@ namespace LuaSharpVM.Decompiler
                 case LuaOpcode.EQ:
                 case LuaOpcode.TEST:
                 case LuaOpcode.TESTSET:
-                case LuaOpcode.LOADBOOL: // untested
+                    //case LuaOpcode.LOADBOOL: // untested
                     return true;
-                    break;
             }
             return false;
         }
@@ -446,10 +553,8 @@ namespace LuaSharpVM.Decompiler
             {
                 case LuaOpcode.MOVE: // anything else, sir?
                     return true;
-                    break;
             }
             return false;
         }
-
     }
 }
