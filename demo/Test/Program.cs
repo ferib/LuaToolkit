@@ -17,10 +17,10 @@ namespace Test
             Console.WriteLine("[+] LuaSharpVM\r\n");
             //LuaObfuscator o = new LuaObfuscator(File.ReadAllBytes(@"L:\Projects\LuaBytcodeInterpreter\lua_installer\files\test_if.luac"));
             //LuaObfuscator o = new LuaObfuscator(File.ReadAllBytes(@"L:\Projects\LuaBytcodeInterpreter\lua_installer\files\frost.luac"));
-            LuaObfuscator o = new LuaObfuscator(File.ReadAllBytes(@"L:\Projects\LuaBytcodeInterpreter\lua_installer\files\testif.luac"));
+            LuaObfuscator o = new LuaObfuscator(File.ReadAllBytes(@"L:\Projects\LuaBytcodeInterpreter\lua_installer\files\upvalues.luac"));
 
             // show original lua
-            Console.ForegroundColor = ConsoleColor.DarkYellow;
+           Console.ForegroundColor = ConsoleColor.DarkYellow;
             LuaWriter w = new LuaWriter(ref o.Decoder);
             Console.WriteLine(w.LuaScript);
 

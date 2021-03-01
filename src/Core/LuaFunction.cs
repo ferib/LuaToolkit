@@ -32,5 +32,12 @@ namespace LuaSharpVM.Core
             this.Functions = new List<LuaFunction>();
             this.DebugLines = new List<int>();
         }
+
+        public override string ToString()
+        {
+            if (ScriptFunction != null)
+                return ScriptFunction.ToString();
+            return base.ToString();
+        }
     }
 }

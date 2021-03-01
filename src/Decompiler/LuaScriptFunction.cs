@@ -40,7 +40,7 @@ namespace LuaSharpVM.Decompiler
             this.UsedLocals = new List<int>();
             InitArgs(argsCount);
             this.UsedLocals.AddRange(this.Args);
-            HandleUpvalues(); // get upvalues from parent
+            //HandleUpvalues(); // get upvalues from parent TODO: Bugfix
         }
 
         private void InitArgs(int count)
@@ -357,7 +357,7 @@ namespace LuaSharpVM.Decompiler
         }
 
         // NOTE: OO?
-        private string GetConstant(int index, LuaFunction targetFunc = null)
+        public string GetConstant(int index, LuaFunction targetFunc = null)
         {
             if (targetFunc == null)
                 targetFunc = this.Func; // self

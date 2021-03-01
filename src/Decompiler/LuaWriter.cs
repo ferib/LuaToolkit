@@ -33,17 +33,28 @@ namespace LuaSharpVM.Decompiler
             // NOTE: old code            
             // Get function names from root
             //var names = GetFunctionNames();
-            for (int i = 0; i < this.Decoder.File.Function.Functions.Count; i++)
-            {
-                WriteFunction(this.Decoder.File.Function.Functions[i], 1);
-                //WriteFunction(this.Decoder.File.Function.Functions[i], 1, names[i].Key, names[i].Value);
-            }
-            WriteFunction(this.Decoder.File.Function);
+
+            WriteF(this.Decoder.File.Function);
+            // WriteFunction(this.Decoder.File.Function);
 
             // allign/format/whatever each function
             foreach (var f in this.LuaFunctions)
                 f.Complete();
 
+        }
+
+        private void WriteF(LuaFunction func)
+        {
+            for (int i = 0; i < func.Functions.Count; i++)
+            {
+                WriteFunction(func.Functions[i], 1); // parent
+                foreach (var f in func.Functions[i].Functions)
+                {
+                    WriteF(f); // children
+                }
+                    
+            }
+            WriteFunction(func); // root
         }
 
         private void WriteFunction(LuaFunction func, int dpth = 0, string name = "", bool isGlobal = false)

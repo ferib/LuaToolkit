@@ -63,7 +63,10 @@ namespace LuaSharpVM.Decompiler
             switch (Instr.OpCode)
             {
                 case LuaOpcode.MOVE:
-                    this.Op1 = WriteIndex(Instr.A);
+                    if (Instr.A == 0)
+                        this.Op1 = "_ENV"; // not always?
+                    else
+                        this.Op1 = WriteIndex(Instr.A);
                     this.Op2 = " = ";
                     this.Op3 = WriteIndex(Instr.B);
                     break;
@@ -88,9 +91,13 @@ namespace LuaSharpVM.Decompiler
                     }
                     break;
                 case LuaOpcode.GETUPVAL:
-                    this.Op1 = WriteIndex(Instr.A);
-                    this.Op2 = " = ";
-                    this.Op3 = this.Func.Upvalues[Instr.B].ToString().Substring(1, this.Func.Upvalues[Instr.B].ToString().Length - 2); // this is legit for prototypes etc
+                    //this.Op1 = WriteIndex(Instr.A);
+                    //this.Op2 = " = ";
+                    //this.Op3 = WriteIndex(Instr.B);
+
+                    //// TODO: figure if an upvalue is a function or not?
+                    //this.Op3 = this.Func.Upvalues[Instr.B].ToString();
+                    ////this.Op3 = this.Func.Upvalues[Instr.B].ToString().Substring(1, this.Func.Upvalues[Instr.B].ToString().Length - 2); // this is legit for prototypes etc
                     break;
                 case LuaOpcode.GETGLOBAL:
                     this.Op1 = $"{WriteIndex(Instr.A)} = _G[";
@@ -108,10 +115,13 @@ namespace LuaSharpVM.Decompiler
                     this.Op3 = $"var{Instr.A}";
                     break;
                 case LuaOpcode.SETUPVAL:
-                    //this.Op1 = $"upvalue[{WriteIndex(Instr.B)}]"; TODO: Verify if below actually work
-                    this.Op1 = this.Func.Upvalues[Instr.B].ToString().Substring(1, this.Func.Upvalues[Instr.B].ToString().Length - 2);
-                    this.Op2 = " = ";
-                    this.Op3 = $"var[{GetConstant(Instr.A)}]";
+                    ////this.Op1 = $"upvalue[{WriteIndex(Instr.B)}]"; TODO: Verify if below actually work
+                    //// TODO: check if actual function!
+                    
+                    //this.Op1 = this.Func.Upvalues[Instr.B].ToString().Substring(1, this.Func.Upvalues[Instr.B].ToString().Length - 2);
+                    ////this.Op1 = $"var";
+                    //this.Op2 = " = ";
+                    //this.Op3 = $"var[{GetConstant(Instr.A)}]";
                     break;
                 case LuaOpcode.SETTABLE:
                     this.Op1 = $"{WriteIndex(Instr.A)}[{WriteIndex(Instr.B)}]";
@@ -371,11 +381,13 @@ namespace LuaSharpVM.Decompiler
                     this.Op3 = "}";
                     break;
                 case LuaOpcode.CLOSE:
-                    // NOTE: close all variables in the stack up to
-                    // has no impact on the decompiler?
+                    // NOTE: close all variables in the stack up to (>=) R(A)
                     break;
                 case LuaOpcode.CLOSURE:
-                    // 
+                    // crates closutre for function prototype Bx
+                    this.Func.Upvalues.Add(null);
+                    //var xx = (this.Func.ScriptFunction.GetParentFunction().ScriptFunction.GetConstant(Instr.Bx));
+                    //this.Func.Upvalues.Add(this.Func.ScriptFunction.GetParentFunction().Upvalues[Instr.sBx]);
                     this.Op1 = $"{WriteIndex(Instr.A)}";
                     this.Op2 = " = ";
                     this.Op3 = $"{WriteIndex(Instr.Bx)}";
