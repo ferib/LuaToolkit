@@ -516,7 +516,11 @@ namespace LuaSharpVM.Decompiler
 
                         if (erase)
                         {
+#if DEBUG
                             this.Blocks[i].Lines[j].Op1 = "-- TAILCALL RETURN"; // erase keyword
+#else
+                            this.Blocks[i].Lines[j].Op1 = ""; // erase keyword
+#endif
                             this.Blocks[i].Lines[j].Op2 = ""; // erase variables
                             //this.Blocks[i].Lines[j].Op3 = ""; // erase (dont erase this, contains else)
                         }

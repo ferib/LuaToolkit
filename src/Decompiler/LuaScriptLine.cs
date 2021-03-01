@@ -382,14 +382,11 @@ namespace LuaSharpVM.Decompiler
                     // NOTE: close all variables in the stack up to (>=) R(A)
                     break;
                 case LuaOpcode.CLOSURE:
+                    // TODO: scope in
+                    // NOTE: obfuscator can inline to give mindfuck ;D?
                     // crates closutre for function prototype Bx
-                    //var xx = (this.Func.ScriptFunction.GetParentFunction().ScriptFunction.GetConstant(Instr.Bx));
-                    //this.Func.Upvalues.Add(this.Func.ScriptFunction.GetParentFunction().Upvalues[Instr.sBx]);
                     this.Op1 = $"{WriteIndex(Instr.A)}";
                     this.Op2 = " = ";
-                    //if(this.Func.Upvalues.Count > Instr.Bx)
-                    //    this.Op3 = $"{this.Func.Upvalues[Instr.Bx]}";
-                    //else
                     if(this.Func.Functions[Instr.Bx].ScriptFunction != null)
                         this.Op3 = this.Func.Functions[Instr.Bx].ScriptFunction.Name;
                     else
