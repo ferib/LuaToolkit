@@ -40,7 +40,7 @@ namespace LuaSharpVM.Decompiler
             this.UsedLocals = new List<int>();
             InitArgs(argsCount);
             this.UsedLocals.AddRange(this.Args);
-            //HandleUpvalues(); // get upvalues from parent TODO: Bugfix
+            HandleUpvalues(); // get upvalues from parent TODO: Bugfix
         }
 
         private void InitArgs(int count)
@@ -79,6 +79,9 @@ namespace LuaSharpVM.Decompiler
             {
                 // TODO: prefix functions so we can distiguins one parent from another? (like: unknown_0_1)
                 var parent = GetParentFunction();
+                if (parent == null)
+                    return "unkErr";
+
                 // TODO: get all parents?
                 int unkCount = -1;
                 for(int i = 0; i < parent.Functions.IndexOf(this.Func); i++)
@@ -99,24 +102,26 @@ namespace LuaSharpVM.Decompiler
             return FindParentFunction(this.Decoder.File.Function);
         }
 
-        private LuaFunction FindParentFunction(LuaFunction function)
+        private LuaFunction FindParentFunction(LuaFunction function, LuaFunction search = null)
         {
             // NOTE: recursive, always nice to stackoverflow
 
             // check if any the functions matches us
-            var target = function.Functions.IndexOf(this.Func);
-            if (target != -1)
-                return function;
-            else if (function == this.Func)
-                return null; // returns itself?
+            if (search == null)
+                search = this.Decoder.File.Function;
 
-            // no match? continue search
-            if (function.Functions.Count > 0)
+            var target = search.Functions.FindIndex(x => x.ScriptFunction == this);
+            if (target != -1)
+                return search;
+
+            // search children
+            foreach(var f in search.Functions)
             {
-                var res = FindParentFunction(function);
+                var res = FindParentFunction(function, f);
                 if (res != null)
-                    return res; // parent
+                    return res;
             }
+
             return null;
         }
 
@@ -375,10 +380,12 @@ namespace LuaSharpVM.Decompiler
             // My job is to generate a list of static available upvalues so that the decompiler can
             // reference to them, they are commonly used for function calls that are in scope of the root function.
 
+            //return;
             LuaFunction parent = GetParentFunction();
             if (parent == null)
                 return; // we in root UwU
 
+            return;
             // create Upvalues List from parent
             int functionIndex = parent.Functions.IndexOf(this.Func);
             for (int i = 0; i < parent.Instructions.Count; i++)
