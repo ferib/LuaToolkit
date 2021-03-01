@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using LuaSharpVM.Core;
-using LuaSharpVM.Models;
+﻿using LuaSharpVM.Core;
 using LuaSharpVM.Disassembler;
+using LuaSharpVM.Models;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace LuaSharpVM.Decompiler
@@ -13,7 +11,7 @@ namespace LuaSharpVM.Decompiler
         public int Depth;
         private LuaDecoder Decoder;
         private LuaFunction Func;
-        private string Name;
+        
         public bool IsLocal = false;
         private List<int> Args;
         private List<string> NameArgs;
@@ -23,6 +21,24 @@ namespace LuaSharpVM.Decompiler
         public List<int> UsedLocals;
 
         private string _text;
+
+        public string Name
+        {
+            get
+            {
+                if (this.Func == null || this.Func.Name == null || this.Func.Name == "")
+                {
+                    return GetName();
+                }
+                else
+                    return this.Func.Name;
+            }
+            set
+            {
+                if (this.Func != null && this.Func.Name != null)
+                    this.Func.Name = value;
+            }
+        }
 
         public string Text
         {
@@ -72,10 +88,7 @@ namespace LuaSharpVM.Decompiler
 
         private string GetName()
         {
-            if (Func.Name != null && Func.Name != "")
-                return Func.Name;
-
-            if (this.Name == "") // unknownX
+            if (this.Func.Name == "") // unknownX
             {
                 // TODO: prefix functions so we can distiguins one parent from another? (like: unknown_0_1)
                 var parent = GetParentFunction();
@@ -84,19 +97,19 @@ namespace LuaSharpVM.Decompiler
 
                 // TODO: get all parents?
                 int unkCount = -1;
-                for(int i = 0; i < parent.Functions.IndexOf(this.Func); i++)
+                for (int i = 0; i < parent.Functions.IndexOf(this.Func); i++)
                 {
                     if (parent.Functions[i].ScriptFunction.IsLocal)
                         unkCount++;
                 }
                 return "unknown" + (unkCount + 1); // should give right index?
             }
-            return this.Name;
+            return this.Func.Name;
         }
 
         public LuaFunction GetParentFunction()
         {
-            if(this.Decoder.File.Function == this.Func)
+            if (this.Decoder.File.Function == this.Func)
                 return null; // we root already
 
             return FindParentFunction(this.Decoder.File.Function);
@@ -115,7 +128,7 @@ namespace LuaSharpVM.Decompiler
                 return search;
 
             // search children
-            foreach(var f in search.Functions)
+            foreach (var f in search.Functions)
             {
                 var res = FindParentFunction(function, f);
                 if (res != null)
@@ -124,7 +137,6 @@ namespace LuaSharpVM.Decompiler
 
             return null;
         }
-
 
         private void GenerateBlocks()
         {
@@ -240,7 +252,7 @@ namespace LuaSharpVM.Decompiler
                 // ELSE: JMP != -1 && ELSE == -1
                 // ENDIF: JMP == -1 && ELSE != -1
                 // END: JMP == -1 && ELSE == -1
-                if (this.Blocks[i].GetBranchLine() != null && 
+                if (this.Blocks[i].GetBranchLine() != null &&
                     (this.Blocks[i].GetBranchLine().Instr.OpCode == LuaOpcode.FORLOOP || this.Blocks[i].GetBranchLine().Instr.OpCode == LuaOpcode.TFORLOOP))
                 {
 #if DEBUG
@@ -248,7 +260,7 @@ namespace LuaSharpVM.Decompiler
 #else
                     this.Blocks[i].GetBranchLine().Text = "end\r\n";
 #endif
-                }     
+                }
                 else if (this.Blocks[i].JumpsTo != -1 && this.Blocks[i].JumpsNext != -1) // IF detected
                 {
                     // merge
@@ -290,16 +302,16 @@ namespace LuaSharpVM.Decompiler
                             {
                                 found = true;
                                 bool jmpsToStart = this.Blocks[ifIndex].JumpsTo == ifbodyBlockStart.StartAddress; // is or?
-                                if(jmpsToStart)
+                                if (jmpsToStart)
                                 {
                                     if (ifIndex != lastifIndex)
                                         this.Blocks[ifIndex].GetConditionLine().Op3 = "or";
-                                    if(this.Blocks[ifIndex].GetConditionLine().Instr.A == 0)
+                                    if (this.Blocks[ifIndex].GetConditionLine().Instr.A == 0)
                                         this.Blocks[ifIndex].GetConditionLine().Op2 = this.Blocks[ifIndex].GetConditionLine().Op2.Replace("==", "~=");
                                 }
                                 else
                                 {
-                                    if(ifIndex != lastifIndex)
+                                    if (ifIndex != lastifIndex)
                                         this.Blocks[ifIndex].GetConditionLine().Op3 = "and";
                                     if (this.Blocks[ifIndex].GetConditionLine().Instr.A == 1)
                                         this.Blocks[ifIndex].GetConditionLine().Op2 = this.Blocks[ifIndex].GetConditionLine().Op2.Replace("==", "~=");
@@ -323,14 +335,14 @@ namespace LuaSharpVM.Decompiler
                                 int ifIndexFix = ifIndex + 1;
                                 do
                                 {
-                                    this.Blocks[ifIndexFix].IfChainIndex = ifIndexFix - ifIndex-1; // rebase
+                                    this.Blocks[ifIndexFix].IfChainIndex = ifIndexFix - ifIndex - 1; // rebase
                                     ifIndexFix++;
                                 }
                                 while (this.Blocks[ifIndexFix].IfChainIndex != -1);
                             }
-                                
+
                             lastifIndex = ifIndex; // new IF end found!
-                        } 
+                        }
                     }
                 }
                 else if (this.Blocks[i].JumpsTo != -1 && this.Blocks[i].JumpsNext == -1)
@@ -340,7 +352,7 @@ namespace LuaSharpVM.Decompiler
 #else
                     this.Blocks[i].GetBranchLine().Op3 += "else";
 #endif
-                }  
+                }
                 else if (this.Blocks[i].JumpsTo == -1 && this.Blocks[i].JumpsNext != -1 && this.Blocks[i].GetBranchLine() != null
                     && this.Blocks[i].GetBranchLine().Instr.OpCode != LuaOpcode.FORPREP) // also make sure if condifition is set (no forloop)
                 {
@@ -350,14 +362,14 @@ namespace LuaSharpVM.Decompiler
                     this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Op3 += "\r\nend";
 #endif
                 }
-                    
+
                 else if (this.Blocks[i].JumpsTo == -1 && this.Blocks[i].JumpsNext == -1)
                 {
 #if DEBUG
                     this.Blocks[i].GetBranchLine().Op3 += " -- END\r\n"; // already taken care of
 #endif
                 }
-                    
+
             }
         }
 
@@ -385,102 +397,103 @@ namespace LuaSharpVM.Decompiler
             if (parent == null)
                 return; // we in root UwU
 
-            return;
+            //return;
             // create Upvalues List from parent
             int functionIndex = parent.Functions.IndexOf(this.Func);
             for (int i = 0; i < parent.Instructions.Count; i++)
             {
                 // TODO: bugfix
                 var instr = parent.Instructions[i];
-                switch (instr.OpCode)
+                if (!(instr.OpCode == LuaOpcode.CLOSURE && instr.Bx == functionIndex))
+                    continue;
+
+                string globalName = "";
+                this.IsLocal = true;
+                //int j = i - 1;
+                //// Find GETGLOBAL
+                //while (j >= 0)
+                //{
+                //    if (parent.Instructions[j].OpCode == LuaOpcode.CLOSURE || parent.Instructions[j].OpCode == LuaOpcode.CLOSE || parent.Instructions[j].OpCode == LuaOpcode.RETURN)
+                //        break; // end of closure
+
+                //    if (parent.Instructions[j].OpCode == LuaOpcode.GETGLOBAL && parent.Instructions[i].A == parent.Instructions[j].A)
+                //    {
+                //        globalName = GetConstant(parent.Instructions[j].B);
+                //        globalName = globalName.Substring(1, globalName.Length - 2);
+                //        break; // job's done
+                //    }
+                //    j--;
+                //}
+
+                // handle closure
+                //if (parent.Functions[functionIndex].ScriptFunction.Name == null || parent.Functions[functionIndex].ScriptFunction.Name == "")
+                //    this.Func.Upvalues.Add(new StringConstant($"unknownX_{functionIndex}\0")); // count all prototypes
+                //else
+                //    this.Func.Upvalues.Add(new StringConstant(parent.Functions[functionIndex].ScriptFunction.Name + $"_{functionIndex}\0")); // count all prototypes
+                ////parent.Upvalues.Add(new PrototypeConstant($"unknown{functionIndex}_{parent.Upvalues.FindAll(x => x.GetType() == typeof(PrototypeConstant)).Count}")); // count all prototypes
+
+                int j = i + 1; // instr after CLOSURE to start with
+                bool closure = false;
+                int setTableIndex = -1;
+                while (j < parent.Instructions.Count)
                 {
-                    case LuaOpcode.CLOSURE:
-                        if (instr.Bx != functionIndex)
-                            break;
+                    if (parent.Instructions[j].OpCode == LuaOpcode.CLOSURE || parent.Instructions[j].OpCode == LuaOpcode.CLOSE || parent.Instructions[j].OpCode == LuaOpcode.RETURN)
+                        break; // end of closure
+                    //closure = true; // stop MOVEs after closure, keep going for settable/setglobal
 
-                        string globalName = "";
-                        this.IsLocal = true;
-                        int j = i - 1;
-                        // Find GETGLOBAL
-                        while (j >= 0)
+
+                    if (parent.Instructions[j].OpCode == LuaOpcode.MOVE && !closure)
+                    {
+                        // upvalues!
+                        if (parent.Instructions[j].A == 0) // 0 = _ENV
                         {
-                            if (parent.Instructions[j].OpCode == LuaOpcode.CLOSURE)
-                                break; // start of another closure
-
-                            if (parent.Instructions[j].OpCode == LuaOpcode.GETGLOBAL && parent.Instructions[i].A == parent.Instructions[j].A)
-                            {
-                                globalName = GetConstant(parent.Instructions[j].B);
-                                globalName = globalName.Substring(1, globalName.Length - 2);
-                                break; // job's done
-                            }
-                            j--;
+                            // TODO: handle value correct & erase script line
+                            LuaConstant cons;
+                            string obj = GetConstant(parent.Instructions[j].B, parent).ToString();
+                            //if(parent.ScriptFunction != null)
+                            //    obj = parent.ScriptFunction.Lines.FirstOrDefault().WriteIndex(parent.Instructions[j].B);
+                            //if (!obj.Contains("var"))
+                            //    cons = new PrototypeConstant($"{parent.Name}_{parent.Instructions[j].B}\0"); // TODO: parent name or actual name?
+                            //else
+                            //    cons = new StringConstant(obj); // idk?
+                            cons = new StringConstant(obj.Substring(1, obj.Length-2) + "\0");
+                            this.Func.Upvalues.Add(cons);
                         }
-
-                        j = i + 1;
-                        // Find SETTABLE
-                        bool closure = false;
-                        int setTableIndex = -1;
-                        while (j < parent.Instructions.Count)
+                    }
+                    else if (parent.Instructions[j].OpCode == LuaOpcode.SETTABLE)
+                    {
+                        // check the source and desitnation of the SETTABLE to find out both local and global name
+                        if (setTableIndex == -1 && parent.Instructions[i].A == parent.Instructions[j].C) // SETTABLE x y == CLOSURE y ?  
                         {
-                            if (parent.Instructions[j].OpCode == LuaOpcode.CLOSURE)
-                                closure = true; // stop MOVEs after closure, keep going for settable/setglobal
+                            // find first part of the table
 
-
-                            if (parent.Instructions[j].OpCode == LuaOpcode.MOVE && !closure)
-                            {
-                                // upvalues!
-                                if (parent.Instructions[j].A == 0) // 0 = _ENV
-                                {
-                                    // TODO
-                                    LuaConstant cons;
-                                    cons = new StringConstant($"unknown{parent.Instructions[j].B}\0"); // NOTE: strip last character??
-                                    this.Func.Upvalues.Add(cons);
-                                }
-                            }
-                            else if (parent.Instructions[j].OpCode == LuaOpcode.SETTABLE)
-                            {
-                                // check the source and desitnation of the SETTABLE to find out both local and global name
-                                if(setTableIndex == -1 && parent.Instructions[i].A == parent.Instructions[j].C) // SETTABLE x y == CLOSURE y ?  
-                                {
-                                    // find first part of the table
-                                 
-                                    // TODO: bugfix false locals
-                                    this.IsLocal = false;
-                                    this.Name = GetConstant(parent.Instructions[j].B, parent).ToString();
-                                    this.Name = this.Name.Substring(1, this.Name.Length - 2);
-                                    closure = true;
-                                    setTableIndex = j; // src
-                                }
-                                else if(setTableIndex > -1 && parent.Instructions[setTableIndex].A == parent.Instructions[j].C)
-                                {
-                                    // find second part of the table, which is the root/global
-                                    globalName = GetConstant(parent.Instructions[j].B, parent).ToString();
-                                    globalName = globalName.Substring(1, globalName.Length - 2);
-                                    break;
-                                }
-                            }
-                            else if (parent.Instructions[j].OpCode == LuaOpcode.SETGLOBAL && !closure && parent.Instructions[i].A == parent.Instructions[j].A) // CLOSURE x ? == SETGLOBAL x ?
-                            {
-                                // is global!
-                                this.IsLocal = false;
-                                this.Name = GetConstant(parent.Instructions[j].C, parent).ToString();
-                                this.Name = this.Name.Substring(1, this.Name.Length - 2);
-                                closure = true;
-                                break;
-                            }
-                            j++;
+                            // TODO: bugfix false locals
+                            this.IsLocal = false;
+                            this.Name = GetConstant(parent.Instructions[j].B, parent).ToString();
+                            this.Name = this.Name.Substring(1, this.Name.Length - 2);
+                            //closure = true;
+                            setTableIndex = j; // src
                         }
-
-                        //if (globalName != "")
-                        //    this.Name = globalName + ":" + this.Name;
-
-                        break;
-                    case LuaOpcode.SETUPVAL:
-                        // NOTE: check all 'MOV 0 Bx' after CLOSURE & SETUPVALUE
-                        // NOTE: these are only used at runtime to set/get values?
-                        var test2 = instr.Bx;
-                        break;
+                        else if (setTableIndex > -1 && parent.Instructions[setTableIndex].A == parent.Instructions[j].C)
+                        {
+                            // find second part of the table, which is the root/global
+                            globalName = GetConstant(parent.Instructions[j].B, parent).ToString();
+                            globalName = globalName.Substring(1, globalName.Length - 2);
+                            //break;
+                        }
+                    }
+                    else if (parent.Instructions[j].OpCode == LuaOpcode.SETGLOBAL && !closure && parent.Instructions[i].A == parent.Instructions[j].A) // CLOSURE x ? == SETGLOBAL x ?
+                    {
+                        // is global!
+                        this.IsLocal = false;
+                        this.Name = GetConstant(parent.Instructions[j].C, parent).ToString();
+                        this.Name = this.Name.Substring(1, this.Name.Length - 2);
+                        //closure = true;
+                        //break;
+                    }
+                    j++;
                 }
+
             }
         }
 
@@ -492,7 +505,7 @@ namespace LuaSharpVM.Decompiler
             {
                 for (int j = 0; j < this.Blocks[i].Lines.Count; j++)
                 {
-                    if(this.Blocks[i].Lines[j].Instr.OpCode == LuaOpcode.RETURN)
+                    if (this.Blocks[i].Lines[j].Instr.OpCode == LuaOpcode.RETURN)
                     {
                         // check if previous 1/2 is a TAILCALL
                         bool erase = false;
@@ -550,12 +563,12 @@ namespace LuaSharpVM.Decompiler
         {
             string result = "";
             int tabLevel = 0;
-            for(int b = 0; b < this.Blocks.Count; b++)
+            for (int b = 0; b < this.Blocks.Count; b++)
             {
                 // print block content
-                for(int i = 0; i < this.Blocks[b].Lines.Count; i++)
-                    result += (this.Blocks[b].StartAddress + i).ToString("0000") + $": {new string(' ',tabLevel)}" + this.Blocks[b].Lines[i].Text.Replace("\t","");
-                
+                for (int i = 0; i < this.Blocks[b].Lines.Count; i++)
+                    result += (this.Blocks[b].StartAddress + i).ToString("0000") + $": {new string(' ', tabLevel)}" + this.Blocks[b].Lines[i].Text.Replace("\t", "");
+
                 result += new string('-', 50) + $" ({this.Blocks[b].JumpsTo}) \r\n";
                 if (b == this.Blocks.Count - 1)
                     result += "\r\n"; // keep it clean?
@@ -570,9 +583,9 @@ namespace LuaSharpVM.Decompiler
             {
                 for (int i = 0; i < this.Blocks[b].Lines.Count; i++)
                 {
-                    result += this.Blocks[b].Lines[i].Text.Replace("\t","");
+                    result += this.Blocks[b].Lines[i].Text.Replace("\t", "");
                 }
-               
+
                 if (b == this.Blocks.Count - 1)
                     result += "\n\r"; // keep it clean?
             }

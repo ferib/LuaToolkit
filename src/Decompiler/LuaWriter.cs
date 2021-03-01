@@ -50,9 +50,8 @@ namespace LuaSharpVM.Decompiler
                 WriteFunction(func.Functions[i], 1); // parent
                 foreach (var f in func.Functions[i].Functions)
                 {
-                    WriteF(f); // children
+                    WriteF(f); // children NOTE: write children in body of parent?
                 }
-                    
             }
             WriteFunction(func); // root
         }

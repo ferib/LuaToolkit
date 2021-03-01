@@ -63,10 +63,7 @@ namespace LuaSharpVM.Decompiler
             switch (Instr.OpCode)
             {
                 case LuaOpcode.MOVE:
-                    if (Instr.A == 0)
-                        this.Op1 = "_ENV"; // not always?
-                    else
-                        this.Op1 = WriteIndex(Instr.A);
+                    this.Op1 = WriteIndex(Instr.A);
                     this.Op2 = " = ";
                     this.Op3 = WriteIndex(Instr.B);
                     break;
@@ -91,13 +88,14 @@ namespace LuaSharpVM.Decompiler
                     }
                     break;
                 case LuaOpcode.GETUPVAL:
-                    //this.Op1 = WriteIndex(Instr.A);
-                    //this.Op2 = " = ";
-                    //this.Op3 = WriteIndex(Instr.B);
+                    // NOTE: child get local from parent
+                    this.Op1 = WriteIndex(Instr.A);
+                    this.Op2 = " = ";
+                    this.Op3 = WriteIndex(Instr.B);
 
-                    //// TODO: figure if an upvalue is a function or not?
-                    //this.Op3 = this.Func.Upvalues[Instr.B].ToString();
-                    ////this.Op3 = this.Func.Upvalues[Instr.B].ToString().Substring(1, this.Func.Upvalues[Instr.B].ToString().Length - 2); // this is legit for prototypes etc
+                    // TODO: figure if an upvalue is a function or not?
+                    this.Op3 = this.Func.Upvalues[Instr.B].ToString();
+                    //this.Op3 = this.Func.Upvalues[Instr.B].ToString().Substring(1, this.Func.Upvalues[Instr.B].ToString().Length - 2); // this is legit for prototypes etc
                     break;
                 case LuaOpcode.GETGLOBAL:
                     this.Op1 = $"{WriteIndex(Instr.A)} = _G[";
@@ -115,13 +113,13 @@ namespace LuaSharpVM.Decompiler
                     this.Op3 = $"var{Instr.A}";
                     break;
                 case LuaOpcode.SETUPVAL:
-                    ////this.Op1 = $"upvalue[{WriteIndex(Instr.B)}]"; TODO: Verify if below actually work
-                    //// TODO: check if actual function!
-                    
-                    //this.Op1 = this.Func.Upvalues[Instr.B].ToString().Substring(1, this.Func.Upvalues[Instr.B].ToString().Length - 2);
-                    ////this.Op1 = $"var";
-                    //this.Op2 = " = ";
-                    //this.Op3 = $"var[{GetConstant(Instr.A)}]";
+                    // NOTE: child writes to parent locals
+                    //this.Op1 = $"upvalue[{WriteIndex(Instr.B)}]"; TODO: Verify if below actually work
+                    // TODO: check if actual function!
+
+                    this.Op1 = $"{WriteIndex(Instr.B)}"; // no?
+                    this.Op2 = " = ";
+                    this.Op3 = $"{GetConstant(Instr.A)}";
                     break;
                 case LuaOpcode.SETTABLE:
                     this.Op1 = $"{WriteIndex(Instr.A)}[{WriteIndex(Instr.B)}]";
@@ -385,12 +383,17 @@ namespace LuaSharpVM.Decompiler
                     break;
                 case LuaOpcode.CLOSURE:
                     // crates closutre for function prototype Bx
-                    this.Func.Upvalues.Add(null);
                     //var xx = (this.Func.ScriptFunction.GetParentFunction().ScriptFunction.GetConstant(Instr.Bx));
                     //this.Func.Upvalues.Add(this.Func.ScriptFunction.GetParentFunction().Upvalues[Instr.sBx]);
                     this.Op1 = $"{WriteIndex(Instr.A)}";
                     this.Op2 = " = ";
-                    this.Op3 = $"{WriteIndex(Instr.Bx)}";
+                    //if(this.Func.Upvalues.Count > Instr.Bx)
+                    //    this.Op3 = $"{this.Func.Upvalues[Instr.Bx]}";
+                    //else
+                    if(this.Func.Functions[Instr.Bx].ScriptFunction != null)
+                        this.Op3 = this.Func.Functions[Instr.Bx].ScriptFunction.Name;
+                    else
+                        this.Op3 = $"{this.Func.ScriptFunction.Name}_{Instr.Bx}";
                     break;
                 case LuaOpcode.VARARG:
                     this.Op1 = "local ";
