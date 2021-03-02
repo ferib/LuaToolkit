@@ -420,7 +420,7 @@ namespace LuaSharpVM.Decompiler
                 //        break; // job's done
                 //    }
                 //    j--;
-                }
+                //}
 
                 j = i + 1; // instr after CLOSURE to start with
                 bool closure = false;
