@@ -409,30 +409,20 @@ namespace LuaSharpVM.Decompiler
 
                 string globalName = "";
                 this.IsLocal = true;
-                //int j = i - 1;
-                //// Find GETGLOBAL
+                int j = i - 1;
+                // Find GETGLOBAL - if needed?
                 //while (j >= 0)
                 //{
-                //    if (parent.Instructions[j].OpCode == LuaOpcode.CLOSURE || parent.Instructions[j].OpCode == LuaOpcode.CLOSE || parent.Instructions[j].OpCode == LuaOpcode.RETURN)
-                //        break; // end of closure
-
                 //    if (parent.Instructions[j].OpCode == LuaOpcode.GETGLOBAL && parent.Instructions[i].A == parent.Instructions[j].A)
                 //    {
-                //        globalName = GetConstant(parent.Instructions[j].B);
+                //        globalName = parent.Constants[parent.Instructions[j].Bx].ToString();
                 //        globalName = globalName.Substring(1, globalName.Length - 2);
                 //        break; // job's done
                 //    }
                 //    j--;
-                //}
+                }
 
-                // handle closure
-                //if (parent.Functions[functionIndex].ScriptFunction.Name == null || parent.Functions[functionIndex].ScriptFunction.Name == "")
-                //    this.Func.Upvalues.Add(new StringConstant($"unknownX_{functionIndex}\0")); // count all prototypes
-                //else
-                //    this.Func.Upvalues.Add(new StringConstant(parent.Functions[functionIndex].ScriptFunction.Name + $"_{functionIndex}\0")); // count all prototypes
-                ////parent.Upvalues.Add(new PrototypeConstant($"unknown{functionIndex}_{parent.Upvalues.FindAll(x => x.GetType() == typeof(PrototypeConstant)).Count}")); // count all prototypes
-
-                int j = i + 1; // instr after CLOSURE to start with
+                j = i + 1; // instr after CLOSURE to start with
                 bool closure = false;
                 int setTableIndex = -1;
                 while (j < parent.Instructions.Count)
@@ -493,6 +483,8 @@ namespace LuaSharpVM.Decompiler
                     }
                     j++;
                 }
+                if (globalName != "")
+                    this.Name = globalName + ":"+ this.Name;
 
             }
         }

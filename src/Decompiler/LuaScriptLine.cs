@@ -94,7 +94,8 @@ namespace LuaSharpVM.Decompiler
                     this.Op3 = WriteIndex(Instr.B);
 
                     // TODO: figure if an upvalue is a function or not?
-                    this.Op3 = this.Func.Upvalues[Instr.B].ToString();
+                    if(this.Func.Upvalues.Count > Instr.B)
+                        this.Op3 = this.Func.Upvalues[Instr.B].ToString();
                     //this.Op3 = this.Func.Upvalues[Instr.B].ToString().Substring(1, this.Func.Upvalues[Instr.B].ToString().Length - 2); // this is legit for prototypes etc
                     break;
                 case LuaOpcode.GETGLOBAL:
@@ -114,9 +115,6 @@ namespace LuaSharpVM.Decompiler
                     break;
                 case LuaOpcode.SETUPVAL:
                     // NOTE: child writes to parent locals
-                    //this.Op1 = $"upvalue[{WriteIndex(Instr.B)}]"; TODO: Verify if below actually work
-                    // TODO: check if actual function!
-
                     this.Op1 = $"{WriteIndex(Instr.B)}"; // no?
                     this.Op2 = " = ";
                     this.Op3 = $"{GetConstant(Instr.A)}";
