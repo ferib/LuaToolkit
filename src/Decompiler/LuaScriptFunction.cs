@@ -1,6 +1,7 @@
 ﻿using LuaSharpVM.Core;
 using LuaSharpVM.Disassembler;
 using LuaSharpVM.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -248,7 +249,7 @@ namespace LuaSharpVM.Decompiler
             // if merge
             for (int i = 0; i < this.Blocks.Count; i++)
             {
-                // IF: JMP != -1 && ELSE != -1
+                // IF: JMP != -1 && ELSE != -1 (&& GetConditionLine != NULL; ELSE; FORLOOP END (dont care))
                 // ELSE: JMP != -1 && ELSE == -1
                 // ENDIF: JMP == -1 && ELSE != -1
                 // END: JMP == -1 && ELSE == -1
@@ -261,88 +262,99 @@ namespace LuaSharpVM.Decompiler
                     this.Blocks[i].GetBranchLine().Text = "end\r\n";
 #endif
                 }
-                else if (this.Blocks[i].JumpsTo != -1 && this.Blocks[i].JumpsNext != -1) // IF detected
+                else if (this.Blocks[i].JumpsTo != -1 && this.Blocks[i].JumpsNext != -1 && this.Blocks[i].GetConditionLine() != null) // IF detected
                 {
-                    // merge
-                    int lastifIndex = -1;
-                    int bIndex = i + 1; // search end of IF
-                    while (bIndex < this.Blocks.Count)
+                    try
                     {
-                        if (this.Blocks[bIndex].JumpsTo == -1 || this.Blocks[bIndex].JumpsNext == -1)
+                        // merge
+                        int lastifIndex = -1;
+                        int bIndex = i + 1; // search end of IF
+                        while (bIndex < this.Blocks.Count)
                         {
-                            lastifIndex = bIndex - 1;
-                            break; // IF found
+                            if (this.Blocks[bIndex].JumpsTo == -1 || this.Blocks[bIndex].JumpsNext == -1)
+                            {
+                                lastifIndex = bIndex - 1;
+                                break; // IF found
+                            }
+                            bIndex++;
                         }
-                        bIndex++;
+                        // TODO: find the bodyblock for the last IF and compare against previous IF to find merge chain,
+                        // re-do group IF's that do not match the ifbodyblock end/start-1 and figure out if its and/or 
+                        // depending on where the jump is set to. The last one should always be classified as 'and'
+                        // can be used to figure out the END of the ifbodyblock, we check others by keeping in mind
+                        // they can be both and/or, meaning ifbodyblock (and) || ifbodyblock-1 (or)
+
+                        // iterate from lastifIndex to i and split
+                        int ifIndex = lastifIndex;
+                        if (this.Blocks[i].IfChainIndex != -1)
+                            continue; // skip if already discovered
+
+                        //while (ifIndex > i) // temp
+                        while (ifIndex >= i)
+                        {
+                            // NOTE: not always the case??
+                            // TODO: bug! JumpsTo not found!!
+                            var ifbodyBlockEnd = this.Blocks.ToList().Single(x => x.StartAddress == this.Blocks[lastifIndex].JumpsTo); // end JMP
+                            var ifbodyBlockStart = this.Blocks[lastifIndex + 1]; // start +1
+
+                            // NOTE: iterate from end to here to which block it JMPs to
+                            bool found = false;
+                            int cIndex = this.Blocks.IndexOf(ifbodyBlockEnd); // start from endblock
+                            while (cIndex > ifIndex)
+                            {
+                                // scan if's
+                                if (this.Blocks[ifIndex].JumpsTo == this.Blocks[cIndex].StartAddress && this.Blocks[ifIndex].GetConditionLine() != null)
+                                {
+                                    found = true;
+                                    bool jmpsToStart = this.Blocks[ifIndex].JumpsTo == ifbodyBlockStart.StartAddress; // is or?
+                                    if (jmpsToStart)
+                                    {
+                                        if (ifIndex != lastifIndex)
+                                            this.Blocks[ifIndex].GetConditionLine().Op3 = "or";
+                                        if (this.Blocks[ifIndex].GetConditionLine().Instr.A == 0)
+                                            this.Blocks[ifIndex].GetConditionLine().Op2 = this.Blocks[ifIndex].GetConditionLine().Op2.Replace("==", "~=");
+                                    }
+                                    else
+                                    {
+                                        if (ifIndex != lastifIndex)
+                                            this.Blocks[ifIndex].GetConditionLine().Op3 = "and";
+                                        if (this.Blocks[ifIndex].GetConditionLine().Instr.A == 1)
+                                            this.Blocks[ifIndex].GetConditionLine().Op2 = this.Blocks[ifIndex].GetConditionLine().Op2.Replace("==", "~=");
+                                    }
+
+                                    if (ifIndex != lastifIndex && this.Blocks[ifIndex + 1].GetConditionLine() != null)
+                                        this.Blocks[ifIndex + 1].GetConditionLine().Op1 = "";  
+                                    if (this.Blocks[ifIndex].IfChainIndex == -1)
+                                        this.Blocks[ifIndex].IfChainIndex = ifIndex - i; // NOTE: numbers are NOT correct after rebase!
+
+                                    break;
+                                }
+                                cIndex--;
+                            }
+                            ifIndex--;
+                            if (!found)
+                            {
+                                ifIndex++;
+                                if (this.Blocks[ifIndex + 1].IfChainIndex != -1)
+                                {
+                                    // cleanup existing end of merged ifchain
+                                    int ifIndexFix = ifIndex + 1;
+                                    do
+                                    {
+                                        this.Blocks[ifIndexFix].IfChainIndex = ifIndexFix - ifIndex - 1; // rebase
+                                        ifIndexFix++;
+                                    }
+                                    while (this.Blocks[ifIndexFix].IfChainIndex != -1);
+                                }
+
+                                lastifIndex = ifIndex; // new IF end found!
+                                ifIndex--; // subtract or inf loop??
+                            }
+                        }
                     }
-                    // TODO: find the bodyblock for the last IF and compare against previous IF to find merge chain,
-                    // re-do group IF's that do not match the ifbodyblock end/start-1 and figure out if its and/or 
-                    // depending on where the jump is set to. The last one should always be classified as 'and'
-                    // can be used to figure out the END of the ifbodyblock, we check others by keeping in mind
-                    // they can be both and/or, meaning ifbodyblock (and) || ifbodyblock-1 (or)
-
-                    // iterate from lastifIndex to i and split
-                    int ifIndex = lastifIndex;
-                    if (this.Blocks[i].IfChainIndex != -1)
-                        continue; // skip if already discovered
-
-                    while (ifIndex >= i)
+                    catch (Exception e)
                     {
-                        // NOTE: not always the case??
-                        var ifbodyBlockEnd = this.Blocks.ToList().Single(x => x.StartAddress == this.Blocks[lastifIndex].JumpsTo); // end JMP
-                        var ifbodyBlockStart = this.Blocks[lastifIndex + 1]; // start +1
-
-                        // NOTE: iterate from end to here to which block it JMPs to
-                        bool found = false;
-                        int cIndex = this.Blocks.IndexOf(ifbodyBlockEnd); // start from endblock
-                        while (cIndex > ifIndex)
-                        {
-                            // scan if's
-                            if (this.Blocks[ifIndex].JumpsTo == this.Blocks[cIndex].StartAddress)
-                            {
-                                found = true;
-                                bool jmpsToStart = this.Blocks[ifIndex].JumpsTo == ifbodyBlockStart.StartAddress; // is or?
-                                if (jmpsToStart)
-                                {
-                                    if (ifIndex != lastifIndex)
-                                        this.Blocks[ifIndex].GetConditionLine().Op3 = "or";
-                                    if (this.Blocks[ifIndex].GetConditionLine().Instr.A == 0)
-                                        this.Blocks[ifIndex].GetConditionLine().Op2 = this.Blocks[ifIndex].GetConditionLine().Op2.Replace("==", "~=");
-                                }
-                                else
-                                {
-                                    if (ifIndex != lastifIndex)
-                                        this.Blocks[ifIndex].GetConditionLine().Op3 = "and";
-                                    if (this.Blocks[ifIndex].GetConditionLine().Instr.A == 1)
-                                        this.Blocks[ifIndex].GetConditionLine().Op2 = this.Blocks[ifIndex].GetConditionLine().Op2.Replace("==", "~=");
-                                }
-
-                                if (ifIndex != lastifIndex)
-                                    this.Blocks[ifIndex + 1].GetConditionLine().Op1 = "";
-                                if (this.Blocks[ifIndex].IfChainIndex == -1)
-                                    this.Blocks[ifIndex].IfChainIndex = ifIndex - i; // NOTE: numbers are NOT correct after rebase!
-                                break;
-                            }
-                            cIndex--;
-                        }
-                        ifIndex--;
-                        if (!found)
-                        {
-                            ifIndex++;
-                            if (this.Blocks[ifIndex + 1].IfChainIndex != -1)
-                            {
-                                // cleanup existing end of merged ifchain
-                                int ifIndexFix = ifIndex + 1;
-                                do
-                                {
-                                    this.Blocks[ifIndexFix].IfChainIndex = ifIndexFix - ifIndex - 1; // rebase
-                                    ifIndexFix++;
-                                }
-                                while (this.Blocks[ifIndexFix].IfChainIndex != -1);
-                            }
-
-                            lastifIndex = ifIndex; // new IF end found!
-                        }
+                        Console.WriteLine(e);
                     }
                 }
                 else if (this.Blocks[i].JumpsTo != -1 && this.Blocks[i].JumpsNext == -1)
@@ -369,7 +381,6 @@ namespace LuaSharpVM.Decompiler
                     this.Blocks[i].GetBranchLine().Op3 += " -- END\r\n"; // already taken care of
 #endif
                 }
-
             }
         }
 
@@ -446,7 +457,10 @@ namespace LuaSharpVM.Decompiler
                             //    cons = new PrototypeConstant($"{parent.Name}_{parent.Instructions[j].B}\0"); // TODO: parent name or actual name?
                             //else
                             //    cons = new StringConstant(obj); // idk?
-                            cons = new StringConstant(obj.Substring(1, obj.Length-2) + "\0");
+                            if(obj.Contains('\"'))
+                                cons = new StringConstant(obj.Substring(1, obj.Length-2) + "\0");
+                            else
+                                cons = new StringConstant(obj + "\0");
                             this.Func.Upvalues.Add(cons);
                         }
                     }
@@ -468,7 +482,7 @@ namespace LuaSharpVM.Decompiler
                         {
                             // find second part of the table, which is the root/global
                             globalName = GetConstant(parent.Instructions[j].B, parent).ToString();
-                            globalName = globalName.Substring(1, globalName.Length - 2);
+                            //globalName = globalName.Substring(1, globalName.Length - 2);
                             //break;
                         }
                     }
@@ -607,7 +621,7 @@ namespace LuaSharpVM.Decompiler
                     if (i < lines.Length - 1 && lines[i + 1].StartsWith("if"))
                     {
                         // elseif	
-                        newText += $"{new string('\t', tabCount - 1)}{lines[i]}{lines[i + 1]}\n\r";
+                        newText += $"{new string('\t', tabCount)}{lines[i]}{lines[i + 1]}\n\r";
                         i += 1; // brrrr fuck y'all, i skip next one this way!	
                         continue;
                     }

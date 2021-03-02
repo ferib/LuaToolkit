@@ -31,9 +31,9 @@ namespace LuaSharpVM.Decompiler
         public LuaInstruction Instr;
         public List<int> BranchInc = new List<int>();
 
-        public string Op1; // opperands ;D
-        public string Op2;
-        public string Op3;
+        public string Op1 = ""; // opperands ;D
+        public string Op2 = "";
+        public string Op3 = "";
 
         private string _text;
         public string Text
@@ -392,7 +392,7 @@ namespace LuaSharpVM.Decompiler
                     break;
                 case LuaOpcode.VARARG:
                     this.Op1 = "local ";
-                    for (int i = Instr.A; i < Instr.B-1; i++)
+                    for (int i = Instr.A; i < Instr.B-1; i++) // TODO: bugfix not always printing!
                     {
                         WriteIndex(i); // NOTE: Do not print, just consume local?
                         this.Op2 += $"var{i}";
