@@ -27,7 +27,7 @@ namespace LuaSharpVM.Decompiler
         {
             get
             {
-                if (this.Func == null || this.Func.Name == null || this.Func.Name == "")
+                if (this.Func == null || this.Func.Name == null || this.Func.Name == "" || this.Func.Name.Contains("@"))
                 {
                     return GetName();
                 }
@@ -89,7 +89,7 @@ namespace LuaSharpVM.Decompiler
 
         private string GetName()
         {
-            if (this.Func.Name == "") // unknownX
+            if (this.Func.Name == "" || this.Func.Name.Contains("@")) // unknownX
             {
                 // TODO: prefix functions so we can distiguins one parent from another? (like: unknown_0_1)
                 var parent = GetParentFunction();
@@ -551,11 +551,26 @@ namespace LuaSharpVM.Decompiler
                     b.Optimize();
         }
 
+        private void UpdateClosures()
+        {
+            // NOTE: update the names of the functions
+            for(int i = 0; i < this.Lines.Count; i++)
+            {
+                if (this.Lines[i].Instr.OpCode != LuaOpcode.CLOSURE)
+                    continue;
+
+                if (this.Func.Functions[this.Lines[i].Instr.Bx].ScriptFunction != null)
+                    this.Lines[i].Op3 = this.Func.Functions[this.Lines[i].Instr.Bx].ScriptFunction.Name;
+
+            }
+        }
+
         public void Complete()
         {
             GenerateBlocks();
+            UpdateClosures(); // fixes closure name referncing
             HandleTailcallReturns(); // fix returns
-            OutlineConditions();
+            OutlineConditions(); // moves IF code above IF chain
 #if !DEBUG
             Realign(); // complete?
 #endif

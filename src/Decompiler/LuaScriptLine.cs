@@ -390,7 +390,7 @@ namespace LuaSharpVM.Decompiler
                     if(this.Func.Functions[Instr.Bx].ScriptFunction != null)
                         this.Op3 = this.Func.Functions[Instr.Bx].ScriptFunction.Name;
                     else
-                        this.Op3 = $"{this.Func.ScriptFunction.Name}_{Instr.Bx}"; // TODO fix
+                        this.Op3 = $"IDK_SHIT_WENT_MISSING_BRO"; // TODO fix
                     break;
                 case LuaOpcode.VARARG:
                     this.Op1 = "local ";

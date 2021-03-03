@@ -31,6 +31,7 @@ namespace LuaSharpVM.Decompiler
         private void WriteFile()
         {
             // create Script Functions
+            this.Decoder.File.Function.Name = "CRoot";
             WriteF(this.Decoder.File.Function);
 
             // allign/format/whatever each function
