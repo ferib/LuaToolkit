@@ -217,12 +217,12 @@ namespace LuaSharpVM.Decompiler
                         case LuaOpcode.TFORLOOP:
                         case LuaOpcode.FORLOOP: // calculate LOOP jump
                             this.Blocks[i].JumpsTo = (this.Blocks[i].StartAddress + this.Blocks[i].Lines.Count - 1) + (short)this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Instr.sBx + 1; // TODO: verify math
-                            this.Blocks[i].JumpsNext = this.Blocks[i].JumpsNext = this.Blocks[i + 1].StartAddress;
+                            this.Blocks[i].JumpsNext = this.Blocks[i + 1].StartAddress;
                             break; // jmp?
-                        case LuaOpcode.LOADBOOL: // pc++
-                            this.Blocks[i].JumpsTo = (this.Blocks[i].StartAddress + this.Blocks[i].Lines.Count - 1) + 2; // skips one if C
-                            this.Blocks[i].JumpsNext = (this.Blocks[i].StartAddress + this.Blocks[i].Lines.Count - 1) + 1; // next block
-                            break;
+                        //case LuaOpcode.LOADBOOL: // pc++
+                        //    this.Blocks[i].JumpsTo = (this.Blocks[i].StartAddress + this.Blocks[i].Lines.Count - 1) + 2; // skips one if C
+                        //    this.Blocks[i].JumpsNext = (this.Blocks[i].StartAddress + this.Blocks[i].Lines.Count - 1) + 1; // next block
+                        //    break;
                         case LuaOpcode.JMP: // pc++
                             // check previous condition
                             if (this.Blocks[i].Lines.Count > 1 && this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 2].IsCondition()) // check for IF
@@ -289,7 +289,6 @@ namespace LuaSharpVM.Decompiler
                         if (this.Blocks[i].IfChainIndex != -1)
                             continue; // skip if already discovered
 
-                        //while (ifIndex > i) // temp
                         while (ifIndex >= i)
                         {
                             // NOTE: not always the case??
