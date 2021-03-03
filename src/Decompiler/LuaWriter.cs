@@ -30,34 +30,35 @@ namespace LuaSharpVM.Decompiler
 
         private void WriteFile()
         {
+            // create Script Functions
             WriteF(this.Decoder.File.Function);
-            // WriteFunction(this.Decoder.File.Function);
 
             // allign/format/whatever each function
             foreach (var f in this.LuaFunctions)
                 f.Complete();
+
         }
 
         private void WriteF(LuaFunction func)
         {
+            CreateScripFunction(func); // root first and then inside ?
             // TODO: write functions on CLOSURE and not each list?
             for (int i = 0; i < func.Functions.Count; i++)
             {
-                WriteFunction(func.Functions[i], 1); // parent
+                CreateScripFunction(func.Functions[i], 1); // parent
                 foreach (var f in func.Functions[i].Functions)
                 {
                     WriteF(f); // children NOTE: write children in body of parent?
                 }
             }
-            WriteFunction(func); // root
         }
 
-        private void WriteFunction(LuaFunction func, int dpth = 0, string name = "", bool isGlobal = false)
+        private void CreateScripFunction(LuaFunction func, int dpth = 0, string name = "", bool isGlobal = false)
         {
             // TODO: write functions on CLOSURE and not each list?
             string funcName = "";
 
-            if (dpth == 0)
+            if (dpth == 0) // unused?
                 funcName = null; // destroy header on root
 
             if (funcName != null)
@@ -164,8 +165,9 @@ namespace LuaSharpVM.Decompiler
         private string GetScript()
         {
             string result = "";
-            for(int i = 0; i < this.LuaFunctions.Count; i++)
-                result += this.LuaFunctions[i].Text;
+            result += this.Decoder.File.Function.ScriptFunction.Text; // only need main, right?
+            //for(int i = 0; i < this.LuaFunctions.Count; i++)
+            //    result += this.LuaFunctions[i].Text;
 
             if(this.LuaCode != null)
                 result += this.LuaCode.Text;

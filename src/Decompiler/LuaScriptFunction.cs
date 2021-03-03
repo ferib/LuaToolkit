@@ -139,6 +139,7 @@ namespace LuaSharpVM.Decompiler
             return null;
         }
 
+        // NOTE: Please do NOT touch this unless you 110% know what you are doing!!!
         private void GenerateBlocks()
         {
             int index = 0;
@@ -502,6 +503,9 @@ namespace LuaSharpVM.Decompiler
                 }
                 if (globalName != "")
                     this.Name = globalName + ":"+ this.Name;
+
+                // set line CLOSURE from parent
+                parent.ScriptFunction.Lines[i].FunctionRef = this.Func;
             }
         }
 
@@ -559,6 +563,9 @@ namespace LuaSharpVM.Decompiler
 
         public string GetText()
         {
+            if (this.Blocks.Count == 0)
+                this.Complete(); // i guess?
+
             if (_text != null)
                 return _text; // stores end results
 
@@ -579,8 +586,11 @@ namespace LuaSharpVM.Decompiler
             {
                 // print block content
                 for (int i = 0; i < this.Blocks[b].Lines.Count; i++)
+                {
+                    if (this.Blocks[b].Lines[i].Instr.OpCode == LuaOpcode.CLOSURE)
+                        result += this.Blocks[b].Lines[i].FunctionRef.ScriptFunction.GetText(); // inline func in parent
                     result += (this.Blocks[b].StartAddress + i).ToString("0000") + $": {new string(' ', tabLevel)}" + this.Blocks[b].Lines[i].Text.Replace("\t", "");
-
+                }
                 result += new string('-', 50) + $" ({this.Blocks[b].JumpsTo}) \r\n";
                 if (b == this.Blocks.Count - 1)
                     result += "\r\n"; // keep it clean?
@@ -595,6 +605,9 @@ namespace LuaSharpVM.Decompiler
             {
                 for (int i = 0; i < this.Blocks[b].Lines.Count; i++)
                 {
+                    if(this.Blocks[b].Lines[i].Instr.OpCode == LuaOpcode.CLOSURE)
+                        if (this.Blocks[b].Lines[i].FunctionRef != null)
+                            result += this.Blocks[b].Lines[i].FunctionRef.ScriptFunction.GetText(); // inline func in parent
                     result += this.Blocks[b].Lines[i].Text.Replace("\t", "");
                 }
 
@@ -645,6 +658,8 @@ namespace LuaSharpVM.Decompiler
                     newText += $"{new string('\t', tabCount)}{lines[i]}";
                 else if (lines[i].EndsWith("or") || lines[i].EndsWith("and") || lines[i].StartsWith(" not"))
                     newText += $"{lines[i]}";
+                else if (lines[i] == "")
+                    newText += "";
                 else
                     newText += $"{new string('\t', tabCount)}{lines[i]}\n\r";
 

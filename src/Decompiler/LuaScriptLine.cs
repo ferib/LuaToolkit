@@ -31,6 +31,8 @@ namespace LuaSharpVM.Decompiler
         public LuaInstruction Instr;
         public List<int> BranchInc = new List<int>();
 
+        public LuaFunction FunctionRef;
+
         public string Op1 = ""; // opperands ;D
         public string Op2 = "";
         public string Op3 = "";
@@ -378,9 +380,9 @@ namespace LuaSharpVM.Decompiler
                     break;
                 case LuaOpcode.CLOSE:
                     // NOTE: close all variables in the stack up to (>=) R(A)
+                    // this.FunctionRef = ... // TODO: print this one out right here
                     break;
                 case LuaOpcode.CLOSURE:
-                    // TODO: scope in
                     // NOTE: obfuscator can inline to give mindfuck ;D?
                     // crates closutre for function prototype Bx
                     this.Op1 = $"{WriteIndex(Instr.A)}";
@@ -388,7 +390,7 @@ namespace LuaSharpVM.Decompiler
                     if(this.Func.Functions[Instr.Bx].ScriptFunction != null)
                         this.Op3 = this.Func.Functions[Instr.Bx].ScriptFunction.Name;
                     else
-                        this.Op3 = $"{this.Func.ScriptFunction.Name}_{Instr.Bx}";
+                        this.Op3 = $"{this.Func.ScriptFunction.Name}_{Instr.Bx}"; // TODO fix
                     break;
                 case LuaOpcode.VARARG:
                     this.Op1 = "local ";
