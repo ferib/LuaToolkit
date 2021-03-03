@@ -12,7 +12,8 @@ namespace Recompiler
             // NOTE: Please download and install Lua 5.1 and link the LuaC binary to ./lua/luac
             Console.Write("Please enter the path of your project files: ");
             //string path = Console.ReadLine();
-            string path = @"H:\games\World of Warcraft\_retail_\Interface\AddOns\dubai";
+            //string path = @"H:\games\World of Warcraft\_retail_\Interface\AddOns\dubai";
+            string path = @"L:\Projects\LuaBytcodeInterpreter\lua_installer\files\testAddon";
 
             if (!Directory.Exists(path))
             {

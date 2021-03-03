@@ -292,7 +292,7 @@ namespace LuaSharpVM.Decompiler
                         while (ifIndex >= i)
                         {
                             // NOTE: not always the case??
-                            // TODO: bug! JumpsTo not found!!
+                            // TODO: INF loop somtimes!!
                             var ifbodyBlockEnd = this.Blocks.ToList().Single(x => x.StartAddress == this.Blocks[lastifIndex].JumpsTo); // end JMP
                             var ifbodyBlockStart = this.Blocks[lastifIndex + 1]; // start +1
 
@@ -301,8 +301,9 @@ namespace LuaSharpVM.Decompiler
                             int cIndex = this.Blocks.IndexOf(ifbodyBlockEnd); // start from endblock
                             while (cIndex > ifIndex)
                             {
-                                // scan if's
-                                if (this.Blocks[ifIndex].JumpsTo == this.Blocks[cIndex].StartAddress && this.Blocks[ifIndex].GetConditionLine() != null)
+                                // scan if's (and ONLT if's)
+                                if (this.Blocks[ifIndex].JumpsTo == this.Blocks[cIndex].StartAddress 
+                                    && this.Blocks[ifIndex].GetConditionLine() != null && this.Blocks[ifIndex].GetConditionLine().IsCondition())
                                 {
                                     found = true;
                                     bool jmpsToStart = this.Blocks[ifIndex].JumpsTo == ifbodyBlockStart.StartAddress; // is or?
@@ -347,7 +348,10 @@ namespace LuaSharpVM.Decompiler
                                 }
 
                                 lastifIndex = ifIndex; // new IF end found!
-                                ifIndex--; // subtract or inf loop??
+
+                                // TODO: this below shit is very buggy, temp fix for FORLOOPs?
+                                if(cIndex < ifIndex || this.Blocks[ifIndex].GetConditionLine() == null) // skip LOOPs?
+                                    ifIndex--; // subtract or inf loop?? TODO: bugfix, may 
                             }
                         }
                     }
