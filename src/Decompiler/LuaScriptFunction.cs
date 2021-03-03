@@ -502,7 +502,6 @@ namespace LuaSharpVM.Decompiler
                 }
                 if (globalName != "")
                     this.Name = globalName + ":"+ this.Name;
-
             }
         }
 
@@ -542,7 +541,7 @@ namespace LuaSharpVM.Decompiler
         {
             // NOTE: IF statements may have more then 2 instruction (IF, JMP) when they are chained
             // My job is to optimize those merged IF blocks so that inline IFs are working fine
-
+            // EDIT: nvm I just tweak them and move the instructions that arent IF/JMP up so the merge is clean
             foreach (var b in this.Blocks)
                 if (b.GetConditionLine() != null && b.IfChainIndex > 0)
                     b.Optimize();
@@ -565,14 +564,14 @@ namespace LuaSharpVM.Decompiler
 
             string result = this.ToString();
 #if DEBUG
-            result += GenerateCode();
+            result += GenerateDebugCode();
 #else
-            result += GenerateCodeFlat();
+            result += GenerateCleanCode();
 #endif
             return result;
         }
 
-        private string GenerateCode()
+        private string GenerateDebugCode()
         {
             string result = "";
             int tabLevel = 0;
@@ -589,7 +588,7 @@ namespace LuaSharpVM.Decompiler
             return result;
         }
 
-        private string GenerateCodeFlat()
+        private string GenerateCleanCode()
         {
             string result = "";
             for (int b = 0; b < this.Blocks.Count; b++)
@@ -607,6 +606,7 @@ namespace LuaSharpVM.Decompiler
 
         private void Realign()
         {
+            // TODO: replace blank lines and correct tabs?
             // text based because we did wanky things instead of respecting the list	
             _text = GetText();
             int tabCount = 1;

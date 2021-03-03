@@ -30,21 +30,17 @@ namespace LuaSharpVM.Decompiler
 
         private void WriteFile()
         {
-            // NOTE: old code            
-            // Get function names from root
-            //var names = GetFunctionNames();
-
             WriteF(this.Decoder.File.Function);
             // WriteFunction(this.Decoder.File.Function);
 
             // allign/format/whatever each function
             foreach (var f in this.LuaFunctions)
                 f.Complete();
-
         }
 
         private void WriteF(LuaFunction func)
         {
+            // TODO: write functions on CLOSURE and not each list?
             for (int i = 0; i < func.Functions.Count; i++)
             {
                 WriteFunction(func.Functions[i], 1); // parent
@@ -58,6 +54,7 @@ namespace LuaSharpVM.Decompiler
 
         private void WriteFunction(LuaFunction func, int dpth = 0, string name = "", bool isGlobal = false)
         {
+            // TODO: write functions on CLOSURE and not each list?
             string funcName = "";
 
             if (dpth == 0)
@@ -77,22 +74,6 @@ namespace LuaSharpVM.Decompiler
                     Number = i,
                     Depth = dpth+1
                 });
-            }
-        }
-
-        private void SetStaticUpvalues()
-        {
-            for (int i = 0; i < this.Decoder.File.Function.Instructions.Count; i++)
-            {
-                var instr = this.Decoder.File.Function.Instructions[i];
-                switch (instr.OpCode)
-                {
-                    case LuaOpcode.CLOSURE:
-
-                        break;
-                    case LuaOpcode.SETUPVAL:
-                        break;
-                }
             }
         }
 
