@@ -27,6 +27,7 @@ namespace LuaSharpVM.Obfuscator.Plugin
 
         public override void Obfuscate()
         {
+            // NOTE: not all?
             for(int i = 0; i < base.Functions.Count; i++)
             {
                 Console.WriteLine($"{base.Functions[i]}: {desc} ({(LODebugLevel)base.Levels[i]})");

@@ -17,10 +17,20 @@ namespace LuaSharpVM.Obfuscator.Plugin
         {
 
         }
-        // For starters, add a few jumps/ifs that dont make sense?
+
         public override void Obfuscate()
         {
-            throw new NotImplementedException();
+            // lets assume we only have 1 function
+            var target = base.Decoder.File.Function.Functions[3].ScriptFunction;
+
+            var oldc = Console.ForegroundColor;
+            Console.ForegroundColor = ConsoleColor.DarkMagenta;
+
+            // duplicate reverse ifs?
+
+            Console.WriteLine(target.Text);
+
+            Console.ForegroundColor = oldc;
         }
 
         public override string GetName()
