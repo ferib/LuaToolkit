@@ -103,6 +103,7 @@ namespace LuaSharpVM.Obfuscator.Plugin
                 blacklist.Add(ifStartBlock);
             }
 
+            target.Complete(false);
             Console.WriteLine(target.Text);
             Console.ForegroundColor = oldc;
         }

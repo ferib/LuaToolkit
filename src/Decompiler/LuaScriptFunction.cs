@@ -140,7 +140,7 @@ namespace LuaSharpVM.Decompiler
         }
 
         // NOTE: Please do NOT touch this unless you 110% know what you are doing!!!
-        private void GenerateBlocks(bool overwriteBlocks = false, bool appendText = true)
+        private void GenerateBlocks(bool overwriteBlocks = false)
         {
             int index = 0;
             if (overwriteBlocks || this.Blocks.Count == 0)
@@ -208,8 +208,7 @@ namespace LuaSharpVM.Decompiler
                         this.Blocks[i].JumpsTo = -1;
                         this.Blocks[i].JumpsNext = -1;
                         if (this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Instr.OpCode == LuaOpcode.RETURN)
-                            if(appendText)
-                                this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Op1 = "end"; // replace last RETURN with END
+                                this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Prefix = "end"; // replace last RETURN with END
                         continue;
                     }
                     // Conditions without JMP
@@ -260,11 +259,10 @@ namespace LuaSharpVM.Decompiler
                 if (this.Blocks[i].GetBranchLine() != null &&
                     (this.Blocks[i].GetBranchLine().Instr.OpCode == LuaOpcode.FORLOOP || this.Blocks[i].GetBranchLine().Instr.OpCode == LuaOpcode.TFORLOOP))
                 {
-                    if (appendText)
 #if DEBUG
-                        this.Blocks[i].GetBranchLine().Text = "end -- ENDLOOP\r\n";
+                    this.Blocks[i].GetBranchLine().Text = "end -- ENDLOOP\r\n";
 #else
-                        this.Blocks[i].GetBranchLine().Text = "end\r\n";
+                    this.Blocks[i].GetBranchLine().Text = "end\r\n";
 #endif
                 }
                 else if (this.Blocks[i].JumpsTo != -1 && this.Blocks[i].JumpsNext != -1 && this.Blocks[i].GetConditionLine() != null) // IF detected
@@ -367,11 +365,10 @@ namespace LuaSharpVM.Decompiler
                 }
                 else if (this.Blocks[i].JumpsTo != -1 && this.Blocks[i].JumpsNext == -1)
                 {
-                    if (appendText)
 #if DEBUG
-                        this.Blocks[i].GetBranchLine().Op3 += "else -!- ELSE";
+                    this.Blocks[i].GetBranchLine().Postfix += "else -- ELSE";
 #else
-                        this.Blocks[i].GetBranchLine().Op3 += "else";
+                    this.Blocks[i].GetBranchLine().Postfix += "else";
 #endif
                 }
                 else if (this.Blocks[i].JumpsTo == -1 && this.Blocks[i].JumpsNext != -1 && this.Blocks[i].GetBranchLine() != null
@@ -379,18 +376,16 @@ namespace LuaSharpVM.Decompiler
                 {
 
 #if DEBUG
-                    if (appendText)
-                        this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Op3 += "\r\nend --! ENDIF";
+                    this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Postfix += "\r\nend -- ENDIF";
 #else
-                        this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Op3 += "\r\nend";
+                    this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Postfix += "\r\nend";
 #endif
                 }
 
                 else if (this.Blocks[i].JumpsTo == -1 && this.Blocks[i].JumpsNext == -1)
                 {
 #if DEBUG
-                    if (appendText)
-                        this.Blocks[i].GetBranchLine().Op3 += " --! END\r\n"; // already taken care of
+                    this.Blocks[i].GetBranchLine().Postfix += " -- END\r\n"; // already taken care of
 #endif
                 }
             }
@@ -573,10 +568,10 @@ namespace LuaSharpVM.Decompiler
             }
         }
 
-        public void Complete(bool overwriteBlocks = false, bool appendText = true)
+        public void Complete(bool overwriteBlocks = false)
         {
             Cleanlines();
-            GenerateBlocks(overwriteBlocks, appendText);
+            GenerateBlocks(overwriteBlocks);
             UpdateClosures(); // fixes closure name referncing
             HandleTailcallReturns(); // fix returns
             OutlineConditions(); // moves IF code above IF chain
