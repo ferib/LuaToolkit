@@ -208,7 +208,7 @@ namespace LuaSharpVM.Decompiler
                         this.Blocks[i].JumpsTo = -1;
                         this.Blocks[i].JumpsNext = -1;
                         if (this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Instr.OpCode == LuaOpcode.RETURN)
-                                this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Prefix = "end"; // replace last RETURN with END
+                            this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Op1 = "end"; // replace last RETURN with END
                         continue;
                     }
                     // Conditions without JMP
@@ -599,6 +599,7 @@ namespace LuaSharpVM.Decompiler
 
         private string GenerateDebugCode()
         {
+            
             string result = "";
             int tabLevel = 0;
             for (int b = 0; b < this.Blocks.Count; b++)
@@ -626,7 +627,7 @@ namespace LuaSharpVM.Decompiler
                 {
                     if(this.Blocks[b].Lines[i].Instr.OpCode == LuaOpcode.CLOSURE)
                         if (this.Blocks[b].Lines[i].FunctionRef != null)
-                            result += this.Blocks[b].Lines[i].FunctionRef.ScriptFunction.GetText(); // inline func in parent
+                            result += this.Blocks[b].Lines[i].FunctionRef.ScriptFunction.GetText().Replace("\n",$"\n{new string(' ',3)}"); // inline func in parent
                     result += this.Blocks[b].Lines[i].Text; //.Replace("\t", "");
                 }
 

@@ -504,18 +504,20 @@ namespace LuaSharpVM.Decompiler
         {
             // TODO: leave tab to another level?
             string tab = "";// new string('\t', Depth); // NOTE: singple space for debugging
-
+            string pre = "";
+#if DEBUG
+            pre = $"{this.Instr.ToString().PadRight(19)}";
+#endif
             if (this.Instr == null)
-                return $"{this.Instr.ToString().PadRight(19)} {tab}{Prefix}{Op1}{Postfix}\r\n"; // wildcard
-            else if (this.Op1 == "" && this.Op2 == "" && this.Op3 == "")
-                return $"{this.Instr.ToString().PadRight(19)}\r\n";
+                return $"{pre}{tab}{Prefix}{Op1}{Postfix}\r\n"; // wildcard
+            else if (this.Op1 == "" && this.Op2 == "" && this.Op3 == "" && this.Prefix == "" && this.Postfix == "")
+                return $"{pre}\r\n";
             else
             {
                 if (IsCondition() && !Op1.Contains("if"))
-                    return $"{this.Instr.ToString().PadRight(19)} {Prefix}{Op1}{Op2}{Op3}{Postfix}\r\n";
-                return $"{this.Instr.ToString().PadRight(19)} {tab}{Prefix}{Op1}{Op2}{Op3}{Postfix}\r\n";
+                    return $"{pre}{Prefix}{Op1}{Op2}{Op3}{Postfix}\r\n";
+                return $"{pre}{tab}{Prefix}{Op1}{Op2}{Op3}{Postfix}\r\n";
             }
-
         }
 
         public bool IsCondition()
