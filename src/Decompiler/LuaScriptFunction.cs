@@ -140,7 +140,7 @@ namespace LuaSharpVM.Decompiler
         }
 
         // NOTE: Please do NOT touch this unless you 110% know what you are doing!!!
-        private void GenerateBlocks(bool overwriteBlocks = false)
+        private void GenerateBlocks(bool overwriteBlocks = false, bool appendText = true)
         {
             int index = 0;
             if (overwriteBlocks || this.Blocks.Count == 0)
@@ -208,7 +208,8 @@ namespace LuaSharpVM.Decompiler
                         this.Blocks[i].JumpsTo = -1;
                         this.Blocks[i].JumpsNext = -1;
                         if (this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Instr.OpCode == LuaOpcode.RETURN)
-                            this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Op1 = "end"; // replace last RETURN with END
+                            if(appendText)
+                                this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Op1 = "end"; // replace last RETURN with END
                         continue;
                     }
                     // Conditions without JMP
@@ -250,7 +251,6 @@ namespace LuaSharpVM.Decompiler
                 }
             }
 
-            // if merge
             for (int i = 0; i < this.Blocks.Count; i++)
             {
                 // IF: JMP != -1 && ELSE != -1 (&& GetConditionLine != NULL; ELSE; FORLOOP END (dont care))
@@ -260,10 +260,11 @@ namespace LuaSharpVM.Decompiler
                 if (this.Blocks[i].GetBranchLine() != null &&
                     (this.Blocks[i].GetBranchLine().Instr.OpCode == LuaOpcode.FORLOOP || this.Blocks[i].GetBranchLine().Instr.OpCode == LuaOpcode.TFORLOOP))
                 {
+                    if (appendText)
 #if DEBUG
-                    this.Blocks[i].GetBranchLine().Text = "end -- ENDLOOP\r\n";
+                        this.Blocks[i].GetBranchLine().Text = "end -- ENDLOOP\r\n";
 #else
-                    this.Blocks[i].GetBranchLine().Text = "end\r\n";
+                        this.Blocks[i].GetBranchLine().Text = "end\r\n";
 #endif
                 }
                 else if (this.Blocks[i].JumpsTo != -1 && this.Blocks[i].JumpsNext != -1 && this.Blocks[i].GetConditionLine() != null) // IF detected
@@ -366,26 +367,30 @@ namespace LuaSharpVM.Decompiler
                 }
                 else if (this.Blocks[i].JumpsTo != -1 && this.Blocks[i].JumpsNext == -1)
                 {
+                    if (appendText)
 #if DEBUG
-                    this.Blocks[i].GetBranchLine().Op3 += "else -- ELSE";
+                        this.Blocks[i].GetBranchLine().Op3 += "else -!- ELSE";
 #else
-                    this.Blocks[i].GetBranchLine().Op3 += "else";
+                        this.Blocks[i].GetBranchLine().Op3 += "else";
 #endif
                 }
                 else if (this.Blocks[i].JumpsTo == -1 && this.Blocks[i].JumpsNext != -1 && this.Blocks[i].GetBranchLine() != null
                     && this.Blocks[i].GetBranchLine().Instr.OpCode != LuaOpcode.FORPREP) // also make sure if condifition is set (no forloop)
                 {
+
 #if DEBUG
-                    this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Op3 += "\r\nend -- ENDIF";
+                    if (appendText)
+                        this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Op3 += "\r\nend --! ENDIF";
 #else
-                    this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Op3 += "\r\nend";
+                        this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Op3 += "\r\nend";
 #endif
                 }
 
                 else if (this.Blocks[i].JumpsTo == -1 && this.Blocks[i].JumpsNext == -1)
                 {
 #if DEBUG
-                    this.Blocks[i].GetBranchLine().Op3 += " -- END\r\n"; // already taken care of
+                    if (appendText)
+                        this.Blocks[i].GetBranchLine().Op3 += " --! END\r\n"; // already taken care of
 #endif
                 }
             }
@@ -568,9 +573,9 @@ namespace LuaSharpVM.Decompiler
             }
         }
 
-        public void Complete(bool overwriteBlocks = false)
+        public void Complete(bool overwriteBlocks = false, bool appendText = true)
         {
-            GenerateBlocks(overwriteBlocks);
+            GenerateBlocks(overwriteBlocks, appendText);
             UpdateClosures(); // fixes closure name referncing
             HandleTailcallReturns(); // fix returns
             OutlineConditions(); // moves IF code above IF chain

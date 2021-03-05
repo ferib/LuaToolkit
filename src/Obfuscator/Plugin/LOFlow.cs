@@ -22,6 +22,10 @@ namespace LuaSharpVM.Obfuscator.Plugin
 
         public override void Obfuscate()
         {
+            // NOTE: My job is to add aditional IF checks to each existing IF chain,
+            // I will change the IfChainIndex to -1 after im done manipulating a merge
+            // so that the LuaScriptFunction can re-discover them, My block instructions
+            // will no longer be correct, instead, we will only rely on JumpTo, JumpNext, etc
             // lets assume we only have 1 function
             var target = base.Decoder.File.Function.Functions[3].ScriptFunction;
 
@@ -31,10 +35,11 @@ namespace LuaSharpVM.Obfuscator.Plugin
             // find start ifchains
             List<LuaScriptBlock> blacklist = new List<LuaScriptBlock>();
 
-            while (blacklist.Count != target.Blocks.FindAll(x => x.IfChainIndex == 0).Count)
+            //while (target.Blocks.FindAll(x => x.IfChainIndex == 0).Count != blacklist.Count)
+            while (target.Blocks.FindAll(x => x.IfChainIndex == 0).Count != 0)
             {
                 // find next ifchain block start
-                var ifStartBlock = target.Blocks.Find(x => x.IfChainIndex == 0 && !blacklist.Contains(x));
+                var ifStartBlock = target.Blocks.Find(x => x.IfChainIndex == 0 && !blacklist.Contains(x)); // TODO: obsolete: !blacklist.Contains(x)
                 // do some magic
                 List<LuaScriptBlock> ifMergeMembers = new List<LuaScriptBlock>();
 
@@ -62,6 +67,7 @@ namespace LuaSharpVM.Obfuscator.Plugin
                     for (int j = i; j < ifMergeMembers.Count; j++)
                     {
                         ifMergeMembers[j].IfChainIndex = -1; // get ready to re-discover
+                        //ifMergeMembers[j].IfChainIndex = j-i ;// -1; // get ready to re-discover
                         if(j > i+1)
                         {
                             if (ifMergeMembers[j].JumpsNext != -1)
@@ -96,8 +102,6 @@ namespace LuaSharpVM.Obfuscator.Plugin
                 // complete
                 blacklist.Add(ifStartBlock);
             }
-
-            target.Complete();
 
             Console.WriteLine(target.Text);
             Console.ForegroundColor = oldc;
