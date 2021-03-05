@@ -33,9 +33,11 @@ namespace LuaSharpVM.Decompiler
 
         public LuaFunction FunctionRef;
 
+        public string Prefix = "";
         public string Op1 = ""; // opperands ;D
         public string Op2 = "";
         public string Op3 = "";
+        public string Postfix = "";
 
         private string _text;
         public string Text
@@ -567,6 +569,22 @@ namespace LuaSharpVM.Decompiler
                     return true;
             }
             return false;
+        }
+
+        public void AddPrefix(string str)
+        {
+            this.Prefix = str + this.Prefix;
+        }
+
+        public void AddPostfix(string str)
+        {
+            this.Postfix += str;
+        }
+
+        public void ClearLine()
+        {
+            this.Prefix = "";
+            this.Postfix = "";
         }
     }
 }

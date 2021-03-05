@@ -575,6 +575,7 @@ namespace LuaSharpVM.Decompiler
 
         public void Complete(bool overwriteBlocks = false, bool appendText = true)
         {
+            Cleanlines();
             GenerateBlocks(overwriteBlocks, appendText);
             UpdateClosures(); // fixes closure name referncing
             HandleTailcallReturns(); // fix returns
@@ -631,13 +632,19 @@ namespace LuaSharpVM.Decompiler
                     if(this.Blocks[b].Lines[i].Instr.OpCode == LuaOpcode.CLOSURE)
                         if (this.Blocks[b].Lines[i].FunctionRef != null)
                             result += this.Blocks[b].Lines[i].FunctionRef.ScriptFunction.GetText(); // inline func in parent
-                    result += this.Blocks[b].Lines[i].Text.Replace("\t", "");
+                    result += this.Blocks[b].Lines[i].Text; //.Replace("\t", "");
                 }
 
                 if (b == this.Blocks.Count - 1)
                     result += "\n\r"; // keep it clean?
             }
             return result;
+        }
+
+        public void Cleanlines()
+        {
+            for (int i = 0; i < this.Lines.Count; i++)
+                this.Lines[i].ClearLine();
         }
 
         private void Realign()
