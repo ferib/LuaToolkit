@@ -12,7 +12,7 @@ namespace LuaSharpVM.Decompiler
         public int Depth;
         private LuaDecoder Decoder;
         private LuaFunction Func;
-        
+
         public bool IsLocal = false;
         private List<int> Args;
         private List<string> NameArgs;
@@ -140,109 +140,112 @@ namespace LuaSharpVM.Decompiler
         }
 
         // NOTE: Please do NOT touch this unless you 110% know what you are doing!!!
-        private void GenerateBlocks()
+        private void GenerateBlocks(bool overwriteBlocks = false)
         {
             int index = 0;
-            this.Blocks.Clear();
-            while (index < this.Lines.Count)
+            if (overwriteBlocks || this.Blocks.Count == 0)
             {
-                LuaScriptBlock b = new LuaScriptBlock(index, ref this.Decoder, ref this.Func);
+                this.Blocks.Clear();
                 while (index < this.Lines.Count)
                 {
-                    if (b.AddScriptLine(this.Lines[index]))
-                        break;
-                    index++;
-                }
-                index++;
-                this.Blocks.Add(b); // save block
-            }
-
-            // add block jumpsFrom and split
-            List<KeyValuePair<int, int>> BlockSplitLines = new List<KeyValuePair<int, int>>();// block, line
-            for (int i = 0; i < this.Blocks.Count; i++)
-            {
-                if (this.Blocks[i].JumpsTo == -1)
-                    continue;
-                var targets = this.Blocks.FindAll(x => x.HasLineNumber(this.Blocks[i].JumpsTo));
-                if (targets.Count > 0)
-                    BlockSplitLines.Add(new KeyValuePair<int, int>(this.Blocks.FindIndex(x => x.StartAddress == targets[0].StartAddress), this.Blocks[i].JumpsTo));
-                //foreach (var tb in targets)
-                //    BlockSplitLines.Add(new KeyValuePair<int, int>(this.Blocks.FindIndex(x => x.StartAddress == tb.StartAddress), i));
-            }
-
-            BlockSplitLines = BlockSplitLines.OrderBy(x => x.Value).ToList(); // important to sort by lineNumber or other blocks wont get done otherwise
-            // cut blocks and make new ones
-            for (int i = 0; i < BlockSplitLines.Count; i++)
-            {
-                if (this.Blocks[BlockSplitLines[i].Key].StartAddress + this.Blocks[BlockSplitLines[i].Key].Lines.Count < BlockSplitLines[i].Value ||
-                    this.Blocks[BlockSplitLines[i].Key].StartAddress > BlockSplitLines[i].Value)
-                    continue; // already circumcised this boi
-
-                if (this.Blocks.Find(x => x.StartAddress == BlockSplitLines[i].Value) != null)
-                    continue; // been there, done that
-
-                LuaScriptBlock splitBlock = new LuaScriptBlock(BlockSplitLines[i].Value, ref this.Decoder, ref this.Func);
-                for (int j = BlockSplitLines[i].Value - this.Blocks[BlockSplitLines[i].Key].StartAddress; j < this.Blocks[BlockSplitLines[i].Key].Lines.Count; j++)
-                    splitBlock.Lines.Add(this.Blocks[BlockSplitLines[i].Key].Lines[j]); // copy from old to new
-
-                // delete old lines
-                if (splitBlock.Lines.Count > 0)
-                    this.Blocks[BlockSplitLines[i].Key].Lines.RemoveRange(BlockSplitLines[i].Value - this.Blocks[BlockSplitLines[i].Key].StartAddress, splitBlock.Lines.Count);
-
-                this.Blocks.Insert(BlockSplitLines[i].Key + 1, splitBlock); // insert new block after modified one
-                // update BlockSplitLines indexing
-                for (int j = i + 1; j < BlockSplitLines.Count; j++)
-                    BlockSplitLines[j] = new KeyValuePair<int, int>(BlockSplitLines[j].Key + 1, BlockSplitLines[j].Value); // offset remaining blocks
-            }
-
-            // fix JumpsTo and JumpsNext ?
-            this.Blocks.OrderBy(x => x.StartAddress);
-            for (int i = 0; i < this.Blocks.Count; i++)
-            {
-                // last return
-                if (i == this.Blocks.Count - 1)
-                {
-                    // Last block shouldnt jump to anywhere
-                    this.Blocks[i].JumpsTo = -1;
-                    this.Blocks[i].JumpsNext = -1;
-                    if (this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Instr.OpCode == LuaOpcode.RETURN)
-                        this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Op1 = "end"; // replace last RETURN with END
-                    continue;
-                }
-                // Conditions without JMP
-                if (this.Blocks[i].Lines.Count > 0)
-                {
-                    switch (this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Instr.OpCode)
+                    LuaScriptBlock b = new LuaScriptBlock(index, ref this.Decoder, ref this.Func);
+                    while (index < this.Lines.Count)
                     {
-                        // TODO: check which instructions dont pick the next one
-                        case LuaOpcode.TFORLOOP:
-                        case LuaOpcode.FORLOOP: // calculate LOOP jump
-                            this.Blocks[i].JumpsTo = (this.Blocks[i].StartAddress + this.Blocks[i].Lines.Count - 1) + (short)this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Instr.sBx + 1; // TODO: verify math
-                            this.Blocks[i].JumpsNext = this.Blocks[i + 1].StartAddress;
-                            break; // jmp?
-                        //case LuaOpcode.LOADBOOL: // pc++
-                        //    this.Blocks[i].JumpsTo = (this.Blocks[i].StartAddress + this.Blocks[i].Lines.Count - 1) + 2; // skips one if C
-                        //    this.Blocks[i].JumpsNext = (this.Blocks[i].StartAddress + this.Blocks[i].Lines.Count - 1) + 1; // next block
-                        //    break;
-                        case LuaOpcode.JMP: // pc++
-                            // check previous condition
-                            if (this.Blocks[i].Lines.Count > 1 && this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 2].IsCondition()) // check for IF
-                            {
-                                // if/test/testset
+                        if (b.AddScriptLine(this.Lines[index]))
+                            break;
+                        index++;
+                    }
+                    index++;
+                    this.Blocks.Add(b); // save block
+                }
+
+                // add block jumpsFrom and split
+                List<KeyValuePair<int, int>> BlockSplitLines = new List<KeyValuePair<int, int>>();// block, line
+                for (int i = 0; i < this.Blocks.Count; i++)
+                {
+                    if (this.Blocks[i].JumpsTo == -1)
+                        continue;
+                    var targets = this.Blocks.FindAll(x => x.HasLineNumber(this.Blocks[i].JumpsTo));
+                    if (targets.Count > 0)
+                        BlockSplitLines.Add(new KeyValuePair<int, int>(this.Blocks.FindIndex(x => x.StartAddress == targets[0].StartAddress), this.Blocks[i].JumpsTo));
+                    //foreach (var tb in targets)
+                    //    BlockSplitLines.Add(new KeyValuePair<int, int>(this.Blocks.FindIndex(x => x.StartAddress == tb.StartAddress), i));
+                }
+
+                BlockSplitLines = BlockSplitLines.OrderBy(x => x.Value).ToList(); // important to sort by lineNumber or other blocks wont get done otherwise
+                                                                                  // cut blocks and make new ones
+                for (int i = 0; i < BlockSplitLines.Count; i++)
+                {
+                    if (this.Blocks[BlockSplitLines[i].Key].StartAddress + this.Blocks[BlockSplitLines[i].Key].Lines.Count < BlockSplitLines[i].Value ||
+                        this.Blocks[BlockSplitLines[i].Key].StartAddress > BlockSplitLines[i].Value)
+                        continue; // already circumcised this boi
+
+                    if (this.Blocks.Find(x => x.StartAddress == BlockSplitLines[i].Value) != null)
+                        continue; // been there, done that
+
+                    LuaScriptBlock splitBlock = new LuaScriptBlock(BlockSplitLines[i].Value, ref this.Decoder, ref this.Func);
+                    for (int j = BlockSplitLines[i].Value - this.Blocks[BlockSplitLines[i].Key].StartAddress; j < this.Blocks[BlockSplitLines[i].Key].Lines.Count; j++)
+                        splitBlock.Lines.Add(this.Blocks[BlockSplitLines[i].Key].Lines[j]); // copy from old to new
+
+                    // delete old lines
+                    if (splitBlock.Lines.Count > 0)
+                        this.Blocks[BlockSplitLines[i].Key].Lines.RemoveRange(BlockSplitLines[i].Value - this.Blocks[BlockSplitLines[i].Key].StartAddress, splitBlock.Lines.Count);
+
+                    this.Blocks.Insert(BlockSplitLines[i].Key + 1, splitBlock); // insert new block after modified one
+                                                                                // update BlockSplitLines indexing
+                    for (int j = i + 1; j < BlockSplitLines.Count; j++)
+                        BlockSplitLines[j] = new KeyValuePair<int, int>(BlockSplitLines[j].Key + 1, BlockSplitLines[j].Value); // offset remaining blocks
+                }
+
+                // fix JumpsTo and JumpsNext ?
+                this.Blocks.OrderBy(x => x.StartAddress);
+                for (int i = 0; i < this.Blocks.Count; i++)
+                {
+                    // last return
+                    if (i == this.Blocks.Count - 1)
+                    {
+                        // Last block shouldnt jump to anywhere
+                        this.Blocks[i].JumpsTo = -1;
+                        this.Blocks[i].JumpsNext = -1;
+                        if (this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Instr.OpCode == LuaOpcode.RETURN)
+                            this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Op1 = "end"; // replace last RETURN with END
+                        continue;
+                    }
+                    // Conditions without JMP
+                    if (this.Blocks[i].Lines.Count > 0)
+                    {
+                        switch (this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Instr.OpCode)
+                        {
+                            // TODO: check which instructions dont pick the next one
+                            case LuaOpcode.TFORLOOP:
+                            case LuaOpcode.FORLOOP: // calculate LOOP jump
                                 this.Blocks[i].JumpsTo = (this.Blocks[i].StartAddress + this.Blocks[i].Lines.Count - 1) + (short)this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Instr.sBx + 1; // TODO: verify math
                                 this.Blocks[i].JumpsNext = this.Blocks[i + 1].StartAddress;
-                            }
-                            else
-                            {
-                                // unknown jump
-                                this.Blocks[i].JumpsTo = (this.Blocks[i].StartAddress + this.Blocks[i].Lines.Count - 1) + (short)this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Instr.sBx + 1; // TODO: verify math
-                                this.Blocks[i].JumpsNext = -1; // this.Blocks[i + 1].StartAddress;
-                            }
-                            break;
-                        default:
-                            this.Blocks[i].JumpsTo = -1; // erase from possible previous block?
-                            this.Blocks[i].JumpsNext = this.Blocks[i + 1].StartAddress;
-                            break;
+                                break; // jmp?
+                                       //case LuaOpcode.LOADBOOL: // pc++
+                                       //    this.Blocks[i].JumpsTo = (this.Blocks[i].StartAddress + this.Blocks[i].Lines.Count - 1) + 2; // skips one if C
+                                       //    this.Blocks[i].JumpsNext = (this.Blocks[i].StartAddress + this.Blocks[i].Lines.Count - 1) + 1; // next block
+                                       //    break;
+                            case LuaOpcode.JMP: // pc++
+                                                // check previous condition
+                                if (this.Blocks[i].Lines.Count > 1 && this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 2].IsCondition()) // check for IF
+                                {
+                                    // if/test/testset
+                                    this.Blocks[i].JumpsTo = (this.Blocks[i].StartAddress + this.Blocks[i].Lines.Count - 1) + (short)this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Instr.sBx + 1; // TODO: verify math
+                                    this.Blocks[i].JumpsNext = this.Blocks[i + 1].StartAddress;
+                                }
+                                else
+                                {
+                                    // unknown jump
+                                    this.Blocks[i].JumpsTo = (this.Blocks[i].StartAddress + this.Blocks[i].Lines.Count - 1) + (short)this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Instr.sBx + 1; // TODO: verify math
+                                    this.Blocks[i].JumpsNext = -1; // this.Blocks[i + 1].StartAddress;
+                                }
+                                break;
+                            default:
+                                this.Blocks[i].JumpsTo = -1; // erase from possible previous block?
+                                this.Blocks[i].JumpsNext = this.Blocks[i + 1].StartAddress;
+                                break;
+                        }
                     }
                 }
             }
@@ -565,9 +568,9 @@ namespace LuaSharpVM.Decompiler
             }
         }
 
-        public void Complete()
+        public void Complete(bool overwriteBlocks = false)
         {
-            GenerateBlocks();
+            GenerateBlocks(overwriteBlocks);
             UpdateClosures(); // fixes closure name referncing
             HandleTailcallReturns(); // fix returns
             OutlineConditions(); // moves IF code above IF chain
@@ -581,8 +584,8 @@ namespace LuaSharpVM.Decompiler
             if (this.Blocks.Count == 0)
                 this.Complete(); // i guess?
 
-            if (_text != null)
-                return _text; // stores end results
+            //if (_text != null)
+            //    return _text; // stores end results
 
             string result = this.ToString();
 #if DEBUG

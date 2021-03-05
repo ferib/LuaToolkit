@@ -41,8 +41,17 @@ namespace LuaSharpVM.Obfuscator.Plugin
             string localD = GenerateRandomVariable(ref usedVars); // funcDecode 4
             string localE = GenerateRandomVariable(ref usedVars); // funcDecode 2
             string localF = GenerateRandomVariable(ref usedVars); // funcDecode 3
+            string localG = GenerateRandomVariable(ref usedVars); // 
+            string localH = GenerateRandomVariable(ref usedVars); // 
+            string localI = GenerateRandomVariable(ref usedVars); // 
+            string localJ = GenerateRandomVariable(ref usedVars); //  
+            string localK = GenerateRandomVariable(ref usedVars); // 
+            string localL = GenerateRandomVariable(ref usedVars); // 
+            string localM = GenerateRandomVariable(ref usedVars); // 
+            string localN = GenerateRandomVariable(ref usedVars); // 
+            string localO = GenerateRandomVariable(ref usedVars); // 
             string funcDecode = GenerateRandomVariable(ref usedVars); // decodes characters
-            string funcToTable = GenerateRandomVariable(ref usedVars); // decodes the LPH! table
+            string funcDecodeTable = GenerateRandomVariable(ref usedVars); // decodes the LPH! table
             string funcLPHTable = GenerateRandomVariable(ref usedVars); // converts the LPH! to table
 
 
@@ -51,10 +60,28 @@ namespace LuaSharpVM.Obfuscator.Plugin
             string sectionTwo = $"\nlocal {funcDecode} = function({localC}, {localE}, {localF}, {localD}) if {localF} >= 256 then {localF}, {localD} = 0, {localD} + 1 " +
                 $"if {localD} >= 256 then {localE} = {{}} {localD} = 1 end end {localE}[string.char({localF}, {localD})] = {localC} {localF} = {localF} + 1" +
                 $"return {localE}, {localF}, {localD} end";
-            string sectionThree = $"\n-- TODO\n";
-            string sectionFour = $"local {funcLPHTable} = function({localC}) return ({{{localC}:sub(5):gsub(\"..\", function(n) return string.char(tonumber(n, 16)) end)}})[1] end";
+            // LocalC = byte_table
+
+            // localL = arg_len
+            // LocalF = table_map_chars
+            // LocalJ = left_char
+            // LocalI = right_char
+            // LocalG = result
+            // LocalH = current_byte
+            // LocalE = table_index
+            // LocalD = unk_str
+            // LocalM = next_str
+            // LocalN = current_str
+            // LocalO = next_byte
+            string sectionThree = $"\nlocal function {funcDecodeTable}({localC}) local {localL} = #{localC} local {localF} = {{}} local {localJ}, {localI} = 0, 1 " +
+                $"local {localG} = {{}} local {localE} = 1 local {localH} = string.sub({localC}, 1, 2) {localG}[{localE}] = {tablename}[{localH}] or {localF}[{localH}] " +
+                $"{localE} = {localE} + 1 for {index} = 3, {localL}, 2 do local {localO} = string.sub({localC}, {index}, {index} + 1) local {localN} = {tablename}[{localH}] or {localF}[{localH}] " +
+                $"local {localM} = {tablename}[{localO}] or {localF}[{localO}] if {localM} then {localG}[{localE}] = {localM} {localE} = {localE} + 1 {localF}, {localJ}, {localI} = " +
+                $"{funcDecode}({localN} .. string.sub({localM}, 1, 1), {localF}, {localJ}, {localI}) else local {localD} = {localN} .. string.sub({localN}, 1, 1) {localG}[{localE}] = {localD} " +
+                $"{localE} = {localE} + 1 {localF}, {localJ}, {localI} = {funcDecode}({localD},{localF},{localJ},{localI}) end {localH} = {localO} end return table.concat({localG}) end";
+            string sectionFour = $"\nlocal {funcLPHTable} = function({localC}) return ({{{localC}:sub(5):gsub(\"..\", function(iliIi) return string.char(tonumber(iliIi, 16)) end)}})[1] end";
             string sectionFive = $"\nif not pcall(loadstring, \"return\") then error(\"Your Lua environment does not support loadstring, therefore you are unable to use the Luraph VM compression feature.\") end";
-            string sectionSix = $"\nloadstring({funcToTable}({funcLPHTable}(\"LPH!{compressedScriptBytes}\")))()";
+            string sectionSix = $"\nloadstring({funcDecodeTable}({funcLPHTable}(\"LPH!{compressedScriptBytes}\")))()";
 
             return sectionOne + sectionTwo + sectionThree + sectionFour + sectionFive + sectionSix;
         }
@@ -82,7 +109,8 @@ namespace LuaSharpVM.Obfuscator.Plugin
 
         public override void Obfuscate()
         {
-            Console.WriteLine(CreateScript("REEEEEEEEEEEEEEEEEEEEEEEE"));
+            // TODO: get this working!!!!
+            //Console.WriteLine(CreateScript(this.Decoder.File));
             //this.UnpackFunc = CreateUnpackFunction();
 
             //// add XOR decoding function

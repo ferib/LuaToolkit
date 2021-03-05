@@ -35,8 +35,8 @@ namespace LuaSharpVM.Decompiler
             get { return GetText();  }
         }
 
-        private LuaFunction Func;
-        private LuaDecoder Decoder;
+        public LuaFunction Func;
+        public LuaDecoder Decoder;
 
         private List<LuaScriptLine> lines;
         public List<LuaScriptLine> Lines
