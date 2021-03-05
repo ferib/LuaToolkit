@@ -51,21 +51,23 @@ namespace LuaSharpVM.Obfuscator.Plugin
                 int newLinesCount = 0;
                 for (int i = 0; i < ifMergeMembers.Count-1; i++)
                 {
-                    int lastAddr = ifMergeMembers[ifMergeMembers.Count - 1].JumpsTo; // AND
-                    //int lastAddr = ifMergeMembers[i+1].JumpsTo; // OR
-                    var newblock = GeneareIf(ifMergeMembers[i], lastAddr, ifMergeMembers[i+1].StartAddress);
+                    int jmpAND = ifMergeMembers[ifMergeMembers.Count - 1].JumpsTo; // AND
+                    //int jmpOR = ifMergeMembers[i+1].JumpsTo; // OR
+                    var newblock = GeneareIf(ifMergeMembers[i], jmpAND);
                     // add rebased?
                     ifMergeMembers.Insert(i+1, newblock);
 
                     // change StartAddress (TODO: same for main blocks?)
-                    newLinesCount += ifMergeMembers[i].Lines.Count;
-                    for (int j = i+1; j < ifMergeMembers.Count; j++)
+                    newLinesCount += newblock.Lines.Count;
+                    for (int j = i; j < ifMergeMembers.Count; j++)
                     {
-                        ifMergeMembers[j].StartAddress += ifMergeMembers[i].Lines.Count;
-                        if (ifMergeMembers[j].JumpsTo != -1)
-                            ifMergeMembers[j].JumpsTo += ifMergeMembers[i].Lines.Count;
-                        if (ifMergeMembers[j].JumpsNext != -1)
-                            ifMergeMembers[j].JumpsNext += ifMergeMembers[i].Lines.Count;
+                        ifMergeMembers[j].IfChainIndex = -1; // get ready to re-discover
+                        if(j > i+1)
+                        {
+                            if (ifMergeMembers[j].JumpsNext != -1)
+                                ifMergeMembers[j].JumpsNext += newblock.Lines.Count;
+                            ifMergeMembers[j].StartAddress += newblock.Lines.Count;
+                        }
                     }
                     break;
                 }
@@ -75,13 +77,20 @@ namespace LuaSharpVM.Obfuscator.Plugin
                 target.Blocks.InsertRange(index, ifMergeMembers);
 
                 // TODO: rebase other blocks
-                for(int i = index+count+1; i < target.Blocks.Count; i++)
+                //for (int i = index + count + 1; i < target.Blocks.Count; i++)
+                for (int i = index; i < target.Blocks.Count; i++)
                 {
-                    target.Blocks[i].StartAddress += newLinesCount;
-                    if (target.Blocks[i].JumpsTo != -1)
+                    // rebase jumps if needed
+                    if (target.Blocks[i].JumpsTo != -1 && target.Blocks[i].JumpsTo >= target.Blocks[index +count].StartAddress)
                         target.Blocks[i].JumpsTo += newLinesCount;
-                    if (target.Blocks[i].JumpsNext != -1)
-                        target.Blocks[i].JumpsNext += newLinesCount;
+
+                    if (i > index + count)
+                    {
+                        // upper part (needs more rebase)
+                        if (target.Blocks[i].JumpsNext != -1)
+                            target.Blocks[i].JumpsNext += newLinesCount;
+                        target.Blocks[i].StartAddress += newLinesCount;    
+                    }
                 }
 
                 // complete
@@ -94,14 +103,13 @@ namespace LuaSharpVM.Obfuscator.Plugin
             Console.ForegroundColor = oldc;
         }
 
-        private LuaScriptBlock GeneareIf(LuaScriptBlock old, int jmp, int els)
+        private LuaScriptBlock GeneareIf(LuaScriptBlock old, int jmp, bool els = true)
         {
-            var block = new LuaScriptBlock(old.StartAddress, ref old.Decoder, ref old.Func);
-
+            var block = new LuaScriptBlock(old.StartAddress + old.Lines.Count, ref old.Decoder, ref old.Func);
             // TODO: take and/or so we can make 10+ condition chains and have 1 OR fuck them all or have 1 critical AND that does the real logic
             block.AddScriptLine(new LuaScriptLine(new LuaInstruction(LuaOpcode.EQ) // TODO: take a random operand here
             {
-                A = 1, // true/false
+                A = 0, // true/false
                 B = 1, // op1 // TODO: take some random values here
                 C = 1, // op2
             }, ref old.Decoder, ref old.Func));
@@ -110,8 +118,12 @@ namespace LuaSharpVM.Obfuscator.Plugin
             {
                 sBx = jmp - (old.StartAddress + old.Lines.Count)
             }, ref old.Decoder, ref old.Func));
-            block.JumpsNext = els;
-            block.JumpsTo = block.StartAddress + block.Lines.Count + block.Lines[block.Lines.Count - 1].Instr.sBx + 2;
+
+            block.JumpsNext = block.StartAddress + block.Lines.Count; 
+            if (!els) 
+                block.JumpsNext = -1;
+            block.JumpsTo = jmp;
+
             return block;
         }
 
