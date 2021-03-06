@@ -5,6 +5,7 @@ using LuaToolkit.Core;
 using LuaToolkit.Disassembler;
 using LuaToolkit.Obfuscator;
 using LuaToolkit.Obfuscator.Plugin;
+using LuaToolkit.Beautifier;
 using System.IO;
 using System.Collections.Generic;
 
@@ -31,7 +32,7 @@ namespace Test
             Console.ForegroundColor = ConsoleColor.DarkCyan;
             Console.WriteLine(new string('=', Console.WindowWidth));
             w = new LuaWriter(ref o.Decoder);
-            Console.WriteLine(w.LuaScript);
+            Console.WriteLine(LuaBeautifier.BeautifieScript(w.LuaScript));
 
             Console.ReadLine();
         }

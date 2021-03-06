@@ -1,0 +1,114 @@
+{
+  "version": 3,
+  "targets": {
+    ".NETCoreApp,Version=v3.1": {
+      "Nancy.Hosting.Self/2.0.0": {
+        "type": "package",
+        "compile": {
+          "lib/net452/Nancy.Hosting.Self.dll": {}
+        },
+        "runtime": {
+          "lib/net452/Nancy.Hosting.Self.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Nancy.Hosting.Self/2.0.0": {
+      "sha512": "bVusVYasJmwhJr4RVeVZYZctrUiME1JTZmydrnrxjMZBIEBZsGEmLIxcxXazEAvzfG6Z8dB2ocwlZCt1aX+70g==",
+      "type": "package",
+      "path": "nancy.hosting.self/2.0.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "lib/net452/Nancy.Hosting.Self.dll",
+        "lib/net452/Nancy.Hosting.Self.xml",
+        "nancy.hosting.self.2.0.0.nupkg.sha512",
+        "nancy.hosting.self.nuspec"
+      ]
+    }
+  },
+  "projectFileDependencyGroups": {
+    ".NETCoreApp,Version=v3.1": [
+      "Nancy.Hosting.Self >= 2.0.0"
+    ]
+  },
+  "packageFolders": {
+    "C:\\Users\\Ferib\\.nuget\\packages\\": {},
+    "C:\\Microsoft\\Xamarin\\NuGet\\": {}
+  },
+  "project": {
+    "version": "1.0.0",
+    "restore": {
+      "projectUniqueName": "L:\\Projects\\LuaSharpVM\\LuaSharpVM\\Web\\Web.csproj",
+      "projectName": "Web",
+      "projectPath": "L:\\Projects\\LuaSharpVM\\LuaSharpVM\\Web\\Web.csproj",
+      "packagesPath": "C:\\Users\\Ferib\\.nuget\\packages\\",
+      "outputPath": "L:\\Projects\\LuaSharpVM\\LuaSharpVM\\Web\\obj\\",
+      "projectStyle": "PackageReference",
+      "fallbackFolders": [
+        "C:\\Microsoft\\Xamarin\\NuGet\\"
+      ],
+      "configFilePaths": [
+        "C:\\Users\\Ferib\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Xamarin.Offline.config"
+      ],
+      "originalTargetFrameworks": [
+        "netcoreapp3.1"
+      ],
+      "sources": {
+        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+        "https://api.nuget.org/v3/index.json": {}
+      },
+      "frameworks": {
+        "netcoreapp3.1": {
+          "projectReferences": {}
+        }
+      },
+      "warningProperties": {
+        "warnAsError": [
+          "NU1605"
+        ]
+      }
+    },
+    "frameworks": {
+      "netcoreapp3.1": {
+        "dependencies": {
+          "Nancy.Hosting.Self": {
+            "target": "Package",
+            "version": "[2.0.0, )"
+          }
+        },
+        "imports": [
+          "net461",
+          "net462",
+          "net47",
+          "net471",
+          "net472",
+          "net48"
+        ],
+        "assetTargetFallback": true,
+        "warn": true,
+        "frameworkReferences": {
+          "Microsoft.NETCore.App": {
+            "privateAssets": "all"
+          }
+        },
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\3.1.302\\RuntimeIdentifierGraph.json"
+      }
+    }
+  },
+  "logs": [
+    {
+      "code": "NU1701",
+      "level": "Warning",
+      "warningLevel": 1,
+      "message": "Package 'Nancy.Hosting.Self 2.0.0' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8' instead of the project target framework '.NETCoreApp,Version=v3.1'. This package may not be fully compatible with your project.",
+      "libraryId": "Nancy.Hosting.Self",
+      "targetGraphs": [
+        ".NETCoreApp,Version=v3.1"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "dgSpecHash": "mGvEdLF9XXh8yTKeEFTA1uzVemCFPVO1hciMARxuJLuExQjE2gz3TTsXeYYpqzGsKxYGdZzN79kJ9ovOPaCuzA==",
+  "success": true,
+  "projectFilePath": "L:\\Projects\\LuaSharpVM\\LuaSharpVM\\Web\\Web.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Ferib\\.nuget\\packages\\nancy.hosting.self\\2.0.0\\nancy.hosting.self.2.0.0.nupkg.sha512"
+  ],
+  "logs": [
+    {
+      "code": "NU1701",
+      "level": "Warning",
+      "warningLevel": 1,
+      "message": "Package 'Nancy.Hosting.Self 2.0.0' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8' instead of the project target framework '.NETCoreApp,Version=v3.1'. This package may not be fully compatible with your project.",
+      "libraryId": "Nancy.Hosting.Self",
+      "targetGraphs": [
+        ".NETCoreApp,Version=v3.1"
+      ]
+    }
+  ]
+}
