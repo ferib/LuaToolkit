@@ -34,9 +34,10 @@ namespace LuaSharpVM.Decompiler
             this.Decoder.File.Function.Name = "CRoot";
             WriteF(this.Decoder.File.Function);
 
-            // allign/format/whatever each function
-            foreach (var f in this.LuaFunctions)
-                f.Complete();
+            // NOTE: this is done on GetText
+            //// allign/format/whatever each function
+            //foreach (var f in this.LuaFunctions)
+            //    f.Complete();
 
         }
 

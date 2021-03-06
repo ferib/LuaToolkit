@@ -511,11 +511,19 @@ namespace LuaSharpVM.Decompiler
             if (this.Instr == null)
                 return $"{pre}{tab}{Prefix}{Op1}{Postfix}\r\n"; // wildcard
             else if (this.Op1 == "" && this.Op2 == "" && this.Op3 == "" && this.Prefix == "" && this.Postfix == "")
-                return $"{pre}\r\n";
+                return $"";
+                //return $"{pre}\r\n";
             else
             {
                 if (IsCondition() && !Op1.Contains("if"))
+                {
+#if DEBUG
                     return $"{pre}{Prefix}{Op1}{Op2}{Op3}{Postfix}\r\n";
+#else
+                    return $"{Prefix}{Op1}{Op2}{Op3}{Postfix} ";
+#endif
+                }
+                    
                 return $"{pre}{tab}{Prefix}{Op1}{Op2}{Op3}{Postfix}\r\n";
             }
         }

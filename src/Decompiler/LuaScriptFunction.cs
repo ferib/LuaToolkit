@@ -73,9 +73,6 @@ namespace LuaSharpVM.Decompiler
 
         public override string ToString()
         {
-            if (this.Name == null && GetName() != null)
-                return "-- root file\n\r";
-
             string args = "(";
             for (int i = 0; i < this.NameArgs.Count; i++)
             {
@@ -84,7 +81,7 @@ namespace LuaSharpVM.Decompiler
                     args += ", ";
             }
             args += ")";
-            return (this.IsLocal ? "local " : "") + $"function {GetName()}{args}\n\r";
+            return (this.IsLocal ? "local " : "") + $"function {GetName()}{args}\r\n";
         }
 
         private string GetName()
@@ -575,9 +572,6 @@ namespace LuaSharpVM.Decompiler
             UpdateClosures(); // fixes closure name referncing
             HandleTailcallReturns(); // fix returns
             OutlineConditions(); // moves IF code above IF chain
-#if !DEBUG
-            Realign(); // complete?
-#endif
         }
 
         public string GetText()
@@ -627,7 +621,8 @@ namespace LuaSharpVM.Decompiler
                 {
                     if(this.Blocks[b].Lines[i].Instr.OpCode == LuaOpcode.CLOSURE)
                         if (this.Blocks[b].Lines[i].FunctionRef != null)
-                            result += this.Blocks[b].Lines[i].FunctionRef.ScriptFunction.GetText().Replace("\n",$"\n{new string(' ',3)}"); // inline func in parent
+                            result += this.Blocks[b].Lines[i].FunctionRef.ScriptFunction.BeautifieCode(); // inline func in parent
+                            //result += this.Blocks[b].Lines[i].FunctionRef.ScriptFunction.RealignText().Replace("\r\n",$"\r\n{new string('\t',1)}"); // inline func in parent
                     result += this.Blocks[b].Lines[i].Text; //.Replace("\t", "");
                 }
 
@@ -643,17 +638,14 @@ namespace LuaSharpVM.Decompiler
                 this.Lines[i].ClearLine();
         }
 
-        private void Realign()
+        public string BeautifieCode()
         {
-            // TODO: replace blank lines and correct tabs?
             // text based because we did wanky things instead of respecting the list	
-            _text = GetText();
             int tabCount = 1;
             string[] lines = Text.Replace("\r", "").Replace("\t", "").Split('\n');
             string newText = "";
             for (int i = 0; i < lines.Length; i++)
             {
-                //string[] moreLines = lines[i].Split(';');	
                 bool postAdd = false;
                 bool postSub = false;
                 if (lines[i].StartsWith("if") || lines[i].StartsWith("function") || lines[i].StartsWith("local function") || lines[i].StartsWith("for"))
@@ -663,7 +655,7 @@ namespace LuaSharpVM.Decompiler
                     if (i < lines.Length - 1 && lines[i + 1].StartsWith("if"))
                     {
                         // elseif	
-                        newText += $"{new string('\t', tabCount)}{lines[i]}{lines[i + 1]}\n\r";
+                        newText += $"{new string('\t', tabCount)}{lines[i]}{lines[i + 1]}\r\n";
                         i += 1; // brrrr fuck y'all, i skip next one this way!	
                         continue;
                     }
@@ -687,17 +679,17 @@ namespace LuaSharpVM.Decompiler
                 else if (lines[i] == "")
                     newText += "";
                 else
-                    newText += $"{new string('\t', tabCount)}{lines[i]}\n\r";
+                    newText += $"{new string('\t', tabCount)}{lines[i]}\r\n";
 
                 if (lines[i].EndsWith("then"))
-                    newText += "\n\r";
+                    newText += "\r\n";
 
                 if (postAdd)
                     tabCount += 1;
                 if (postSub)
                     tabCount -= 1;
             }
-            _text = newText;
+            return newText;
         }
     }
 
