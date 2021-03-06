@@ -31,9 +31,13 @@ namespace LuaSharpVM.Decompiler
         public LuaInstruction Instr;
         public List<int> BranchInc = new List<int>();
 
-        public string Op1; // opperands ;D
-        public string Op2;
-        public string Op3;
+        public LuaFunction FunctionRef;
+
+        public string Prefix = "";
+        public string Op1 = ""; // opperands ;D
+        public string Op2 = "";
+        public string Op3 = "";
+        public string Postfix = "";
 
         private string _text;
         public string Text
@@ -88,9 +92,15 @@ namespace LuaSharpVM.Decompiler
                     }
                     break;
                 case LuaOpcode.GETUPVAL:
+                    // NOTE: child get local from parent
                     this.Op1 = WriteIndex(Instr.A);
                     this.Op2 = " = ";
-                    this.Op3 = this.Func.Upvalues[Instr.B].ToString().Substring(1, this.Func.Upvalues[Instr.B].ToString().Length - 2); // this is legit for prototypes etc
+                    this.Op3 = WriteIndex(Instr.B);
+
+                    // TODO: figure if an upvalue is a function or not?
+                    if(this.Func.Upvalues.Count > Instr.B)
+                        this.Op3 = this.Func.Upvalues[Instr.B].ToString();
+                    //this.Op3 = this.Func.Upvalues[Instr.B].ToString().Substring(1, this.Func.Upvalues[Instr.B].ToString().Length - 2); // this is legit for prototypes etc
                     break;
                 case LuaOpcode.GETGLOBAL:
                     this.Op1 = $"{WriteIndex(Instr.A)} = _G[";
@@ -108,10 +118,10 @@ namespace LuaSharpVM.Decompiler
                     this.Op3 = $"var{Instr.A}";
                     break;
                 case LuaOpcode.SETUPVAL:
-                    //this.Op1 = $"upvalue[{WriteIndex(Instr.B)}]"; TODO: Verify if below actually work
-                    this.Op1 = this.Func.Upvalues[Instr.B].ToString().Substring(1, this.Func.Upvalues[Instr.B].ToString().Length - 2);
+                    // NOTE: child writes to parent locals
+                    this.Op1 = $"{WriteIndex(Instr.B)}"; // no?
                     this.Op2 = " = ";
-                    this.Op3 = $"var[{GetConstant(Instr.A)}]";
+                    this.Op3 = $"{GetConstant(Instr.A)}";
                     break;
                 case LuaOpcode.SETTABLE:
                     this.Op1 = $"{WriteIndex(Instr.A)}[{WriteIndex(Instr.B)}]";
@@ -371,18 +381,22 @@ namespace LuaSharpVM.Decompiler
                     this.Op3 = "}";
                     break;
                 case LuaOpcode.CLOSE:
-                    // NOTE: close all variables in the stack up to
-                    // has no impact on the decompiler?
+                    // NOTE: close all variables in the stack up to (>=) R(A)
+                    // this.FunctionRef = ... // TODO: print this one out right here
                     break;
                 case LuaOpcode.CLOSURE:
-                    // 
+                    // NOTE: obfuscator can inline to give mindfuck ;D?
+                    // crates closutre for function prototype Bx
                     this.Op1 = $"{WriteIndex(Instr.A)}";
                     this.Op2 = " = ";
-                    this.Op3 = $"{WriteIndex(Instr.Bx)}";
+                    if(this.Func.Functions[Instr.Bx].ScriptFunction != null)
+                        this.Op3 = this.Func.Functions[Instr.Bx].ScriptFunction.Name;
+                    else
+                        this.Op3 = $"IDK_SHIT_WENT_MISSING_BRO"; // TODO fix
                     break;
                 case LuaOpcode.VARARG:
                     this.Op1 = "local ";
-                    for (int i = Instr.A; i < Instr.B-1; i++)
+                    for (int i = Instr.A; i < Instr.B-1; i++) // TODO: bugfix not always printing!
                     {
                         WriteIndex(i); // NOTE: Do not print, just consume local?
                         this.Op2 += $"var{i}";
@@ -490,33 +504,28 @@ namespace LuaSharpVM.Decompiler
         {
             // TODO: leave tab to another level?
             string tab = "";// new string('\t', Depth); // NOTE: singple space for debugging
+            string pre = "";
 #if DEBUG
-            if (this.Instr == null)
-                return $"{this.Instr.ToString().PadRight(19)} {tab}{Op1}\r\n"; // wildcard
-            else if ((this.Op1 == "" || this.Op1 == null)
-                && (this.Op2 == "" || this.Op2 == null)
-                && (this.Op3 == "" || this.Op3 == null))
-                return $"{this.Instr.ToString().PadRight(19)}\r\n";
-            else
-            {
-                if (IsCondition() && !Op1.Contains("if"))
-                    return $"{this.Instr.ToString().PadRight(19)} {Op1}{Op2}{Op3}\r\n";
-                return $"{this.Instr.ToString().PadRight(19)} {tab}{Op1}{Op2}{Op3}\r\n";
-            }
-#else
-            if (this.Instr == null)
-                return $"{tab}{Op1}\r\n"; // wildcard
-            else if ((this.Op1 == "" || this.Op1 == null)
-                && (this.Op2 == "" || this.Op2 == null)
-                && (this.Op3 == "" || this.Op3 == null))
-                return "\r\n";
-            else
-            {
-                if (IsCondition() && !Op1.Contains("if"))
-                    return $"{Op1}{Op2}{Op3}\r\n";
-                return $"{tab}{Op1}{Op2}{Op3}\r\n";
-            }
+            pre = $"{this.Instr.ToString().PadRight(19)}";
 #endif
+            if (this.Instr == null)
+                return $"{pre}{tab}{Prefix}{Op1}{Postfix}\r\n"; // wildcard
+            else if (this.Op1 == "" && this.Op2 == "" && this.Op3 == "" && this.Prefix == "" && this.Postfix == "")
+                return $"";
+                //return $"{pre}\r\n";
+            else
+            {
+                if (IsCondition() && !Op1.Contains("if"))
+                {
+#if DEBUG
+                    return $"{pre}{Prefix}{Op1}{Op2}{Op3}{Postfix}\r\n";
+#else
+                    return $"{Prefix}{Op1}{Op2}{Op3}{Postfix} ";
+#endif
+                }
+                    
+                return $"{pre}{tab}{Prefix}{Op1}{Op2}{Op3}{Postfix}\r\n";
+            }
         }
 
         public bool IsCondition()
@@ -555,6 +564,22 @@ namespace LuaSharpVM.Decompiler
                     return true;
             }
             return false;
+        }
+
+        public void AddPrefix(string str)
+        {
+            this.Prefix = str + this.Prefix;
+        }
+
+        public void AddPostfix(string str)
+        {
+            this.Postfix += str;
+        }
+
+        public void ClearLine()
+        {
+            this.Prefix = "";
+            this.Postfix = "";
         }
     }
 }

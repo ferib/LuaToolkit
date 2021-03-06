@@ -20,6 +20,7 @@
         Bool = 1,
         Number = 3,
         String = 4,
+        Prototype = 5,
     }
 
     public enum LuaOpcode

@@ -262,7 +262,10 @@ namespace LuaSharpVM.Disassembler
                 else if (this.File.SizeTSize == 8)
                     len = GetLong(); // get_size_t (8 byte?)
             }
-                
+
+            if (this.File.Buffer == null)
+                return "error";
+
             string str = "";
             for(int i = 0; i < len && this.Index + i < this.File.Buffer.Length; i++)
                 str += (char)this.File.Buffer[this.Index+i];

@@ -35,8 +35,8 @@ namespace LuaSharpVM.Decompiler
             get { return GetText();  }
         }
 
-        private LuaFunction Func;
-        private LuaDecoder Decoder;
+        public LuaFunction Func;
+        public LuaDecoder Decoder;
 
         private List<LuaScriptLine> lines;
         public List<LuaScriptLine> Lines
@@ -58,9 +58,9 @@ namespace LuaSharpVM.Decompiler
         {
             // this only checks for outgoing, we split incommmings somwhere else
             this.lines.Add(l);
-            if (l.IsBranch())
+            if (l.IsBranch() || l.Instr.OpCode == LuaOpcode.TFORLOOP || l.Instr.OpCode == LuaOpcode.FORLOOP)
             {
-                this.JumpsTo = this.StartAddress + this.lines.Count + l.Instr.sBx; // base + offset
+                this.JumpsTo = this.StartAddress + this.lines.Count + (short)l.Instr.sBx; // base + offset
                 return true;
             }
             return false;  

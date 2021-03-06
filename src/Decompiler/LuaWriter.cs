@@ -30,27 +30,37 @@ namespace LuaSharpVM.Decompiler
 
         private void WriteFile()
         {
-            // NOTE: old code            
-            // Get function names from root
-            //var names = GetFunctionNames();
-            for (int i = 0; i < this.Decoder.File.Function.Functions.Count; i++)
-            {
-                WriteFunction(this.Decoder.File.Function.Functions[i], 1);
-                //WriteFunction(this.Decoder.File.Function.Functions[i], 1, names[i].Key, names[i].Value);
-            }
-            WriteFunction(this.Decoder.File.Function);
+            // create Script Functions
+            this.Decoder.File.Function.Name = "CRoot";
+            WriteF(this.Decoder.File.Function);
 
-            // allign/format/whatever each function
-            foreach (var f in this.LuaFunctions)
-                f.Complete();
+            // NOTE: this is done on GetText
+            //// allign/format/whatever each function
+            //foreach (var f in this.LuaFunctions)
+            //    f.Complete();
 
         }
 
-        private void WriteFunction(LuaFunction func, int dpth = 0, string name = "", bool isGlobal = false)
+        private void WriteF(LuaFunction func)
         {
+            CreateScripFunction(func); // root first and then inside ?
+            // TODO: write functions on CLOSURE and not each list?
+            for (int i = 0; i < func.Functions.Count; i++)
+            {
+                CreateScripFunction(func.Functions[i], 1); // parent
+                foreach (var f in func.Functions[i].Functions)
+                {
+                    WriteF(f); // children NOTE: write children in body of parent?
+                }
+            }
+        }
+
+        private void CreateScripFunction(LuaFunction func, int dpth = 0, string name = "", bool isGlobal = false)
+        {
+            // TODO: write functions on CLOSURE and not each list?
             string funcName = "";
 
-            if (dpth == 0)
+            if (dpth == 0) // unused?
                 funcName = null; // destroy header on root
 
             if (funcName != null)
@@ -67,22 +77,6 @@ namespace LuaSharpVM.Decompiler
                     Number = i,
                     Depth = dpth+1
                 });
-            }
-        }
-
-        private void SetStaticUpvalues()
-        {
-            for (int i = 0; i < this.Decoder.File.Function.Instructions.Count; i++)
-            {
-                var instr = this.Decoder.File.Function.Instructions[i];
-                switch (instr.OpCode)
-                {
-                    case LuaOpcode.CLOSURE:
-
-                        break;
-                    case LuaOpcode.SETUPVAL:
-                        break;
-                }
             }
         }
 
@@ -173,8 +167,9 @@ namespace LuaSharpVM.Decompiler
         private string GetScript()
         {
             string result = "";
-            for(int i = 0; i < this.LuaFunctions.Count; i++)
-                result += this.LuaFunctions[i].Text;
+            result += this.Decoder.File.Function.ScriptFunction.Text; // only need main, right?
+            //for(int i = 0; i < this.LuaFunctions.Count; i++)
+            //    result += this.LuaFunctions[i].Text;
 
             if(this.LuaCode != null)
                 result += this.LuaCode.Text;

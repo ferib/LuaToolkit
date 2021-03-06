@@ -41,11 +41,17 @@ namespace LuaSharpVM.Core
         public int Bx
         {
             get { return ((B << 9) & 0xFFE00 | C) & 0x3FFFF; }
+            set 
+            { 
+                B = value >> 9; // TODO: verift that this gets rid of the first 9 bits?
+                C = (value & ~0xFFE00); // TODO: verify that this gets rid of the last 9 bits?
+            } 
         }
 
         public int sBx
         {
-            get { return Bx - (HalfMax18Bit-1); } // NOTE: verify this?
+            get { return Bx - (HalfMax18Bit-1); }
+            set { Bx = value + (HalfMax18Bit - 1); }
         }
 
         public bool HasBx
@@ -136,7 +142,19 @@ namespace LuaSharpVM.Core
             B = (data >> 23) & 0x1FF;
             C = (data >> 14) & 0x1FF;
 
-            switch (OpCode)
+            SetVars();
+        }
+
+        public LuaInstruction(LuaOpcode opcode)
+        {
+            this.OpCode = opcode;
+
+            SetVars();
+        }
+
+        private void SetVars()
+        {
+            switch (this.OpCode)
             {
                 case LuaOpcode.JMP:
                 case LuaOpcode.FORLOOP:

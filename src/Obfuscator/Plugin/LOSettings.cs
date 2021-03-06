@@ -39,7 +39,8 @@ namespace LuaSharpVM.Obfuscator.Plugin
             //AddSetting<LODebug>("Exports", 2);
             //AddSetting<LOString>("Exports", 2);
             //AddSetting<LOString>("anotherRandom", 2);
-
+            AddSetting<LOFlow>("unknown0", 2);
+            //AddSetting<LOCompress>("unknown0", 2);
         }
 
         public bool Execute()

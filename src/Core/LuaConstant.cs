@@ -77,4 +77,20 @@ namespace LuaSharpVM.Core
                 return '\"' + Value.Substring(0, Value.Length - 1) + '\"';
         }
     }
+
+    // PrototypeConstant is used for decoding upvalues
+    public class PrototypeConstant : LuaConstant<string>
+    {
+        public PrototypeConstant(string name) : base(LuaType.String, name)
+        { }
+
+        public override string ToString()
+        {
+            string[] split = Value.Split('(');
+            if(split.Length > 1)
+                return Value.Split('(')[0];
+            return Value;
+        }
+    }
+
 }
