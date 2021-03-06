@@ -12,21 +12,21 @@
 - **Beautifier**: Simple code beautifie/highlighting.
 
 ### Decoder/Encoder
-This Decoder/Encoder is used to turn Lua 5.1 Bytecode into C# classes or vice verse.
-Very usefull to read/write compiled Lua binary's.
+This Decoder/Encoder is used to turn Lua 5.1 Bytecode into C# classes or vice versa.
+Very useful to read/write compiled Lua binary's.
 
 ### Decompiler
 The Decompiler is pretty basic and has no optimization or anything.
 But I am gonna call this a feature instead of a bug, because our Obfuscator will benefit from the unoptimized code it outputs.
 
-## Emulator
+### Emulator
 Nope, not today...
 
 ### Obfuscator
 The obfuscator is designed to integrate all of the above features.
 
-For example, our ``LOFlow`` plugin uses ``Decompiler.LuaScriptblock`` to tamper with the controlflow on 'Blocklevel' while it adds additional ``Core.LuaInstructions`` to generate new IF statements on bytecode level.
+For example, our ``LOFlow`` plugin uses ``Decompiler.LuaScriptblock`` to tamper with the control-flow on 'Blocklevel' while it adds additional ``Core.LuaInstructions`` to generate new IF statements on bytecode level.
 The ``LOPacker`` plugin on the other hand uses ``Decompiler.LuaScriptFunction``'s end result to convert the decompiled Lua script code and then packs it.
 
 ### Beautifier
-This only exists to show pretty results in the console so we humans can better see whats going on.
+This only exists to show pretty results in the console so we humans can better see what's going on.
