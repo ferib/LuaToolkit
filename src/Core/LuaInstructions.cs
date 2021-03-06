@@ -1,7 +1,7 @@
-﻿using LuaSharpVM.Models;
+﻿using LuaToolkit.Models;
 using System.Collections.Generic;
 
-namespace LuaSharpVM.Core
+namespace LuaToolkit.Core
 {
     public class LuaInstruction
     {

@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using LuaSharpVM.Decompiler;
-using LuaSharpVM.Core;
-using LuaSharpVM.Disassembler;
+using LuaToolkit.Decompiler;
+using LuaToolkit.Core;
+using LuaToolkit.Disassembler;
 
-namespace LuaSharpVM.Obfuscator.Plugin
+namespace LuaToolkit.Obfuscator.Plugin
 {
     class LOPacker : LOPlugin
     {

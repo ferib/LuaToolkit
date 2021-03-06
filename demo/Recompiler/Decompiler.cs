@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using LuaSharpVM;
-using LuaSharpVM.Core;
-using LuaSharpVM.Models;
-using LuaSharpVM.Decompiler;
-using LuaSharpVM.Disassembler;
+using LuaToolkit;
+using LuaToolkit.Core;
+using LuaToolkit.Models;
+using LuaToolkit.Decompiler;
+using LuaToolkit.Disassembler;
 
 namespace Recompiler
 {

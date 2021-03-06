@@ -1,9 +1,9 @@
-﻿using LuaSharpVM.Disassembler;
-using LuaSharpVM.Decompiler;
-using LuaSharpVM.Models;
+﻿using LuaToolkit.Disassembler;
+using LuaToolkit.Decompiler;
+using LuaToolkit.Models;
 using System.Collections.Generic;
 
-namespace LuaSharpVM.Core
+namespace LuaToolkit.Core
 {
     public class LuaFunction
     {

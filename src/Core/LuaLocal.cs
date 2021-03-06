@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace LuaSharpVM.Core
+namespace LuaToolkit.Core
 {
 	public class LuaLocal
 	{

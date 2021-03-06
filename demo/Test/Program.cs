@@ -1,10 +1,10 @@
 ﻿using System;
-using LuaSharpVM;
-using LuaSharpVM.Decompiler;
-using LuaSharpVM.Core;
-using LuaSharpVM.Disassembler;
-using LuaSharpVM.Obfuscator;
-using LuaSharpVM.Obfuscator.Plugin;
+using LuaToolkit;
+using LuaToolkit.Decompiler;
+using LuaToolkit.Core;
+using LuaToolkit.Disassembler;
+using LuaToolkit.Obfuscator;
+using LuaToolkit.Obfuscator.Plugin;
 using System.IO;
 using System.Collections.Generic;
 

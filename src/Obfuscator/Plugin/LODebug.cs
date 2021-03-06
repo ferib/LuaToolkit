@@ -1,9 +1,9 @@
-﻿using LuaSharpVM.Core;
-using LuaSharpVM.Disassembler;
+﻿using LuaToolkit.Core;
+using LuaToolkit.Disassembler;
 using System;
 using System.Collections.Generic;
 
-namespace LuaSharpVM.Obfuscator.Plugin
+namespace LuaToolkit.Obfuscator.Plugin
 {
     public enum LODebugLevel
     {

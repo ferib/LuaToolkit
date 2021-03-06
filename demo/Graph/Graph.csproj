@@ -112,9 +112,9 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\LuaSharpVM.csproj">
+    <ProjectReference Include="..\..\src\LuaToolkit.csproj">
       <Project>{3c38c968-e485-4154-b6bd-e8446651307f}</Project>
-      <Name>LuaSharpVM</Name>
+      <Name>LuaToolkit</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

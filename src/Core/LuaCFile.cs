@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using LuaSharpVM.Models;
+using LuaToolkit.Models;
 
-namespace LuaSharpVM.Core
+namespace LuaToolkit.Core
 {
     public class LuaCFile
     {

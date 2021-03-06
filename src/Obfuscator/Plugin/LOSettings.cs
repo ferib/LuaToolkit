@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Linq;
-using LuaSharpVM.Decompiler;
-using LuaSharpVM.Disassembler;
+using LuaToolkit.Decompiler;
+using LuaToolkit.Disassembler;
 using Newtonsoft.Json;
 
-namespace LuaSharpVM.Obfuscator.Plugin
+namespace LuaToolkit.Obfuscator.Plugin
 {
     public class LOSettings
     {

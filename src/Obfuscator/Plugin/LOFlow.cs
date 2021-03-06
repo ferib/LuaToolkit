@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using LuaSharpVM.Core;
-using LuaSharpVM.Disassembler;
-using LuaSharpVM.Decompiler;
-using LuaSharpVM.Models;
+using LuaToolkit.Core;
+using LuaToolkit.Disassembler;
+using LuaToolkit.Decompiler;
+using LuaToolkit.Models;
 
-namespace LuaSharpVM.Obfuscator.Plugin
+namespace LuaToolkit.Obfuscator.Plugin
 {
     public class LOFlow : LOPlugin
     {
