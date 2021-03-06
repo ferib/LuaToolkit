@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Collections.Generic;
-using LuaSharpVM.Obfuscator;
+using LuaToolkit.Obfuscator;
 
 namespace Recompiler
 {

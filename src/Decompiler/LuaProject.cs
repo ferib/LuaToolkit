@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using LuaSharpVM.Disassembler;
-using LuaSharpVM.Core;
-using LuaSharpVM.Models;
+using LuaToolkit.Disassembler;
+using LuaToolkit.Core;
+using LuaToolkit.Models;
 
-namespace LuaSharpVM.Decompiler
+namespace LuaToolkit.Decompiler
 {
     // NOTE: a LuaProject is a collection of LuaScriptFiles that are used to define eachother
     public class LuaProject

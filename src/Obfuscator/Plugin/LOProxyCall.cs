@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using LuaSharpVM.Disassembler;
+using LuaToolkit.Disassembler;
 
-namespace LuaSharpVM.Obfuscator.Plugin
+namespace LuaToolkit.Obfuscator.Plugin
 {
     public class LOProxyCall : LOPlugin
     {

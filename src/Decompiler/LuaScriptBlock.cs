@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using LuaSharpVM.Core;
-using LuaSharpVM.Disassembler;
-using LuaSharpVM.Models;
+using LuaToolkit.Core;
+using LuaToolkit.Disassembler;
+using LuaToolkit.Models;
 
-namespace LuaSharpVM.Decompiler
+namespace LuaToolkit.Decompiler
 {
     public class LuaScriptBlock
     {

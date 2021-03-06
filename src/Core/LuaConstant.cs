@@ -1,6 +1,6 @@
-﻿using LuaSharpVM.Models;
+﻿using LuaToolkit.Models;
 
-namespace LuaSharpVM.Core
+namespace LuaToolkit.Core
 {
     public abstract class LuaConstant
     {

@@ -2,13 +2,13 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Linq;
-using LuaSharpVM.Core;
-using LuaSharpVM.Models;
-using LuaSharpVM.Decompiler;
-using LuaSharpVM.Disassembler;
-using LuaSharpVM.Obfuscator.Plugin;
+using LuaToolkit.Core;
+using LuaToolkit.Models;
+using LuaToolkit.Decompiler;
+using LuaToolkit.Disassembler;
+using LuaToolkit.Obfuscator.Plugin;
 
-namespace LuaSharpVM.Obfuscator
+namespace LuaToolkit.Obfuscator
 {
     public class LuaObfuscator
     {

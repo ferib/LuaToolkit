@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace LuaSharpVM.Beautifier
+namespace LuaToolkit.Beautifier
 {
     public static class LuaHighlight
     {

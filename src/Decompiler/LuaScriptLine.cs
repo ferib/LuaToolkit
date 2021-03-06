@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using LuaSharpVM.Core;
-using LuaSharpVM.Models;
-using LuaSharpVM.Disassembler;
+using LuaToolkit.Core;
+using LuaToolkit.Models;
+using LuaToolkit.Disassembler;
 using System.Linq;
 
-namespace LuaSharpVM.Decompiler
+namespace LuaToolkit.Decompiler
 {
     public class LuaScriptLine
     {

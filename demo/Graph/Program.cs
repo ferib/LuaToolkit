@@ -4,9 +4,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.IO;
-using LuaSharpVM.Core;
-using LuaSharpVM.Decompiler;
-using LuaSharpVM.Disassembler;
+using LuaToolkit.Core;
+using LuaToolkit.Decompiler;
+using LuaToolkit.Disassembler;
 
 namespace Graph
 {

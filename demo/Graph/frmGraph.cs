@@ -11,10 +11,10 @@ using SharpDX.DirectWrite;
 using SharpDX;
 using SharpDX.Mathematics.Interop;
 using System.Threading;
-using LuaSharpVM.Disassembler;
-using LuaSharpVM.Models;
-using LuaSharpVM.Core;
-using LuaSharpVM.Decompiler;
+using LuaToolkit.Disassembler;
+using LuaToolkit.Models;
+using LuaToolkit.Core;
+using LuaToolkit.Decompiler;
 
 namespace Graph
 {

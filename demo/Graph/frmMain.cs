@@ -8,9 +8,9 @@ using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using LuaSharpVM.Core;
-using LuaSharpVM.Decompiler;
-using LuaSharpVM.Disassembler;
+using LuaToolkit.Core;
+using LuaToolkit.Decompiler;
+using LuaToolkit.Disassembler;
 
 
 namespace Graph
