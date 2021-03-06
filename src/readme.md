@@ -5,11 +5,11 @@
 *TODO: insert kewl logo*
 
 ## Features
-- **Decoder/Encoder**: Encodes/Decodes Lua 5.1 Compiler Binarys.
-- **Decompiler**: Decompiles lua bytecode to lua script code.
-- ~~**Emulator**:~~ Abandoned, no intentions *(yet*) to finish.
-- **Obfuscator:** Obfuscator that uses Bytelevel, Blocklevel and Scriptlevel.
-- **Beautifier**: Simple code beautifie/highlighting.
+- **[Decoder/Encoder](https://github.com/ferib/LuaToolkit/src/Disassembler)**: Encodes/Decodes Lua 5.1 Compiler Binarys.
+- **[Decompiler](https://github.com/ferib/LuaToolkit/src/Decompiler)**: Decompiles lua bytecode to lua script code.
+- ~~**[Emulator](https://github.com/ferib/LuaToolkit/src/Emulator)**:~~ Abandoned, no intentions *(yet*) to finish.
+- **[Obfuscator](https://github.com/ferib/LuaToolkit/src/Obfuscator)**: Obfuscator that uses Bytelevel, Blocklevel and Scriptlevel.
+- **[Beautifier](https://github.com/ferib/LuaToolkit/src/Beautifier)**: Simple code beautifie/highlighting.
 
 ### Decoder/Encoder
 This Decoder/Encoder is used to turn Lua 5.1 Bytecode into C# classes or vice versa.
