@@ -1,3 +1,0 @@
-L:\Projects\LuaSharpVM\LuaSharpVM\Web\bin\Debug\netcoreapp3.1\Web.exe
-L:\Projects\LuaSharpVM\LuaSharpVM\Web\obj\Debug\netcoreapp3.1\Web.AssemblyInfoInputs.cache
-L:\Projects\LuaSharpVM\LuaSharpVM\Web\obj\Debug\netcoreapp3.1\Web.AssemblyInfo.cs
