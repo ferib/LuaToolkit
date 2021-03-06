@@ -14,6 +14,7 @@ namespace LuaSharpVM.Decompiler
         private LuaFunction Func;
 
         public bool IsLocal = false;
+        public bool HasVarargs = false;
         private List<int> Args;
         private List<string> NameArgs;
         public List<LuaScriptLine> Lines;
@@ -77,10 +78,10 @@ namespace LuaSharpVM.Decompiler
             for (int i = 0; i < this.NameArgs.Count; i++)
             {
                 args += this.NameArgs[i];
-                if (i < this.NameArgs.Count - 1)
+                if (i < this.NameArgs.Count - 1 || this.HasVarargs)
                     args += ", ";
             }
-            args += ")";
+            args += (this.HasVarargs ? "...)" : ")");
             return (this.IsLocal ? "local " : "") + $"function {GetName()}{args}\r\n";
         }
 
