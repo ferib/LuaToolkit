@@ -21,6 +21,7 @@ namespace Web.API
                 return result;
             }
 
+            //luacFile = System.IO.File.ReadAllBytes(@"L:\Projects\LuaBytcodeInterpreter\lua_installer\files\upvalues.luac");
             try
             {
                 // decompile
@@ -63,12 +64,18 @@ namespace Web.API
         
         public static APIResponse<ResponseBeautifier> Beautifie()
         {
-            throw new NotImplementedException();
+            APIResponse<ResponseBeautifier> result = new APIResponse<ResponseBeautifier>();
+            result.status = "N/A";
+            result.message = "Error, not yet implemented!";
+            return result;
         }
         
         public static APIResponse<ResponseHighlighter> Highlight()
         {
-            throw new NotImplementedException();
+            APIResponse<ResponseHighlighter> result = new APIResponse<ResponseHighlighter>();
+            result.status = "N/A";
+            result.message = "Error, not yet implemented!";
+            return result;
         }
     }
 }

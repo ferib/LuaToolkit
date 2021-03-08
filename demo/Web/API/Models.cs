@@ -8,7 +8,7 @@ namespace Web.API
     {
         public string status;
         public string message;
-        public T data;
+        public T data = Activator.CreateInstance<T>();
     }
 
     public class ResponseDecompiler
