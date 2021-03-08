@@ -4,6 +4,7 @@ using System.Text;
 using System.Linq;
 using Nancy;
 using Nancy.ErrorHandling;
+using Nancy.Conventions;
 using Nancy.Bootstrapper;
 using Nancy.TinyIoc;
 using Web.API;
@@ -56,7 +57,7 @@ namespace Web.Nancy
             });
 
             // Highlight API
-            Post("/api/{version}/highlight", async x =>
+            Post("/api/highlight", async x =>
             {
                 return Response.AsJson<APIResponse<ResponseHighlighter>>(APIHelper.Highlight());
             });
@@ -90,6 +91,14 @@ namespace Web.Nancy
                     .WithHeader("Access-Control-Allow-Headers", "Accept, Origin, Content-type")
                     .WithHeader("Access-Control-Allow-Headers", "Accept, Origin, Content-type");
             });
+        }
+        protected override void ConfigureConventions(NancyConventions nancyConventions)
+        {
+            base.ConfigureConventions(nancyConventions);
+
+            nancyConventions.StaticContentsConventions.Clear(); // remove defaults, if any
+            nancyConventions.StaticContentsConventions.Add(StaticContentConventionBuilder.AddDirectory("css", "/public/css"));
+            nancyConventions.StaticContentsConventions.Add(StaticContentConventionBuilder.AddDirectory("js", "/public/js"));
         }
     }
 }

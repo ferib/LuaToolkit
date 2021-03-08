@@ -1,3 +1,15 @@
 ﻿body {
     font-family: 'Comic Sans MS';
 }
+
+.luac-upload
+{
+    height: 500px;
+    width: 100%;
+}
+
+.luac-file-drag
+{
+    height: 100%;
+    width: 100%;
+}
