@@ -17,7 +17,7 @@ namespace Recompiler
         public Decompiler(byte[] Buffer)
         {
             this.Decoder = new LuaDecoder(new LuaCFile(Buffer));
-            this.LuaDecompiler = new LuaWriter(ref this.Decoder);
+            this.LuaDecompiler = new LuaWriter(this.Decoder);
         }
 
         public string GetResult()
