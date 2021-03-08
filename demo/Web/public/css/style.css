@@ -1,15 +1,58 @@
-﻿body {
-    font-family: 'Comic Sans MS';
-}
-
-.luac-upload
-{
+﻿.luac-upload {
     height: 500px;
-    width: 100%;
+    width: 98%;
+    padding: 2px;
+    font-family: "Consolas";
+    margin: auto;
 }
 
-.luac-file-drag
-{
+.luac-file-drag {
     height: 100%;
     width: 100%;
+    border: 2px rgb(218 230 241);
+    border-style: dashed;
+    border-radius: 8px;
+    margin: auto;
+    background: aliceblue;
 }
+
+.luac-file {
+    margin: auto;
+    display: block;
+    top: 350px;
+    position: relative;
+    text-align: center;
+}
+
+.tool-footer {
+    text-align: right;
+    font-size: 12px;
+    padding: 0;
+    margin: 8px 12px 0 0;
+    font-style: italic;
+}
+
+table {
+    font-family: arial, sans-serif;
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 95%;
+}
+
+td, th {
+    border: 1px solid #dfe2e6;
+    text-align: left;
+    padding: 8px;
+}
+
+tr:nth-child(even) {
+    background-color: #f6f8fb;
+}
+
+code {
+    background: #1b1f230d;
+    padding: 3px 4px 3px 4px;
+    border-radius: 2px
+}
+
+/* TODO: make height: 95vh on mobile device below X pixels*/

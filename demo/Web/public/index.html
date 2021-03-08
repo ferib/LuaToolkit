@@ -4,7 +4,7 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <title>Tool: Lua 5.1 Decompiler</title>
     <meta name="description" content="Lua Decompiler for Lua 5.1 bytecode." />
-    <meta name="keywords" content="Programmer, programming, Lua, lua bytecode, compiled lua, lua 5.1, version 5.1, decompiler, reverse compiled, Ferib, Hellscream, Ferib Hellscream" />
+    <meta name="keywords" content="Online Lua Decompiler, Online Lua Decompiler API, REST API, Decompiler with REST API, Online Decompiler, Programmer, programming, Lua, lua bytecode, compiled lua, lua 5.1, version 5.1, Lua 5.1 Bytecode, Luad, compiled lua, .luac, luac decoder, luac opener, luac reader, lua bytecode decompiler, decompiler, reverse compiled, Ferib, Hellscream, Ferib Hellscream" />
     <meta name="revisit-after" content="90 days" />
     <meta name="Author" content="ferib.dev" />
     <meta name="distribution" content="Global" />
@@ -39,13 +39,54 @@
             <div class="fancy-box readability">
                 <article>
                     <header>
-                        <h1>Lua Decompiler for Lua 5.1 Bytecode <span class="blogpost-date">01/05/2021</span></h1>
+                        <h1>Online Lua Decompiler <sup style="font-size: 75%">(for Lua 5.1)</sup><span class="blogpost-date">01/05/2021</span></h1>
                     </header>
-                    <p>
-                        TODO: create a small thing where the user can upload his LuaC file, then add bunch of sliders/options/settings and some JS that does the actual POST request ;D (also, add JSON so this can be used as API?).
-                    </p>
                     <div class="luac-upload">
-
+                        <div class="luac-file-drag">
+                            <div class="luac-file">
+                                <p>Please upload a Lua 5.1 binary file.</p>
+                                <input type="file" id="luacfile" name="luacfile">
+                            </div>
+                        </div>
+                    </div>
+                    <p class="tool-footer">
+                        <span>Check out our <a href="#restapi"><u>REST API</u></a></span>
+                    </p>
+                    <hr />
+                    <div>
+                        <h2 id="about">About</h2>
+                        <p>
+                            About ...
+                        </p>
+                        <h2 id="restapi">REST API</h2>
+                        <p>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th align="center">Type</th>
+                                        <th align="center">URL</th>
+                                        <th align="left">Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td align="center">POST</td>
+                                        <td align="center"><code>/api/decompile</code></td>
+                                        <td align="left">Decompiles the embeded Lua binary file.</td>
+                                    </tr>
+                                    <tr>
+                                        <td align="center">POST</td>
+                                        <td align="center"><code>/api/beautifie</code></td>
+                                        <td align="left">Beautifies the lua script code that is located in the embedded file or body of the request.</td>
+                                    </tr>
+                                    <tr>
+                                        <td align="center">POST</td>
+                                        <td align="center"><code>/api/highlight</code></td>
+                                        <td align="left">Highlights the embeded Lua binary file, the <code>data</code> will hold a list of colors and their corresponding start/end locations.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </p>
                     </div>
                 </article>
                 <hr>
@@ -59,27 +100,29 @@
                     </div>
                 </tt>
             </div>
-        <footer>
-            <div class="footer">
-                <a class="footer-link" href="https://github.com/ferib">GitHub</a> -
-                <a class="footer-link" href="https://twitter.com/FeribHellscream">Twitter</a> -
-                <a class="footer-link" href="https://ferib.dev/">Home</a>
-            </div>
-        </footer>
+            <footer>
+                <div class="footer">
+                    <a class="footer-link" href="https://github.com/ferib">GitHub</a> -
+                    <a class="footer-link" href="https://twitter.com/FeribHellscream">Twitter</a> -
+                    <a class="footer-link" href="https://ferib.dev/">Home</a>
+                </div>
+            </footer>
         </div>
     </div>
     <!-- Global site tag (gtag.js) - Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-86365922-4"></script>
-    <script>
-		window.dataLayer = window.dataLayer || [];
+    <!--
+        <script async src="https://www.googletagmanager.com/gtag/js?id=UA-86365922-4"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
 
-		function gtag() {
-			dataLayer.push(arguments);
-		}
-		gtag('js', new Date());
-		gtag('config', 'UA-86365922-4');
+            function gtag() {
+                dataLayer.push(arguments);
+            }
+            gtag('js', new Date());
+            gtag('config', 'UA-86365922-4');
 
-    </script>
-    <script src="/js/main.js"></script>
-</body>
+        </script>
+        <script src="/js/main.js"></script>
+        -->
+    </body>
 </html>
