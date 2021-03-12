@@ -133,7 +133,7 @@
                 $('.luac-file > p').hide()
                 $('.luac-file').css({ "top": "505px", "text-align": "left" });
 
-                API.decompileFile($(this).val(), function () {
+                API.decompileFile($(this)[0].files[0], function () {
                     $('.luac-upload').removeClass("api-busy");
                     if (API.getLastResult().data.decompiled != null) {
                         $('.insert-code').text(API.getLastResult().data.decompiled);

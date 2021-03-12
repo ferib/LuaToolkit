@@ -32,7 +32,7 @@ namespace Web.Nancy
                 // TODO: add protection to prevent spam?
 
                 // check attached files
-                var file = Request.Files.FirstOrDefault();
+                var file = this.Request.Files.FirstOrDefault();
                 if (file != null)
                 {
                     byte[] LuaC = new byte[file.Value.Length];
