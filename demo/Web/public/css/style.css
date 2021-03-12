@@ -14,6 +14,7 @@
     border-radius: 8px;
     margin: auto;
     background: aliceblue;
+    position: relative;
 }
 
 .luac-file {
@@ -53,6 +54,34 @@ code {
     background: #1b1f230d;
     padding: 3px 4px 3px 4px;
     border-radius: 2px
+}
+
+.insert-code {
+    margin: 0;
+    display: block;
+    overflow: auto;
+    height: 500px;
+    width: 100%;
+    position: absolute;
+}
+
+.busy {
+    filter: blur(8px);
+    animation-name: scanning;
+    animation-duration: 1s;
+    animation-direction: alternate;
+    animation-iteration-count: infinite;
+    animation-timing-function: ease-in-out
+}
+
+@keyframes scanning {
+    from {
+        filter: blur(8px);
+    }
+
+    to {
+        filter: blur(14px);
+    }
 }
 
 /* TODO: make height: 95vh on mobile device below X pixels*/

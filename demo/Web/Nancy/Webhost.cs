@@ -50,14 +50,20 @@ namespace Web.Nancy
                 return Response.AsJson<APIResponse<ResponseDecompiler>>(APIHelper.Decompile(null)); // its for error handling
             });
 
+            Post("/elipmoced/ipa/", async x =>
+            {
+                // NOTE: this one is a joke xD
+                return Response.AsRedirect("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+            });
+
             // Lua Beautifier API
-            Post("/api/beautifie", async x =>
+            Post("/api/beautifie/", async x =>
             {
                 return Response.AsJson<APIResponse<ResponseBeautifier>>(APIHelper.Beautifie());
             });
 
             // Highlight API
-            Post("/api/highlight", async x =>
+            Post("/api/highlight/", async x =>
             {
                 return Response.AsJson<APIResponse<ResponseHighlighter>>(APIHelper.Highlight());
             });

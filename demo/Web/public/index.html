@@ -43,6 +43,7 @@
                     </header>
                     <div class="luac-upload">
                         <div class="luac-file-drag">
+                            <pre class="insert-code"></pre>
                             <div class="luac-file">
                                 <p>Please upload a Lua 5.1 binary file.</p>
                                 <input type="file" id="luacfile" name="luacfile">
@@ -56,13 +57,21 @@
                     <div>
                         <h2 id="about">About</h2>
                         <p>
-                            Decompilers are exacrly the opposite of compilers, decompilers turn the Lua bytecode's back into Lua Script.
-                            Unfortunarly a lot of data went lost during the compiling process, meaning that decompilers wont be able to give you the exact same original input. 
-                            But thankfully the main logic, such as the control flow and decision making, togheter with all it's variables, are still in tact and will be revealed during the decompiling process.
+                            Decompilers do exactly the opposite of what compilers do,<br />
+                            Decompilers turn Lua bytecode back into a Lua script!
                         </p>
                         <p>
-                            Not only can you decompile trough our little box above, you can also make use of the open REST API.
+                            Unfortunately, a lot of data went lost during the compiling process, meaning that decompilers won't be able to give you the original input.
+                            But thankfully the main logic, such as the control flow and decision making, together with all its variables, are still intact and will be revealed during the decompiling process.
+                        </p>
+                        <p>
+                            Not only can you decompile through our little box above, but you can also make use of the open REST API.
                             Details about the REST API can be found below!
+                        </p>
+                        <p class="tool-footer">
+                            <span>
+                                Check out my <a href="#"><u>complete article about Lua decompilers</u></a> for more information!
+                            </span>
                         </p>
                         <h2 id="restapi">REST API</h2>
                         <p>
@@ -77,17 +86,17 @@
                                 <tbody>
                                     <tr>
                                         <td align="center">POST</td>
-                                        <td align="center"><code>/api/decompile</code></td>
+                                        <td align="center"><code>&#8238;/elipmoced/ipa/</code></td>
                                         <td align="left">Decompiles the embeded Lua binary file.</td>
                                     </tr>
                                     <tr>
                                         <td align="center">POST</td>
-                                        <td align="center"><code>/api/beautifie</code></td>
+                                        <td align="center"><code>/api/beautifie/</code></td>
                                         <td align="left">Beautifies the lua script code that is located in the embedded file or body of the request.</td>
                                     </tr>
                                     <tr>
                                         <td align="center">POST</td>
-                                        <td align="center"><code>/api/highlight</code></td>
+                                        <td align="center"><code>/api/highlight/</code></td>
                                         <td align="left">Highlights the embeded Lua binary file, the <code>data</code> will hold a list of colors and their corresponding start/end locations.</td>
                                     </tr>
                                 </tbody>
@@ -100,7 +109,7 @@
                     <h3>Something wrong?</h3>
                     Find me on <a href="https://github.com/ferib/">GitHub</a>!
                     <div class="article-footer">
-                        <a href="https://ferib.dev/portfolio.php?t=Blog+post">
+                        <a href="https://ferib.dev/portfolio.php?t=Tool">
                             <div class="soft-flow" style="padding:10px;border:1px solid;border-radius:2px;">More Tools</div>
                         </a>
                     </div>
@@ -115,6 +124,27 @@
             </footer>
         </div>
     </div>
+    <script class="jsbin" src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+    <script defer src="/js/api.js"></script>
+    <script>
+        $(function () {
+            $('#luacfile:file').change(function () {
+                $('.luac-upload').addClass("api-busy");
+                $('.luac-file > p').hide()
+                $('.luac-file').css({ "top": "505px", "text-align": "left" });
+
+                API.decompileFile($(this).val(), function () {
+                    $('.luac-upload').removeClass("api-busy");
+                    if (API.getLastResult().data.decompiled != null) {
+                        $('.insert-code').text(API.getLastResult().data.decompiled);
+                    } else {
+                        $('.insert-code').text(API.getLastResult().status);
+                    }
+                        
+                });
+            })
+        })
+    </script>
     <!-- Global site tag (gtag.js) - Google Analytics -->
     <!--
         <script async src="https://www.googletagmanager.com/gtag/js?id=UA-86365922-4"></script>
@@ -130,5 +160,5 @@
         </script>
         <script src="/js/main.js"></script>
         -->
-    </body>
+</body>
 </html>
