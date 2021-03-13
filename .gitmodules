@@ -1,0 +1,3 @@
+[submodule "demo/LuaDecompiler-Web"]
+	path = demo/LuaDecompiler-Web
+	url = https://github.com/ferib/LuaDecompiler-Web
