@@ -50,7 +50,7 @@ namespace Web.Nancy
                 return Response.AsJson<APIResponse<ResponseDecompiler>>(APIHelper.Decompile(null)); // its for error handling
             });
 
-            Post("/elipmoced/ipa/", async x =>
+            Post("/api/elipmoced", async x =>
             {
                 // NOTE: this one is a joke xD
                 return Response.AsRedirect("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
