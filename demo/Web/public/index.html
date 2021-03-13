@@ -1,0 +1,169 @@
+﻿<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Tool: Lua 5.1 Decompiler</title>
+    <meta name="description" content="Lua Decompiler for Lua 5.1 bytecode." />
+    <meta name="keywords" content="Online Lua Decompiler, Online Lua Decompiler API, REST API, Decompiler with REST API, Online Decompiler, Programmer, programming, Lua, lua bytecode, compiled lua, lua 5.1, version 5.1, Lua 5.1 Bytecode, Luad, compiled lua, .luac, luac decoder, luac opener, luac reader, lua bytecode decompiler, decompiler, reverse compiled, Ferib, Hellscream, Ferib Hellscream" />
+    <meta name="revisit-after" content="90 days" />
+    <meta name="Author" content="ferib.dev" />
+    <meta name="distribution" content="Global" />
+    <meta name="rating" content="General" />
+    <link rel="apple-touch-icon" sizes="180x180" href="https://ferib.dev/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="https://ferib.dev/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="https://ferib.dev/favicon-16x16.png">
+    <link rel="manifest" href="https://ferib.dev/site.webmanifest">
+    <link rel="mask-icon" href="https://ferib.dev/safari-pinned-tab.svg" color="#c69336">
+    <meta name="msapplication-TileColor" content="#00aba9">
+    <meta name="theme-color" content="#ffffff">
+    <link rel="stylesheet" type="text/css" href="https://ferib.dev/css/style.css" media="all" />
+    <link rel="stylesheet" type="text/css" href="/css/style.css" media="all" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta property="og:title" content="Lua Decompiler for Lua 5.1 bytecode." />
+    <meta property="og:type" content="profile" />
+    <meta property="og:description" content="Lua Decompiler for Lua 5.1 bytecode." />
+    <meta property="og:url" content="https://lua-decompiler.ferib.dev/" />
+    <meta property="og:image" content="https://ferib.dev/img/logo.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="600" />
+    <meta property="og:image:height" content="600" />
+    <meta property="og:image:alt" content="A 'not so good lookin' pumpkin" />
+    <!-- <script data-ad-client="ca-pub-8014088211781182" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script> -->
+</head>
+<body>
+    <div class="container">
+        <div class="content">
+            <a href="/"><img id="main-logo" src="https://ferib.dev/img/logo.png" alt="A 'not so good lookin' pumpkin" width="600" height="600" /></a>
+        </div>
+        <div class="post-content">
+            <div class="fancy-box readability">
+                <article>
+                    <header>
+                        <h1>Online Lua Decompiler <sup style="font-size: 75%">(for Lua 5.1)</sup><span class="blogpost-date">16/03/2021</span></h1>
+                    </header>
+                    <div class="luac-upload">
+                        <div class="luac-file-drag">
+                            <pre class="insert-code"></pre>
+                            <div class="luac-file">
+                                <p>Please upload a Lua 5.1 binary file.</p>
+                                <input type="file" id="luacfile" name="luacfile">
+                            </div>
+                        </div>
+                    </div>
+                    <p class="tool-footer">
+                        <span>Check out our <a href="#restapi"><u>REST API</u></a></span>
+                    </p>
+                    <hr />
+                    <div>
+                        <h2 id="about">About</h2>
+                        <p>
+                            Decompilers do exactly the opposite of what compilers do,<br />
+                            Decompilers turn Lua bytecode back into Lua script!
+                        </p>
+                        <p>
+                            Unfortunately, most of the data went lost during the compiling process, meaning that decompilers won't be able to give you the original input.
+                            But thankfully the main logic, such as the control flow and decision making, together with all its variables, are still intact and will be revealed after the decompiling process.
+                        </p>
+                        <p>
+                            Not only can you decompile through our little box above, but you can also make use of the open REST API.
+                            Details about the REST API can be found below!
+                        </p>
+                        <p class="tool-footer">
+                        <!-- COMMING SOON!
+                            <span>
+                                Check out my <a href="#"><u>complete article about Lua decompilers</u></a> for more information!
+                            </span>
+                        -->
+                        </p>
+                        <h2 id="restapi">REST API</h2>
+                        <p>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th align="center">Type</th>
+                                        <th align="center">URL</th>
+                                        <th align="left">Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td align="center">POST</td>
+                                        <td align="center"><code>/api/decompile/</code></td>
+                                        <!-- <td align="center"><code>/api/&#8238;elipmoced&#8236;/</code></td> // prank, no? -->
+                                        <td align="left">Decompiles the embeded Lua binary file.</td>
+                                    </tr>
+                                        <!-- COMMING SOON MAH DUDES!
+                                        <tr>
+                                            <td align="center">POST</td>
+                                            <td align="center"><code>/api/beautifie/</code></td>
+                                            <td align="left">Beautifies the lua script code that is located in the embedded file or body of the request.</td>
+                                        </tr>
+                                        <tr>
+                                            <td align="center">POST</td>
+                                            <td align="center"><code>/api/highlight/</code></td>
+                                            <td align="left">Highlights the embeded Lua binary file, the <code>data</code> will hold a list of colors and their corresponding start/end locations.</td>
+                                        </tr>
+                                        -->
+                                </tbody>
+                            </table>
+                        </p>
+                    </div>
+                </article>
+                <hr>
+                <tt>
+                    <h3>Something wrong?</h3>
+                    Find me on <a href="https://github.com/ferib/">GitHub</a>!
+                    <div class="article-footer">
+                        <a href="https://ferib.dev/portfolio.php?t=Tool">
+                            <div class="soft-flow" style="padding:10px;border:1px solid;border-radius:2px;">More Tools</div>
+                        </a>
+                    </div>
+                </tt>
+            </div>
+            <footer>
+                <div class="footer">
+                    <a class="footer-link" href="https://github.com/ferib">GitHub</a> -
+                    <a class="footer-link" href="https://twitter.com/FeribHellscream">Twitter</a> -
+                    <a class="footer-link" href="https://ferib.dev/">Home</a>
+                </div>
+            </footer>
+        </div>
+    </div>
+    <script class="jsbin" src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+    <script defer src="/js/api.js"></script>
+    <script>
+        $(function () {
+            $('#luacfile:file').change(function () {
+                $('.luac-upload').addClass("api-busy");
+                $('.luac-file > p').hide()
+                $('.luac-file').css({ "top": "505px", "text-align": "left" });
+
+                API.decompileFile($(this)[0].files[0], function () {
+                    $('.luac-upload').removeClass("api-busy");
+                    if (API.getLastResult().data.decompiled != null) {
+                        $('.insert-code').text(API.getLastResult().data.decompiled);
+                    } else {
+                        $('.insert-code').text(API.getLastResult().status);
+                    }
+                        
+                });
+            })
+        })
+    </script>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <!--
+        <script async src="https://www.googletagmanager.com/gtag/js?id=UA-86365922-4"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+
+            function gtag() {
+                dataLayer.push(arguments);
+            }
+            gtag('js', new Date());
+            gtag('config', 'UA-86365922-4');
+
+        </script>
+        <script src="/js/main.js"></script>
+        -->
+</body>
+</html>

@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Graph", "demo\Graph\Graph.c
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Recompiler", "demo\Recompiler\Recompiler.csproj", "{CE7FDAB8-2F8A-4E39-AFC9-900D3458B9CB}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Web", "demo\Web\Web.csproj", "{D050C652-2A75-4367-8063-37141AF104EB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -46,6 +48,12 @@ Global
 		{CE7FDAB8-2F8A-4E39-AFC9-900D3458B9CB}.Release|Any CPU.Build.0 = Release|Any CPU
 		{CE7FDAB8-2F8A-4E39-AFC9-900D3458B9CB}.TestDebug|Any CPU.ActiveCfg = TestDebug|Any CPU
 		{CE7FDAB8-2F8A-4E39-AFC9-900D3458B9CB}.TestDebug|Any CPU.Build.0 = TestDebug|Any CPU
+		{D050C652-2A75-4367-8063-37141AF104EB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D050C652-2A75-4367-8063-37141AF104EB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D050C652-2A75-4367-8063-37141AF104EB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D050C652-2A75-4367-8063-37141AF104EB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D050C652-2A75-4367-8063-37141AF104EB}.TestDebug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D050C652-2A75-4367-8063-37141AF104EB}.TestDebug|Any CPU.Build.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -55,6 +63,7 @@ Global
 		{9A45374E-5548-4C3A-AF06-C31A962295DD} = {6645C52B-19A3-4114-81F8-DEBA70779569}
 		{C10726C0-8D2C-4F92-9961-5008D1B6940E} = {6645C52B-19A3-4114-81F8-DEBA70779569}
 		{CE7FDAB8-2F8A-4E39-AFC9-900D3458B9CB} = {6645C52B-19A3-4114-81F8-DEBA70779569}
+		{D050C652-2A75-4367-8063-37141AF104EB} = {6645C52B-19A3-4114-81F8-DEBA70779569}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {CA86C95D-BB88-475B-B999-4332121C087F}

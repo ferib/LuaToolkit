@@ -21,7 +21,7 @@ namespace LuaToolkit.Obfuscator
         {
             this.ObfuscatedLuaC = originalLuaC;
             this.Decoder = new LuaDecoder(new LuaCFile(this.ObfuscatedLuaC));
-            this.Decompiler = new LuaWriter(ref this.Decoder);
+            this.Decompiler = new LuaWriter(this.Decoder);
         }
 
         public string Obfuscate(string settings)

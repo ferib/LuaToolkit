@@ -21,7 +21,7 @@ namespace LuaToolkit.Decompiler
             get { return GetScript(); }
         }
 
-        public LuaWriter(ref LuaDecoder decoder)
+        public LuaWriter(LuaDecoder decoder)
         {
             this.Decoder = decoder;
             this.LuaFunctions = new List<LuaScriptFunction>();
