@@ -1,9 +1,9 @@
-﻿using LuaSharpVM.Core;
-using LuaSharpVM.Models;
+﻿using LuaToolkit.Core;
+using LuaToolkit.Models;
 using System.Text;
 using System.Collections.Generic;
 
-namespace LuaSharpVM.Decompiler
+namespace LuaToolkit.Decompiler
 {
     public class LuaDecompiler
     {

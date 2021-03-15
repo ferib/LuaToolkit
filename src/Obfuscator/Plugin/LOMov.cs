@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using LuaSharpVM.Core;
-using LuaSharpVM.Disassembler;
+using LuaToolkit.Core;
+using LuaToolkit.Disassembler;
 
-namespace LuaSharpVM.Obfuscator.Plugin
+namespace LuaToolkit.Obfuscator.Plugin
 {
     public class LOMov : LOPlugin
     {

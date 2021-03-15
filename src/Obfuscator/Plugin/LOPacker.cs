@@ -1,22 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using LuaSharpVM.Decompiler;
-using LuaSharpVM.Core;
-using LuaSharpVM.Disassembler;
+using LuaToolkit.Decompiler;
+using LuaToolkit.Core;
+using LuaToolkit.Disassembler;
 
-namespace LuaSharpVM.Obfuscator.Plugin
+namespace LuaToolkit.Obfuscator.Plugin
 {
-    class LOCompress : LOPlugin
+    class LOPacker : LOPlugin
     {
-        static string desc = "Compresses and packs the Lua ASCII script with basic XOR encryption";
-        private static string Name = "Compresion";
+        static string desc = "Packs the Lua script with fake Luraph packer";
+        private static string Name = "Fake Luraph Packer";
 
         private static byte[] XorInstructions = new byte[]{ 00, 00};
         private static byte[] XorConstants = new byte[]{ 00, 00};
         private LuaFunction UnpackFunc;
 
-        public LOCompress(ref LuaDecoder decoder) : base(ref decoder, desc)
+        public LOPacker(ref LuaDecoder decoder) : base(ref decoder, desc)
         {
 
         }
@@ -107,14 +107,19 @@ namespace LuaSharpVM.Obfuscator.Plugin
             return result;
         }
 
+        private string GeneratePackedString(string str)
+        {
+            // TODO: reverse the packer and find out how it works
+            string result = "";
+            foreach (var b in Encoding.UTF8.GetBytes(str))
+                result += b.ToString("X2"); // TODO: use correct pack format
+            return result;
+        }
+
         public override void Obfuscate()
         {
-            // TODO: get this working!!!!
-            //Console.WriteLine(CreateScript(this.Decoder.File));
-            //this.UnpackFunc = CreateUnpackFunction();
-
-            //// add XOR decoding function
-            //this.Decoder.File.Function.Functions.Add(this.UnpackFunc);
+            // TODO: dont just write it to the console?
+            Console.WriteLine(CreateScript(GeneratePackedString(this.Decoder.File.Function.ScriptFunction.GetText())));
         }
 
         public override string GetName()

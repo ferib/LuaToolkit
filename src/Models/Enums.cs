@@ -1,4 +1,4 @@
-﻿namespace LuaSharpVM.Models
+﻿namespace LuaToolkit.Models
 {
     public enum VarArg
     {

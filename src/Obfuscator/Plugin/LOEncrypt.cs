@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using LuaSharpVM.Models;
-using LuaSharpVM.Core;
-using LuaSharpVM.Disassembler;
+using LuaToolkit.Models;
+using LuaToolkit.Core;
+using LuaToolkit.Disassembler;
 
-namespace LuaSharpVM.Obfuscator.Plugin
+namespace LuaToolkit.Obfuscator.Plugin
 {
     public class LOEncrypt : LOPlugin
     {

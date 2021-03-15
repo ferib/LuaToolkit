@@ -3,11 +3,11 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <Configurations>Debug;Release;TestDebug</Configurations>
+    <Configurations>Debug;Release;TestDebug;WebRelease</Configurations>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\LuaSharpVM.csproj" />
+    <ProjectReference Include="..\..\src\LuaToolkit.csproj" />
   </ItemGroup>
 
 </Project>

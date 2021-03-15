@@ -2,13 +2,13 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Linq;
-using LuaSharpVM.Core;
-using LuaSharpVM.Models;
-using LuaSharpVM.Decompiler;
-using LuaSharpVM.Disassembler;
-using LuaSharpVM.Obfuscator.Plugin;
+using LuaToolkit.Core;
+using LuaToolkit.Models;
+using LuaToolkit.Decompiler;
+using LuaToolkit.Disassembler;
+using LuaToolkit.Obfuscator.Plugin;
 
-namespace LuaSharpVM.Obfuscator
+namespace LuaToolkit.Obfuscator
 {
     public class LuaObfuscator
     {
@@ -21,7 +21,7 @@ namespace LuaSharpVM.Obfuscator
         {
             this.ObfuscatedLuaC = originalLuaC;
             this.Decoder = new LuaDecoder(new LuaCFile(this.ObfuscatedLuaC));
-            this.Decompiler = new LuaWriter(ref this.Decoder);
+            this.Decompiler = new LuaWriter(this.Decoder);
         }
 
         public string Obfuscate(string settings)

@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using LuaSharpVM.Core;
-using LuaSharpVM.Models;
-using LuaSharpVM.Disassembler;
+using LuaToolkit.Core;
+using LuaToolkit.Models;
+using LuaToolkit.Disassembler;
 using System.Linq;
 
-namespace LuaSharpVM.Decompiler
+namespace LuaToolkit.Decompiler
 {
     public class LuaScriptLine
     {
@@ -395,10 +395,10 @@ namespace LuaSharpVM.Decompiler
                         this.Op3 = $"IDK_SHIT_WENT_MISSING_BRO"; // TODO fix
                     break;
                 case LuaOpcode.VARARG:
+                    this.Func.ScriptFunction.HasVarargs = true;
                     this.Op1 = "local ";
-                    for (int i = Instr.A; i < Instr.B-1; i++) // TODO: bugfix not always printing!
+                    for (int i = Instr.A; i < Instr.A+Instr.B-1; i++) 
                     {
-                        WriteIndex(i); // NOTE: Do not print, just consume local?
                         this.Op2 += $"var{i}";
                         if (i < Instr.B - 2)
                             this.Op2 += ", ";

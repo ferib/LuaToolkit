@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using LuaSharpVM.Models;
-using LuaSharpVM.Core;
-using LuaSharpVM.Disassembler;
+using LuaToolkit.Models;
+using LuaToolkit.Core;
+using LuaToolkit.Disassembler;
 
-namespace LuaSharpVM.Decompiler
+namespace LuaToolkit.Decompiler
 {
     public class LuaWriter
     {
@@ -21,7 +21,7 @@ namespace LuaSharpVM.Decompiler
             get { return GetScript(); }
         }
 
-        public LuaWriter(ref LuaDecoder decoder)
+        public LuaWriter(LuaDecoder decoder)
         {
             this.Decoder = decoder;
             this.LuaFunctions = new List<LuaScriptFunction>();

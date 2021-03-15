@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Linq;
-using LuaSharpVM.Decompiler;
-using LuaSharpVM.Disassembler;
+using LuaToolkit.Decompiler;
+using LuaToolkit.Disassembler;
 using Newtonsoft.Json;
 
-namespace LuaSharpVM.Obfuscator.Plugin
+namespace LuaToolkit.Obfuscator.Plugin
 {
     public class LOSettings
     {
@@ -39,8 +39,8 @@ namespace LuaSharpVM.Obfuscator.Plugin
             //AddSetting<LODebug>("Exports", 2);
             //AddSetting<LOString>("Exports", 2);
             //AddSetting<LOString>("anotherRandom", 2);
-            AddSetting<LOFlow>("unknown0", 2);
-            //AddSetting<LOCompress>("unknown0", 2);
+            //AddSetting<LOFlow>("unknown0", 2);
+            AddSetting<LOPacker>("CRoot", 2); // compress main func to pack all
         }
 
         public bool Execute()

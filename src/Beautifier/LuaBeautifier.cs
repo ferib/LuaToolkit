@@ -1,64 +1,71 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Linq;
 
-namespace LuaSharpVM.Beautifier
+namespace LuaToolkit.Beautifier
 {
     public static class LuaBeautifier
     {
+        private static string[] EndLineKeyword = { "end", "then", "else", ")"};
+        private static string[] StartLineKeyword = { "if", "function", "local function", "for", "else if", "return"};
+
         // TODO: create a beautifier for Lua to format our code properly (fork from existing)
-        public static string BeautifieCode(string text)
+        public static string BeautifieScript(string text, bool minified = false)
         {
             // text based because we did wanky things instead of respecting the list	
             int tabCount = 1;
-            string[] lines = text.Replace("\r", "").Replace("\t", "").Split('\n');
-            string newText = "";
-            for (int i = 0; i < lines.Length; i++)
+
+            // NOTE: remove comment lines?
+            for(int i = 0; i < text.Length-3; i++)
             {
-                bool postAdd = false;
-                bool postSub = false;
-                if (lines[i].StartsWith("if") || lines[i].StartsWith("function") || lines[i].StartsWith("local function") || lines[i].StartsWith("for"))
-                    postAdd = true;
-                else if (lines[i].StartsWith("else"))
+                if (!(text[i] == '-' && text[i + 1] == '-' && text[i + 2] != '[' && text[i + 3] != '['))
+                    continue;
+
+                // find endline
+                int index = i + 2;
+                do
                 {
-                    if (i < lines.Length - 1 && lines[i + 1].StartsWith("if"))
-                    {
-                        // elseif	
-                        newText += $"{new string('\t', tabCount)}{lines[i]}{lines[i + 1]}\r\n";
-                        i += 1; // brrrr fuck y'all, i skip next one this way!	
-                        continue;
-                    }
-                    else
-                    {
-                        // else	
-                        tabCount -= 1;
-                        postAdd = true;
-                    }
+                    index++;
                 }
-                else if (lines[i].StartsWith("end"))
-                    tabCount -= 1;
-
-                if (tabCount < 0)
-                    tabCount = 0;
-
-                if (lines[i].StartsWith("if"))
-                    newText += $"{new string('\t', tabCount)}{lines[i]}";
-                else if (lines[i].EndsWith("or") || lines[i].EndsWith("and") || lines[i].StartsWith(" not"))
-                    newText += $"{lines[i]}";
-                else if (lines[i] == "")
-                    newText += "";
-                else
-                    newText += $"{new string('\t', tabCount)}{lines[i]}\r\n";
-
-                if (lines[i].EndsWith("then"))
-                    newText += "\r\n";
-
-                if (postAdd)
-                    tabCount += 1;
-                if (postSub)
-                    tabCount -= 1;
+                while (text[index] != '\n' && index < text.Length);
+                // idk?
             }
-            return newText;
+
+            string minifiedText = text.Replace("\r", "").Replace("\t", "").Replace("\n", " ");
+
+            while(minifiedText.Contains("  "))
+                minifiedText = minifiedText.Replace("  ", " ");
+
+            if (minified)
+                return minifiedText; 
+
+            string[] words = minifiedText.Split(' ');
+            string result = "";
+            int tabDepth = 0;
+
+            for (int i = 0; i < words.Length; i++)
+            {
+                string prefix = "";
+                string postfix = "";
+                if (EndLineKeyword.Contains(words[i]))
+                {
+                    postfix = "\r\n";
+                    prefix = new string('\t', tabDepth);
+                    tabDepth--;
+                }else if (i > 0 && words[i - 1] == "=")
+                {
+                    postfix = "\r\n" + new string('\t', tabDepth);
+                }
+                else if(StartLineKeyword.Contains(words[i]))
+                {
+                    tabDepth++;
+                    prefix = new string('\t', tabDepth);
+                }
+
+                result += " " + prefix + words[i] + postfix;
+            }
+            return result;
         }
 
     }

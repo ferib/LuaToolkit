@@ -1,10 +1,11 @@
 ﻿using System;
-using LuaSharpVM;
-using LuaSharpVM.Decompiler;
-using LuaSharpVM.Core;
-using LuaSharpVM.Disassembler;
-using LuaSharpVM.Obfuscator;
-using LuaSharpVM.Obfuscator.Plugin;
+using LuaToolkit;
+using LuaToolkit.Decompiler;
+using LuaToolkit.Core;
+using LuaToolkit.Disassembler;
+using LuaToolkit.Obfuscator;
+using LuaToolkit.Obfuscator.Plugin;
+using LuaToolkit.Beautifier;
 using System.IO;
 using System.Collections.Generic;
 
@@ -21,7 +22,7 @@ namespace Test
 
             // show original lua
             Console.ForegroundColor = ConsoleColor.DarkYellow;
-            LuaWriter w = new LuaWriter(ref o.Decoder);
+            LuaWriter w = new LuaWriter(o.Decoder);
             Console.WriteLine(w.LuaScript);
 
             // obfuscate
@@ -30,8 +31,8 @@ namespace Test
             // show obfuscated lua
             Console.ForegroundColor = ConsoleColor.DarkCyan;
             Console.WriteLine(new string('=', Console.WindowWidth));
-            w = new LuaWriter(ref o.Decoder);
-            Console.WriteLine(w.LuaScript);
+            w = new LuaWriter(o.Decoder);
+            Console.WriteLine(LuaBeautifier.BeautifieScript(w.LuaScript));
 
             Console.ReadLine();
         }

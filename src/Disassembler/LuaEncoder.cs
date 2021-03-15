@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using LuaSharpVM.Models;
-using LuaSharpVM.Core;
-using LuaSharpVM.Disassembler;
-using LuaSharpVM.Emulator;
+using LuaToolkit.Models;
+using LuaToolkit.Core;
+using LuaToolkit.Disassembler;
+using LuaToolkit.Emulator;
 
-namespace LuaSharpVM.Disassembler
+namespace LuaToolkit.Disassembler
 {
     public class LuaEncoder
     {

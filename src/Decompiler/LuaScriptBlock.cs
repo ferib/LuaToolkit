@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using LuaSharpVM.Core;
-using LuaSharpVM.Disassembler;
-using LuaSharpVM.Models;
+using LuaToolkit.Core;
+using LuaToolkit.Disassembler;
+using LuaToolkit.Models;
 
-namespace LuaSharpVM.Decompiler
+namespace LuaToolkit.Decompiler
 {
     public class LuaScriptBlock
     {
@@ -152,15 +152,37 @@ namespace LuaSharpVM.Decompiler
                 // NOTE: Text bugs out, TOOD: fix Text
                 if (varA != -1)
                 {
-                    this.Lines[i].Op1 = this.Lines[i].Op1.Replace("var" + varA, "var" + this.IfChainIndex + varA);
-                    this.Lines[i].Op2 = this.Lines[i].Op2.Replace("var" + varA, "var" + this.IfChainIndex + varA);
-                    this.Lines[i].Op3 = this.Lines[i].Op3.Replace("var" + varA, "var" + this.IfChainIndex + varA);
+                    // check if block contains the variable
+                    // TODO: clean this up or make OO??
+                    for(int j = 0; j < this.Lines.Count; j++)
+                    {
+                        if (j == i)
+                            continue; // skip this
+                        if(this.Lines[j].Op1.Contains("var" + varA) || this.Lines[j].Op2.Contains("var" + varA) || this.Lines[j].Op3.Contains("var" + varA))
+                        {
+                            this.Lines[i].Op1 = this.Lines[i].Op1.Replace("var" + varA, "var" + this.IfChainIndex + varA);
+                            this.Lines[i].Op2 = this.Lines[i].Op2.Replace("var" + varA, "var" + this.IfChainIndex + varA);
+                            this.Lines[i].Op3 = this.Lines[i].Op3.Replace("var" + varA, "var" + this.IfChainIndex + varA);
+                            break;
+                        }
+                    }
                 } 
                 if (varB != -1)
                 {
-                    this.Lines[i].Op1 = this.Lines[i].Op1.Replace("var" + varB, "var" + this.IfChainIndex + varB);
-                    this.Lines[i].Op2 = this.Lines[i].Op2.Replace("var" + varB, "var" + this.IfChainIndex + varB);
-                    this.Lines[i].Op3 = this.Lines[i].Op3.Replace("var" + varB, "var" + this.IfChainIndex + varB);
+                    // check if block contains the variable
+                    // TODO: clean this up or make OO??
+                    for (int j = 0; j < this.Lines.Count; j++)
+                    {
+                        if (j == i)
+                            continue; // skip this
+                        if (this.Lines[j].Op1.Contains("var" + varB) || this.Lines[j].Op2.Contains("var" + varB) || this.Lines[j].Op3.Contains("var" + varB))
+                        {
+                            this.Lines[i].Op1 = this.Lines[i].Op1.Replace("var" + varB, "var" + this.IfChainIndex + varB);
+                            this.Lines[i].Op2 = this.Lines[i].Op2.Replace("var" + varB, "var" + this.IfChainIndex + varB);
+                            this.Lines[i].Op3 = this.Lines[i].Op3.Replace("var" + varB, "var" + this.IfChainIndex + varB);
+                            break;
+                        }
+                    }
                 }
             }
             tLines.AddRange(this.Lines.GetRange(0, this.Lines.Count - 2)); // copy transplants

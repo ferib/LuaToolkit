@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using LuaSharpVM.Core;
-using LuaSharpVM.Models;
+using LuaToolkit.Core;
+using LuaToolkit.Models;
 
-namespace LuaSharpVM.Emulator
+namespace LuaToolkit.Emulator
 {
     public class LuaInterpreter
     {
