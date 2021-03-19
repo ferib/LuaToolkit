@@ -1,5 +1,7 @@
 # LuaToolkit
 
+NOTE: this Branch `blogpost` will ONLY be used to be referenced from the blogpost!
+
 **[LuaToolkit](https://github.com/ferib/LuaToolkit/tree/master/src/)** is a library for C# that aims for Obfuscation.
 
 The toolset not only comes with a custonizable Obfuscator that supports a plugin framework, it also has features such as Decompiling and Disassembling of compiled Lua binary's.
