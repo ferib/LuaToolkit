@@ -26,10 +26,13 @@ namespace Example
 {
     class Program 
     {
-        LuaCFile = luac new LuaCFile(File.ReadAllBytes(@"C:\test.luac");
-	LuaDecoder decoder = new LuaDecoder(luac);
+        static void Main(string[] args)
+	{
+            LuaCFile luac = new LuaCFile(File.ReadAllBytes(@"C:\test.luac"));
+	    LuaDecoder decoder = new LuaDecoder(luac);
 
-        Console.WriteLine("the compiled Lua file contains {deocder.File.Function.Functions.Count} functions.");
+            Console.WriteLine($"the compiled Lua file contains {decoder.File.Function.Functions.Count} functions.");
+	}
     }
 }
 ```
@@ -44,16 +47,20 @@ using System;
 using System.IO;
 using LuaToolkit.Core;
 using LuaToolkit.Disassembler;
+using LuaToolkit.Decompiler;
 
 namespace Example 
 {
     class Program 
     {
-        LuaCFile = luac new LuaCFile(File.ReadAllBytes(@"C:\test.luac");
-	LuaDecoder decoder = new LuaDecoder(luac);
-        LuaDecompiler decompiler = new LuaDecompiler(decoder);
+        static void Main(string[] args)
+	{
+            LuaCFile luac = new LuaCFile(File.ReadAllBytes(@"C:\test.luac"));
+	    LuaDecoder decoder = new LuaDecoder(luac);
+            LuaDecompiler decompiler = new LuaDecompiler(decoder);
 
-        Console.WriteLine("Lua Decompiler output: \n{decompiler.LuaScript}");
+            Console.WriteLine($"Lua Decompiler output: \n{decompiler.LuaScript}");
+	}
     }
 }
 ```
