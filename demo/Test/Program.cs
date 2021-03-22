@@ -22,7 +22,7 @@ namespace Test
 
             // show original lua
             Console.ForegroundColor = ConsoleColor.DarkYellow;
-            LuaWriter w = new LuaWriter(o.Decoder);
+            LuaDecompiler w = new LuaDecompiler(o.Decoder);
             Console.WriteLine(w.LuaScript);
 
             // obfuscate
@@ -31,7 +31,7 @@ namespace Test
             // show obfuscated lua
             Console.ForegroundColor = ConsoleColor.DarkCyan;
             Console.WriteLine(new string('=', Console.WindowWidth));
-            w = new LuaWriter(o.Decoder);
+            w = new LuaDecompiler(o.Decoder);
             Console.WriteLine(LuaBeautifier.BeautifieScript(w.LuaScript));
 
             Console.ReadLine();

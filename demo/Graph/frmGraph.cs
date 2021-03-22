@@ -53,7 +53,7 @@ namespace Graph
         private List<GraphArrow> GArrows;
         private List<GraphBlock> GBlocks;
 
-        public LuaWriter Writer;
+        public LuaDecompiler Writer;
 
         private int targetFunc = 0;
         public int TargetFunc
@@ -64,7 +64,7 @@ namespace Graph
             }
         }
 
-        public frmGraph(LuaWriter writter)
+        public frmGraph(LuaDecompiler writter)
         {
             InitializeComponent();
 

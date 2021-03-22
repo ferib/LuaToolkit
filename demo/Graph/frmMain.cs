@@ -34,7 +34,7 @@ namespace Graph
 
                 var luaF = new LuaCFile(File.ReadAllBytes(fileDialog.FileName));
                 LuaDecoder d = new LuaDecoder(luaF);
-                LuaWriter writer = new LuaWriter(d);
+                LuaDecompiler writer = new LuaDecompiler(d);
                 activeGraph = new frmGraph(writer);
                 activeGraph.Show();
 
