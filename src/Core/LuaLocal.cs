@@ -4,6 +4,7 @@ using System.Text;
 
 namespace LuaToolkit.Core
 {
+	// NOTE: unused, delete?
 	public class LuaLocal
 	{
 		public string Name

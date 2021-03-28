@@ -11,13 +11,13 @@ namespace Recompiler
 {
     public class Decompiler
     {
-        private LuaWriter LuaDecompiler;
+        private LuaDecompiler LuaDecompiler;
         private LuaDecoder Decoder;
 
         public Decompiler(byte[] Buffer)
         {
             this.Decoder = new LuaDecoder(new LuaCFile(Buffer));
-            this.LuaDecompiler = new LuaWriter(this.Decoder);
+            this.LuaDecompiler = new LuaDecompiler(this.Decoder);
         }
 
         public string GetResult()

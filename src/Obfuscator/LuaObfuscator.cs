@@ -13,7 +13,7 @@ namespace LuaToolkit.Obfuscator
     public class LuaObfuscator
     {
         public LuaDecoder Decoder;
-        private LuaWriter Decompiler;
+        private LuaDecompiler Decompiler;
         private LOSettings Settings;
         private byte[] ObfuscatedLuaC;
 
@@ -21,7 +21,7 @@ namespace LuaToolkit.Obfuscator
         {
             this.ObfuscatedLuaC = originalLuaC;
             this.Decoder = new LuaDecoder(new LuaCFile(this.ObfuscatedLuaC));
-            this.Decompiler = new LuaWriter(this.Decoder);
+            this.Decompiler = new LuaDecompiler(this.Decoder);
         }
 
         public string Obfuscate(string settings)
@@ -29,8 +29,6 @@ namespace LuaToolkit.Obfuscator
             this.Settings = new LOSettings(ref this.Decoder, settings);
             this.Settings.Execute();
 
-            // add watermark
-            this.Decoder.File.Function.Constants.Add(new StringConstant("cromulon.io"));
             return this.Decompiler.LuaScript;
         }
     }

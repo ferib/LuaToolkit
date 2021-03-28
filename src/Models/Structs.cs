@@ -10,10 +10,4 @@
         public int C;
         public int sBx;
     }
-
-    //public struct LuaConstant
-    //{
-    //    public ConstantType Type;
-    //    public object Data;
-    //}
 }

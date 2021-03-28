@@ -242,6 +242,7 @@ namespace LuaToolkit.Decompiler
                     this.Op3 = $"var{Instr.B}; end";
                     break;
                 case LuaOpcode.CALL:
+                    // TODO: there is something off here?
                     // Function returns
                     if(Instr.C == 0)
                     {
@@ -294,6 +295,7 @@ namespace LuaToolkit.Decompiler
                     }
                     break;
                 case LuaOpcode.TAILCALL:
+                    // TODO: there is something off here?
                     // NOTE: C functions have 2 returns while Lua functions only have 1 return?
                     // Function Name
                     this.Op1 = $"return var{Instr.A}"; // func name only (used lateron)

@@ -116,6 +116,9 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <WCFMetadata Include="Connected Services\" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\..\src\LuaToolkit.csproj">
       <Project>{3c38c968-e485-4154-b6bd-e8446651307f}</Project>
       <Name>LuaToolkit</Name>

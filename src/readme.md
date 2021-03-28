@@ -15,9 +15,56 @@
 This Decoder/Encoder is used to turn Lua 5.1 Bytecode into C# classes or vice versa.
 Very useful to read/write compiled Lua binary's.
 
+Example:
+```cs
+using System;
+using System.IO;
+using LuaToolkit.Core;
+using LuaToolkit.Disassembler;
+
+namespace Example 
+{
+    class Program 
+    {
+        static void Main(string[] args)
+	{
+            LuaCFile luac = new LuaCFile(File.ReadAllBytes(@"C:\test.luac"));
+	    LuaDecoder decoder = new LuaDecoder(luac);
+
+            Console.WriteLine($"the compiled Lua file contains {decoder.File.Function.Functions.Count} functions.");
+	}
+    }
+}
+```
+
 ### Decompiler
 The Decompiler is pretty basic and has no optimization or anything.
 But I am gonna call this a feature instead of a bug, because our Obfuscator will benefit from the unoptimized code it outputs.
+
+Example:
+```cs
+using System;
+using System.IO;
+using LuaToolkit.Core;
+using LuaToolkit.Disassembler;
+using LuaToolkit.Decompiler;
+
+namespace Example 
+{
+    class Program 
+    {
+        static void Main(string[] args)
+	{
+            LuaCFile luac = new LuaCFile(File.ReadAllBytes(@"C:\test.luac"));
+	    LuaDecoder decoder = new LuaDecoder(luac);
+            LuaDecompiler decompiler = new LuaDecompiler(decoder);
+
+            Console.WriteLine($"Lua Decompiler output: \n{decompiler.LuaScript}");
+	}
+    }
+}
+```
+
 
 ### Emulator
 Nope, not today...
@@ -28,5 +75,9 @@ The obfuscator is designed to integrate all of the above features.
 For example, our ``LOFlow`` plugin uses ``Decompiler.LuaScriptblock`` to tamper with the control-flow on 'Blocklevel' while it adds additional ``Core.LuaInstructions`` to generate new IF statements on bytecode level.
 The ``LOPacker`` plugin on the other hand uses ``Decompiler.LuaScriptFunction``'s end result to convert the decompiled Lua script code and then packs it.
 
+NOTE: Plugin system not yet finished.
+
 ### Beautifier
 This only exists to show pretty results in the console so we humans can better see what's going on.
+
+NOTE: not yet finished.
