@@ -31,7 +31,7 @@ namespace LuaToolkit.Decompiler
         public LuaInstruction Instr;
         public List<int> BranchInc = new List<int>();
 
-        public LuaFunction FunctionRef;
+        private LuaFunction FunctionRef;
 
         public string Prefix = "";
         public string Op1 = ""; // opperands ;D
@@ -51,7 +51,7 @@ namespace LuaToolkit.Decompiler
             this.Op1 = wildcard;
         }
 
-        public LuaScriptLine(LuaInstruction instr, ref LuaDecoder decoder, ref LuaFunction func)
+        public LuaScriptLine(LuaInstruction instr, LuaDecoder decoder, LuaFunction func)
         {
             this.Instr = instr;
             this.Func = func;
@@ -452,6 +452,16 @@ namespace LuaToolkit.Decompiler
                 return targetFunc.Constants[index - 256].ToString();
             else
                 return WriteIndex(index);
+        }
+
+        public void SetFunctionRef(LuaFunction func)
+        {
+            this.FunctionRef = func;
+        }
+
+        public LuaFunction GetFunctionRef()
+        {
+            return this.FunctionRef;
         }
 
         private LuaScriptBlock FindBlockOwner()

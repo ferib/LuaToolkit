@@ -35,8 +35,8 @@ namespace LuaToolkit.Decompiler
             get { return GetText();  }
         }
 
-        public LuaFunction Func;
-        public LuaDecoder Decoder;
+        private LuaFunction Func;
+        private LuaDecoder Decoder;
 
         private List<LuaScriptLine> lines;
         public List<LuaScriptLine> Lines
@@ -45,7 +45,7 @@ namespace LuaToolkit.Decompiler
             set { SetLines(value); }
         }
 
-        public LuaScriptBlock(int address, ref LuaDecoder decoder, ref LuaFunction func)
+        public LuaScriptBlock(int address, LuaDecoder decoder, LuaFunction func)
         {
             this.Decoder = decoder;
             this.Func = func;
@@ -203,6 +203,26 @@ namespace LuaToolkit.Decompiler
             //        this.Lines.Add(new LuaScriptLine($"var{varB} = var{this.IfChainIndex}{varB}"));
             //    //tLines.Add(new LuaScriptLine($"var{varB} = var{this.IfChainIndex}{varB}"));
             //}
+        }
+
+        public LuaDecoder GetDecoder()
+        {
+            return this.Decoder;
+        }
+
+        public void SetDecoder(LuaDecoder decoder)
+        {
+            this.Decoder = decoder;
+        }
+
+        public void SetFunc(LuaFunction func)
+        {
+            this.Func = func;
+        }
+
+        public LuaFunction GetFunc()
+        {
+            return this.Func;
         }
 
         public string ToString()

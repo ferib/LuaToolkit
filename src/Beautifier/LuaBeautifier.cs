@@ -8,7 +8,10 @@ namespace LuaToolkit.Beautifier
     public static class LuaBeautifier
     {
         private static string[] EndLineKeyword = { "end", "then", "else", ")"};
-        private static string[] StartLineKeyword = { "if", "function", "local function", "for", "else if", "return"};
+        private static string[] StartLineKeyword = { "if", "function", "local function", "for", "elseif", "return"};
+
+        public static string Delimiter = "\r\n";
+        public static int Spaces = 4;
 
         // TODO: create a beautifier for Lua to format our code properly (fork from existing)
         public static string BeautifieScript(string text, bool minified = false)
