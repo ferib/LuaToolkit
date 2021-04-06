@@ -9,7 +9,7 @@ namespace LuaToolkit.Decompiler
 {
     public class LuaScriptFunction
     {
-        public int Depth;
+        public int Depth; // unused?
         private LuaDecoder Decoder;
         private LuaFunction Func;
 
@@ -17,12 +17,10 @@ namespace LuaToolkit.Decompiler
         public bool HasVarargs = false;
         private List<int> Args;
         private List<string> NameArgs;
-        public List<LuaScriptLine> Lines;
+        private List<LuaScriptLine> Lines;
 
         public List<LuaScriptBlock> Blocks;
-        public List<int> UsedLocals;
-
-        private string _text;
+        private List<int> UsedLocals;
 
         public string Name
         {
@@ -42,11 +40,6 @@ namespace LuaToolkit.Decompiler
             }
         }
 
-        public string Text
-        {
-            get { return GetText(); }
-        }
-
         public LuaScriptFunction(string name, int argsCount, LuaFunction func, LuaDecoder decoder)
         {
             this.Name = name;
@@ -59,6 +52,16 @@ namespace LuaToolkit.Decompiler
             InitArgs(argsCount);
             this.UsedLocals.AddRange(this.Args);
             HandleUpvalues(); // get upvalues from parent TODO: Bugfix
+        }
+
+        public List<LuaScriptLine> GetLines()
+        {
+            return this.Lines;
+        }
+
+        public List<int> GetUsedLocals()
+        {
+            return this.UsedLocals;
         }
 
         private void InitArgs(int count)
@@ -643,7 +646,7 @@ namespace LuaToolkit.Decompiler
         {
             // text based because we did wanky things instead of respecting the list	
             int tabCount = 1;
-            string[] lines = Text.Replace("\r", "").Replace("\t", "").Split('\n');
+            string[] lines = GetText().Replace("\r", "").Replace("\t", "").Split('\n');
             string newText = "";
             for (int i = 0; i < lines.Length; i++)
             {

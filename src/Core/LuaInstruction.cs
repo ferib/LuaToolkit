@@ -5,7 +5,6 @@ namespace LuaToolkit.Core
 {
     public class LuaInstruction
     {
-
         private const int HalfMax18Bit = 2 << 16;	// == 2^16 -1 == 131071
 
         public int Data
@@ -54,16 +53,14 @@ namespace LuaToolkit.Core
             set { Bx = value + (HalfMax18Bit - 1); }
         }
 
-        public bool HasBx
-        {
-            get;
-            private set;
-        }
+        private bool _HasBx;
 
-        public bool Signed
+        private bool Signed;
+
+
+        public string Text
         {
-            get;
-            private set;
+            get { return ToString(); }
         }
 
         public List<int> OffsetVariables(int offset)
@@ -152,6 +149,16 @@ namespace LuaToolkit.Core
             SetVars();
         }
 
+        public bool HasBx()
+        {
+            return this._HasBx;
+        }
+
+        public bool IsSigned()
+        {
+            return this.Signed;
+        }
+
         private void SetVars()
         {
             switch (this.OpCode)
@@ -166,11 +173,11 @@ namespace LuaToolkit.Core
                 case LuaOpcode.GETGLOBAL:
                 case LuaOpcode.SETGLOBAL:
                 case LuaOpcode.CLOSE:
-                    HasBx = true;
+                    _HasBx = true;
                     break;
 
                 default:
-                    HasBx = false;
+                    _HasBx = false;
                     Signed = false;
                     break;
             }
@@ -209,7 +216,7 @@ namespace LuaToolkit.Core
                     break;
             }
 
-            if (this.HasBx)
+            if (this._HasBx)
                 return $"{this.OpCode} {this.A} {this.Bx}";
             else
                 if(NoC)

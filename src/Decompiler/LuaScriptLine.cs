@@ -10,7 +10,7 @@ namespace LuaToolkit.Decompiler
 {
     public class LuaScriptLine
     {
-        public int Depth;
+        public int Depth; // unused?
         private int number;
         public int Number // Line number OR index?
         {
@@ -490,11 +490,11 @@ namespace LuaToolkit.Decompiler
             else
             {
                 // TODO: check if local and not yet used!
-                if(this.Func.ScriptFunction.UsedLocals.Contains(value))
+                if(this.Func.ScriptFunction.GetUsedLocals().Contains(value))
                     return "var" + index;
                 else
                 {
-                    this.Func.ScriptFunction.UsedLocals.Add(value);
+                    this.Func.ScriptFunction.GetUsedLocals().Add(value);
                     if (useLocalKeyword)
                         return "local var" + index;
                     else

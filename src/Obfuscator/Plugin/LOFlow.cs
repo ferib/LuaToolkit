@@ -104,7 +104,7 @@ namespace LuaToolkit.Obfuscator.Plugin
             }
 
             target.Complete(false);
-            Console.WriteLine(target.Text);
+            Console.WriteLine(target.GetText());
             Console.ForegroundColor = oldc;
         }
 

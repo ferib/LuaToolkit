@@ -10,13 +10,10 @@ namespace LuaToolkit.Decompiler
 {
     public class LuaScriptBlock
     {
-        public List<int> JumpsFrom;
         public int JumpsTo = -1; // -1 will never happen or its inf loop (iirc)
         public int JumpsNext = -1; // the next instruction (if any)
         public int StartAddress;
-        public bool IsChainedIf = false;
         public int IfChainIndex = -1;
-        public bool IsChainedIfStart = false;
 
         private int tabIndex;
         public int TabIndex
@@ -51,7 +48,6 @@ namespace LuaToolkit.Decompiler
             this.Func = func;
             this.StartAddress = address;
             this.lines = new List<LuaScriptLine>();
-            this.JumpsFrom = new List<int>();
         }
 
         public bool AddScriptLine(LuaScriptLine l)
