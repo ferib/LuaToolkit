@@ -78,6 +78,7 @@ namespace LuaToolkit.Decompiler
                     Depth = dpth+1
                 });
             }
+            newFunction.Complete();
         }
 
         private List<KeyValuePair<string, bool>> GetFunctionNames()
