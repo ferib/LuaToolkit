@@ -10,13 +10,10 @@ namespace LuaToolkit.Decompiler
 {
     public class LuaScriptBlock
     {
-        public List<int> JumpsFrom;
         public int JumpsTo = -1; // -1 will never happen or its inf loop (iirc)
         public int JumpsNext = -1; // the next instruction (if any)
         public int StartAddress;
-        public bool IsChainedIf = false;
         public int IfChainIndex = -1;
-        public bool IsChainedIfStart = false;
 
         private int tabIndex;
         public int TabIndex
@@ -35,8 +32,8 @@ namespace LuaToolkit.Decompiler
             get { return GetText();  }
         }
 
-        public LuaFunction Func;
-        public LuaDecoder Decoder;
+        private LuaFunction Func;
+        private LuaDecoder Decoder;
 
         private List<LuaScriptLine> lines;
         public List<LuaScriptLine> Lines
@@ -45,13 +42,12 @@ namespace LuaToolkit.Decompiler
             set { SetLines(value); }
         }
 
-        public LuaScriptBlock(int address, ref LuaDecoder decoder, ref LuaFunction func)
+        public LuaScriptBlock(int address, LuaDecoder decoder, LuaFunction func)
         {
             this.Decoder = decoder;
             this.Func = func;
             this.StartAddress = address;
             this.lines = new List<LuaScriptLine>();
-            this.JumpsFrom = new List<int>();
         }
 
         public bool AddScriptLine(LuaScriptLine l)
@@ -203,6 +199,26 @@ namespace LuaToolkit.Decompiler
             //        this.Lines.Add(new LuaScriptLine($"var{varB} = var{this.IfChainIndex}{varB}"));
             //    //tLines.Add(new LuaScriptLine($"var{varB} = var{this.IfChainIndex}{varB}"));
             //}
+        }
+
+        public LuaDecoder GetDecoder()
+        {
+            return this.Decoder;
+        }
+
+        public void SetDecoder(LuaDecoder decoder)
+        {
+            this.Decoder = decoder;
+        }
+
+        public void SetFunc(LuaFunction func)
+        {
+            this.Func = func;
+        }
+
+        public LuaFunction GetFunc()
+        {
+            return this.Func;
         }
 
         public string ToString()

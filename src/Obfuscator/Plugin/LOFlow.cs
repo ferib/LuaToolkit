@@ -104,25 +104,25 @@ namespace LuaToolkit.Obfuscator.Plugin
             }
 
             target.Complete(false);
-            Console.WriteLine(target.Text);
+            Console.WriteLine(target.GetText());
             Console.ForegroundColor = oldc;
         }
 
         private LuaScriptBlock GeneareIf(LuaScriptBlock old, int jmp, bool els = true)
         {
-            var block = new LuaScriptBlock(old.StartAddress + old.Lines.Count, ref old.Decoder, ref old.Func);
+            var block = new LuaScriptBlock(old.StartAddress + old.Lines.Count, old.GetDecoder(), old.GetFunc());
             // TODO: take and/or so we can make 10+ condition chains and have 1 OR fuck them all or have 1 critical AND that does the real logic
             block.AddScriptLine(new LuaScriptLine(new LuaInstruction(LuaOpcode.EQ) // TODO: take a random operand here
             {
                 A = 0, // true/false
                 B = 1, // op1 // TODO: take some random values here
                 C = 1, // op2
-            }, ref old.Decoder, ref old.Func));
+            }, old.GetDecoder(), old.GetFunc()));
 
             block.AddScriptLine(new LuaScriptLine(new LuaInstruction(LuaOpcode.JMP)
             {
                 sBx = jmp - (old.StartAddress + old.Lines.Count)
-            }, ref old.Decoder, ref old.Func));
+            }, old.GetDecoder(), old.GetFunc()));
 
             block.JumpsNext = block.StartAddress + block.Lines.Count; 
             if (!els) 

@@ -66,18 +66,19 @@ namespace LuaToolkit.Decompiler
             if (funcName != null)
                 funcName = name; // TODO: remp fix, cleanup soonTM
 
-            LuaScriptFunction newFunction = new LuaScriptFunction(funcName, func.ArgsCount, ref func, ref this.Decoder);
+            LuaScriptFunction newFunction = new LuaScriptFunction(funcName, func.ArgsCount, func, this.Decoder);
             this.LuaFunctions.Add(newFunction);
             // TODO: move the above into a LuaScriptHeader or smthing
 
             for (int i = 0; i < func.Instructions.Count; i++)
             {
-                newFunction.Lines.Add(new LuaScriptLine(func.Instructions[i], ref this.Decoder, ref func)
+                newFunction.GetLines().Add(new LuaScriptLine(func.Instructions[i], this.Decoder, func)
                 {
                     Number = i,
                     Depth = dpth+1
                 });
             }
+            newFunction.Complete();
         }
 
         private List<KeyValuePair<string, bool>> GetFunctionNames()
@@ -167,7 +168,7 @@ namespace LuaToolkit.Decompiler
         private string GetScript()
         {
             string result = "";
-            result += this.Decoder.File.Function.ScriptFunction.Text; // only need main, right?
+            result += this.Decoder.File.Function.ScriptFunction.GetText(); // only need main, right?
             //for(int i = 0; i < this.LuaFunctions.Count; i++)
             //    result += this.LuaFunctions[i].Text;
 

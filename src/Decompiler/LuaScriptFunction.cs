@@ -9,7 +9,7 @@ namespace LuaToolkit.Decompiler
 {
     public class LuaScriptFunction
     {
-        public int Depth;
+        public int Depth; // unused?
         private LuaDecoder Decoder;
         private LuaFunction Func;
 
@@ -17,12 +17,10 @@ namespace LuaToolkit.Decompiler
         public bool HasVarargs = false;
         private List<int> Args;
         private List<string> NameArgs;
-        public List<LuaScriptLine> Lines;
+        private List<LuaScriptLine> Lines;
 
         public List<LuaScriptBlock> Blocks;
-        public List<int> UsedLocals;
-
-        private string _text;
+        private List<int> UsedLocals;
 
         public string Name
         {
@@ -42,12 +40,7 @@ namespace LuaToolkit.Decompiler
             }
         }
 
-        public string Text
-        {
-            get { return GetText(); }
-        }
-
-        public LuaScriptFunction(string name, int argsCount, ref LuaFunction func, ref LuaDecoder decoder)
+        public LuaScriptFunction(string name, int argsCount, LuaFunction func, LuaDecoder decoder)
         {
             this.Name = name;
             this.Func = func;
@@ -59,6 +52,16 @@ namespace LuaToolkit.Decompiler
             InitArgs(argsCount);
             this.UsedLocals.AddRange(this.Args);
             HandleUpvalues(); // get upvalues from parent TODO: Bugfix
+        }
+
+        public List<LuaScriptLine> GetLines()
+        {
+            return this.Lines;
+        }
+
+        public List<int> GetUsedLocals()
+        {
+            return this.UsedLocals;
         }
 
         private void InitArgs(int count)
@@ -146,7 +149,7 @@ namespace LuaToolkit.Decompiler
                 this.Blocks.Clear();
                 while (index < this.Lines.Count)
                 {
-                    LuaScriptBlock b = new LuaScriptBlock(index, ref this.Decoder, ref this.Func);
+                    LuaScriptBlock b = new LuaScriptBlock(index, this.Decoder, this.Func);
                     while (index < this.Lines.Count)
                     {
                         if (b.AddScriptLine(this.Lines[index]))
@@ -181,7 +184,7 @@ namespace LuaToolkit.Decompiler
                     if (this.Blocks.Find(x => x.StartAddress == BlockSplitLines[i].Value) != null)
                         continue; // been there, done that
 
-                    LuaScriptBlock splitBlock = new LuaScriptBlock(BlockSplitLines[i].Value, ref this.Decoder, ref this.Func);
+                    LuaScriptBlock splitBlock = new LuaScriptBlock(BlockSplitLines[i].Value, this.Decoder, this.Func);
                     for (int j = BlockSplitLines[i].Value - this.Blocks[BlockSplitLines[i].Key].StartAddress; j < this.Blocks[BlockSplitLines[i].Key].Lines.Count; j++)
                         splitBlock.Lines.Add(this.Blocks[BlockSplitLines[i].Key].Lines[j]); // copy from old to new
 
@@ -506,7 +509,7 @@ namespace LuaToolkit.Decompiler
                     this.Name = globalName + ":"+ this.Name;
 
                 // set line CLOSURE from parent
-                parent.ScriptFunction.Lines[i].FunctionRef = this.Func;
+                parent.ScriptFunction.Lines[i].SetFunctionRef(this.Func);
             }
         }
 
@@ -603,7 +606,7 @@ namespace LuaToolkit.Decompiler
                 for (int i = 0; i < this.Blocks[b].Lines.Count; i++)
                 {
                     if (this.Blocks[b].Lines[i].Instr.OpCode == LuaOpcode.CLOSURE)
-                        result += this.Blocks[b].Lines[i].FunctionRef.ScriptFunction.GetText(); // inline func in parent
+                        result += this.Blocks[b].Lines[i].GetFunctionRef().ScriptFunction.GetText(); // inline func in parent
                     result += (this.Blocks[b].StartAddress + i).ToString("0000") + $": {new string(' ', tabLevel)}" + this.Blocks[b].Lines[i].Text.Replace("\t", "");
                 }
                 result += new string('-', 50) + $" ({this.Blocks[b].JumpsTo}) \r\n";
@@ -621,8 +624,8 @@ namespace LuaToolkit.Decompiler
                 for (int i = 0; i < this.Blocks[b].Lines.Count; i++)
                 {
                     if(this.Blocks[b].Lines[i].Instr.OpCode == LuaOpcode.CLOSURE)
-                        if (this.Blocks[b].Lines[i].FunctionRef != null)
-                            result += this.Blocks[b].Lines[i].FunctionRef.ScriptFunction.BeautifieCode(); // inline func in parent
+                        if (this.Blocks[b].Lines[i].GetFunctionRef() != null)
+                            result += this.Blocks[b].Lines[i].GetFunctionRef().ScriptFunction.BeautifieCode(); // inline func in parent
                             //result += this.Blocks[b].Lines[i].FunctionRef.ScriptFunction.RealignText().Replace("\r\n",$"\r\n{new string('\t',1)}"); // inline func in parent
                     result += this.Blocks[b].Lines[i].Text; //.Replace("\t", "");
                 }
@@ -643,7 +646,7 @@ namespace LuaToolkit.Decompiler
         {
             // text based because we did wanky things instead of respecting the list	
             int tabCount = 1;
-            string[] lines = Text.Replace("\r", "").Replace("\t", "").Split('\n');
+            string[] lines = GetText().Replace("\r", "").Replace("\t", "").Split('\n');
             string newText = "";
             for (int i = 0; i < lines.Length; i++)
             {

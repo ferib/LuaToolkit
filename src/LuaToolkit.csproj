@@ -3,13 +3,13 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <Configurations>Debug;Release;TestDebug;WebRelease</Configurations>
-    <Version>1.0.1</Version>
+    <Version>1.0.3</Version>
     <Copyright>Ferib Hellscream, Copyright (c) 2021</Copyright>
     <Description>Library to handle Lua (5.1) with ease.</Description>
     <Authors>Ferib Hellscream</Authors>
     <Company>ferib.dev</Company>
-    <AssemblyVersion>1.0.1.1</AssemblyVersion>
-    <FileVersion>1.0.1.1</FileVersion>
+    <AssemblyVersion>1.0.3.0</AssemblyVersion>
+    <FileVersion>1.0.3.0</FileVersion>
     <PackageTags>Lua, Decompiler, Decoder, Encoder, Obfuscator, Disassembler, Beautifier</PackageTags>
     <RepositoryUrl>https://github.com/ferib/LuaToolkit</RepositoryUrl>
     <PackageProjectUrl>https://github.com/ferib/LuaToolkit</PackageProjectUrl>

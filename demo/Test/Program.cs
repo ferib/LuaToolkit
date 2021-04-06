@@ -23,7 +23,8 @@ namespace Test
             // show original lua
             Console.ForegroundColor = ConsoleColor.DarkYellow;
             LuaDecompiler w = new LuaDecompiler(o.Decoder);
-            Console.WriteLine(w.LuaScript);
+            
+            Console.WriteLine(LuaBeautifier.BeautifieScript(w.LuaScript));
 
             // obfuscate
             o.Obfuscate("{'test':123}"); // TODO
