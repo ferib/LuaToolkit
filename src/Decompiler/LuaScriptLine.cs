@@ -527,7 +527,7 @@ namespace LuaToolkit.Decompiler
                 //return $"{pre}\r\n";
             else
             {
-                if (IsCondition() && !Op1.Contains("if"))
+                if (IsCondition() && !Op3.Contains("then"))
                 {
 #if DEBUG
                     return $"{pre}{Prefix}{Op1}{Op2}{Op3}{Postfix}\r\n";

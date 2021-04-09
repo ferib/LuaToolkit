@@ -405,7 +405,6 @@ namespace LuaToolkit.Decompiler
             }
         }
 
-        // NOTE: OO?
         public string GetConstant(int index, LuaFunction targetFunc = null)
         {
             if (targetFunc == null)
@@ -639,12 +638,11 @@ namespace LuaToolkit.Decompiler
                     if(this.Blocks[b].Lines[i].Instr.OpCode == LuaOpcode.CLOSURE)
                         if (this.Blocks[b].Lines[i].GetFunctionRef() != null)
                             result += this.Blocks[b].Lines[i].GetFunctionRef().ScriptFunction.BeautifieCode(); // inline func in parent
-                            //result += this.Blocks[b].Lines[i].FunctionRef.ScriptFunction.RealignText().Replace("\r\n",$"\r\n{new string('\t',1)}"); // inline func in parent
-                    result += this.Blocks[b].Lines[i].Text; //.Replace("\t", "");
+                    result += this.Blocks[b].Lines[i].Text;
                 }
 
                 if (b == this.Blocks.Count - 1)
-                    result += "\n\r"; // keep it clean?
+                    result += "\r\n"; // keep it clean?
             }
             return result;
         }
