@@ -31,7 +31,7 @@ namespace LuaToolkit.Decompiler
         private void WriteFile()
         {
             // create Script Functions
-            this.Decoder.File.Function.Name = "CRoot";
+            this.Decoder.File.Function.Name = "CRoot"; // or main?
             WriteF(this.Decoder.File.Function);
 
             // NOTE: this is done on GetText
@@ -47,7 +47,8 @@ namespace LuaToolkit.Decompiler
             // TODO: write functions on CLOSURE and not each list?
             for (int i = 0; i < func.Functions.Count; i++)
             {
-                CreateScripFunction(func.Functions[i], 1); // parent
+                func.Functions[i].Name = func.Name + "_" + i; // set default name
+                CreateScripFunction(func.Functions[i], func.ScriptFunction.Depth+1);
                 foreach (var f in func.Functions[i].Functions)
                 {
                     WriteF(f); // children NOTE: write children in body of parent?
@@ -55,18 +56,9 @@ namespace LuaToolkit.Decompiler
             }
         }
 
-        private void CreateScripFunction(LuaFunction func, int dpth = 0, string name = "", bool isGlobal = false)
+        private void CreateScripFunction(LuaFunction func, int dpth = 0, bool isGlobal = false)
         {
-            // TODO: write functions on CLOSURE and not each list?
-            string funcName = "";
-
-            if (dpth == 0) // unused?
-                funcName = null; // destroy header on root
-
-            if (funcName != null)
-                funcName = name; // TODO: remp fix, cleanup soonTM
-
-            LuaScriptFunction newFunction = new LuaScriptFunction(funcName, func.ArgsCount, func, this.Decoder);
+            LuaScriptFunction newFunction = new LuaScriptFunction(func, this.Decoder);
             this.LuaFunctions.Add(newFunction);
             // TODO: move the above into a LuaScriptHeader or smthing
 

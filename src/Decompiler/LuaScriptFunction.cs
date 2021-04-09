@@ -26,11 +26,11 @@ namespace LuaToolkit.Decompiler
         {
             get
             {
-                if (this.Func == null || this.Func.Name == null || this.Func.Name == "" || this.Func.Name.Contains("@"))
-                {
-                    return GetName();
-                }
-                else
+                //if (this.Func == null || this.Func.Name == null || this.Func.Name == "" || this.Func.Name.Contains("@"))
+                //{
+                //    return GetName();
+                //}
+                //else
                     return this.Func.Name;
             }
             set
@@ -40,9 +40,21 @@ namespace LuaToolkit.Decompiler
             }
         }
 
+        public LuaScriptFunction(LuaFunction func, LuaDecoder decoder)
+        {
+            this.Func = func;
+            this.Func.ScriptFunction = this; // reference this for lateron
+            this.Decoder = decoder;
+            this.Lines = new List<LuaScriptLine>();
+            this.Blocks = new List<LuaScriptBlock>();
+            this.UsedLocals = new List<int>();
+            InitArgs(this.Func.ArgsCount);
+            this.UsedLocals.AddRange(this.Args);
+            HandleUpvalues(); // get upvalues from parent TODO: Bugfix
+        }
+
         public LuaScriptFunction(string name, int argsCount, LuaFunction func, LuaDecoder decoder)
         {
-            this.Name = name;
             this.Func = func;
             this.Func.ScriptFunction = this; // reference this for lateron
             this.Decoder = decoder;
@@ -90,22 +102,23 @@ namespace LuaToolkit.Decompiler
 
         private string GetName()
         {
-            if (this.Func.Name == "" || this.Func.Name.Contains("@")) // unknownX
-            {
-                // TODO: prefix functions so we can distiguins one parent from another? (like: unknown_0_1)
-                var parent = GetParentFunction();
-                if (parent == null)
-                    return "unkErr";
+            //if (this.Func.Name == "" || this.Func.Name.Contains("@")) // unknownX
+            //{
+            //    // TODO: prefix functions so we can distiguins one parent from another? (like: unknown_0_1)
+            //    var parent = GetParentFunction();
+            //    if (parent == null)
+            //        return "unkErr";
 
-                // TODO: get all parents?
-                int unkCount = -1;
-                for (int i = 0; i < parent.Functions.IndexOf(this.Func); i++)
-                {
-                    if (parent.Functions[i].ScriptFunction.IsLocal)
-                        unkCount++;
-                }
-                return "unknown" + (unkCount + 1); // should give right index?
-            }
+            //    // TODO: get all parents?
+            //    int unkCount = -1;
+            //    for (int i = 0; i < parent.Functions.IndexOf(this.Func); i++)
+            //    {
+            //        if (parent.Functions[i].ScriptFunction.IsLocal)
+            //            unkCount++;
+            //    }
+            //    return "unknown" + (unkCount + 1); // should give right index?
+            //}
+            //return this.Name;
             return this.Func.Name;
         }
 

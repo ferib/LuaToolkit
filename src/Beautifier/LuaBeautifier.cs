@@ -54,10 +54,14 @@ namespace LuaToolkit.Beautifier
                 if (EndLineKeyword.Contains(words[i]))
                 {
                     postfix = "\r\n";
+                    if (tabDepth < 0)
+                        tabDepth = 0;
                     prefix = new string('\t', tabDepth);
                     tabDepth--;
                 }else if (i > 0 && words[i - 1] == "=")
                 {
+                    if (tabDepth < 0)
+                        tabDepth = 0;
                     postfix = "\r\n" + new string('\t', tabDepth);
                 }
                 else if(StartLineKeyword.Contains(words[i]))
