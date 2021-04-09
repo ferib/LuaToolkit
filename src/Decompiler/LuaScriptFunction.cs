@@ -565,6 +565,10 @@ namespace LuaToolkit.Decompiler
             foreach (var b in this.Blocks)
                 if (b.GetConditionLine() != null && b.IfChainIndex > 0)
                     b.Optimize();
+
+            foreach(var b in this.Blocks)
+                foreach (var l in b.Lines)
+                    l.CalculateDepth();
         }
 
         private void UpdateClosures()
@@ -593,10 +597,7 @@ namespace LuaToolkit.Decompiler
         public string GetText()
         {
             if (this.Blocks.Count == 0)
-                this.Complete(); // i guess?
-
-            //if (_text != null)
-            //    return _text; // stores end results
+                this.Complete();
 
             string result = this.ToString();
 #if DEBUG
@@ -659,7 +660,8 @@ namespace LuaToolkit.Decompiler
             int tabCount = 1;
             string[] lines = GetText().Replace("\r", "").Replace("\t", "").Split('\n');
             string newText = "";
-            for (int i = 0; i < lines.Length; i++)
+            int i = 0;
+            while(i < lines.Length)
             {
                 bool postAdd = false;
                 bool postSub = false;
@@ -688,14 +690,17 @@ namespace LuaToolkit.Decompiler
                     tabCount = 0;
 
                 if (lines[i].StartsWith("if"))
+                {
                     newText += $"{new string('\t', tabCount)}{lines[i]}";
+                }
                 else if (lines[i].EndsWith("or") || lines[i].EndsWith("and") || lines[i].StartsWith(" not"))
                     newText += $"{lines[i]}";
                 else if (lines[i] == "")
                     newText += "";
                 else
+                {
                     newText += $"{new string('\t', tabCount)}{lines[i]}\r\n";
-
+                }
                 if (lines[i].EndsWith("then"))
                     newText += "\r\n";
 
@@ -703,6 +708,8 @@ namespace LuaToolkit.Decompiler
                     tabCount += 1;
                 if (postSub)
                     tabCount -= 1;
+
+                i++;
             }
             return newText;
         }

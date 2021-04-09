@@ -15,18 +15,6 @@ namespace LuaToolkit.Decompiler
         public int StartAddress;
         public int IfChainIndex = -1;
 
-        private int tabIndex;
-        public int TabIndex
-        {
-            get { return this.tabIndex; }
-            set
-            {
-                this.tabIndex = value;
-                foreach (var l in this.lines)
-                    l.Depth = this.tabIndex;
-            }
-        }
-
         public string Text
         {
             get { return GetText();  }

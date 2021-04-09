@@ -8,6 +8,7 @@ using LuaToolkit.Obfuscator.Plugin;
 using LuaToolkit.Beautifier;
 using System.IO;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace Test
 {
@@ -16,8 +17,8 @@ namespace Test
         static void Main(string[] args)
         {
             Console.WriteLine("[+] LuaSharpVM\r\n");
-            //LuaObfuscator o = new LuaObfuscator(File.ReadAllBytes(@"L:\Projects\LuaBytcodeInterpreter\lua_installer\files\test_if.luac"));
-            LuaObfuscator o = new LuaObfuscator(File.ReadAllBytes(@"L:\Projects\LuaBytcodeInterpreter\lua_installer\files\frost.luac"));
+            LuaObfuscator o = new LuaObfuscator(File.ReadAllBytes(@"L:\Projects\LuaBytcodeInterpreter\lua_installer\files\test_if.luac"));
+            //LuaObfuscator o = new LuaObfuscator(File.ReadAllBytes(@"L:\Projects\LuaBytcodeInterpreter\lua_installer\files\frost.luac"));
             //LuaObfuscator o = new LuaObfuscator(File.ReadAllBytes(@"L:\Projects\LuaBytcodeInterpreter\lua_installer\files\upvalues.luac"));
 
             // show original lua
@@ -26,6 +27,7 @@ namespace Test
             
             Console.WriteLine(w.LuaScript);
             Console.WriteLine(LuaBeautifier.BeautifieScript(w.LuaScript));
+            string json = JsonConvert.SerializeObject(o.Decoder.File.Function);
 
             // obfuscate
             o.Obfuscate("{'test':123}"); // TODO

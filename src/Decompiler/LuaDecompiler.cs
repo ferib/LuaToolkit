@@ -66,8 +66,7 @@ namespace LuaToolkit.Decompiler
             {
                 newFunction.GetLines().Add(new LuaScriptLine(func.Instructions[i], this.Decoder, func)
                 {
-                    Number = i,
-                    Depth = dpth+1
+                    Number = i
                 });
             }
             newFunction.Complete();

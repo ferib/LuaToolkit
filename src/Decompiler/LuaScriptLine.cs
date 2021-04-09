@@ -436,6 +436,56 @@ namespace LuaToolkit.Decompiler
             }
         }
 
+        public void CalculateDepthOLD()
+        {
+            // find current line
+            LuaScriptLine NextLine = FindNextLine();
+            LuaScriptLine previousLine = FindNextLine(true);
+
+            if (previousLine != null)
+            {
+                if (previousLine.Instr.OpCode == LuaOpcode.JMP)
+                {
+                    if (!this.IsCondition())
+                        Depth = previousLine.Depth + 1; // body of something
+                    else
+                        Depth = 0; // chained or start IF?
+                }
+                else if(previousLine.Instr.Text.EndsWith("end"))
+                {
+                    Depth = previousLine.Depth - 1;
+                }
+                else
+                    Depth = previousLine.Depth;
+            }
+
+            LuaScriptLine FindNextLine(bool reverse = false)
+            {
+                var pBlocks = this.Func.ScriptFunction.Blocks;
+                for (int b = 0; b < pBlocks.Count; b++)
+                {
+                    var pLines = pBlocks[b].Lines; // NOTE: brackets are for hipsters, change my mind
+                    for (int l = 0; l < pLines.Count; l++)
+                        if (pLines[l] == this) // found
+                            if (reverse) // previos line
+                                if (l > 0)
+                                    return pLines[l - 1]; // grab previous line
+                                else if (b > 0)
+                                    return pBlocks[b - 1].Lines.Last(); // grab previous block line
+                                else
+                                    return null;
+                            else // next line
+                                if (l < pLines.Count-1)
+                                    return pBlocks[b].Lines[l + 1]; // return next line
+                                else if (b < pBlocks.Count-1)
+                                    return pBlocks[b + 1].Lines.FirstOrDefault(); // return first block line
+                                else
+                                    return null;
+                }
+                return null;
+            }
+        }
+
         private string GetConstant(int index)
         {
             if (index >= this.Func.Constants.Count)
@@ -514,8 +564,8 @@ namespace LuaToolkit.Decompiler
 
         public override string ToString()
         {
-            // TODO: leave tab to another level?
-            string tab = "";// new string('\t', Depth); // NOTE: singple space for debugging
+            // define depth level?
+            string tab = new string('\t', this.Depth);
             string pre = "";
 #if DEBUG
             pre = $"{this.Instr.ToString().PadRight(19)}";
@@ -524,7 +574,6 @@ namespace LuaToolkit.Decompiler
                 return $"{pre}{tab}{Prefix}{Op1}{Postfix}\r\n"; // wildcard
             else if (this.Op1 == "" && this.Op2 == "" && this.Op3 == "" && this.Prefix == "" && this.Postfix == "")
                 return $"";
-                //return $"{pre}\r\n";
             else
             {
                 if (IsCondition() && !Op3.Contains("then"))
@@ -534,8 +583,7 @@ namespace LuaToolkit.Decompiler
 #else
                     return $"{Prefix}{Op1}{Op2}{Op3}{Postfix} ";
 #endif
-                }
-                    
+                }      
                 return $"{pre}{tab}{Prefix}{Op1}{Op2}{Op3}{Postfix}\r\n";
             }
         }

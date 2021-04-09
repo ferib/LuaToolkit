@@ -99,7 +99,6 @@ namespace LuaToolkit.Beautifier
                 }
 
                 result += line;
-                Console.Write(line);
                 j++;
             }
             return result;
