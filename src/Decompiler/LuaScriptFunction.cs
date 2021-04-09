@@ -565,10 +565,6 @@ namespace LuaToolkit.Decompiler
             foreach (var b in this.Blocks)
                 if (b.GetConditionLine() != null && b.IfChainIndex > 0)
                     b.Optimize();
-
-            foreach(var b in this.Blocks)
-                foreach (var l in b.Lines)
-                    l.CalculateDepth();
         }
 
         private void UpdateClosures()
@@ -656,6 +652,7 @@ namespace LuaToolkit.Decompiler
 
         public string BeautifieCode()
         {
+            // TODO: add tab changes to LuaScriptLine level
             // text based because we did wanky things instead of respecting the list	
             int tabCount = 1;
             string[] lines = GetText().Replace("\r", "").Replace("\t", "").Split('\n');
@@ -673,7 +670,7 @@ namespace LuaToolkit.Decompiler
                     {
                         // elseif	
                         newText += $"{new string('\t', tabCount)}{lines[i]}{lines[i + 1]}\r\n";
-                        i += 1; // brrrr fuck y'all, i skip next one this way!	
+                        i++;	
                         continue;
                     }
                     else
