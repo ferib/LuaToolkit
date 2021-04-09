@@ -7,8 +7,10 @@ namespace LuaToolkit.Beautifier
 {
     public static class LuaBeautifier
     {
-        private static string[] EndLineKeyword = { "end", "then", "else", ")"};
-        private static string[] StartLineKeyword = { "if", "function", "local function", "for", "elseif", "return"};
+        // NOTE: this is a little more complex when you do NOT have the LuaScriptBlock/LuaScriptLine info :/
+        private static string[] EndLineKeyword = { "end", "then", ")"};
+        private static string[] SingleLineKeyword = { "else" };
+        private static string[] StartLineKeyword = { "if", "function", "local function", "for", "elseif", "return", "local"};
 
         public static string Delimiter = "\r\n";
         public static int Spaces = 4;
@@ -47,29 +49,68 @@ namespace LuaToolkit.Beautifier
             string result = "";
             int tabDepth = 0;
 
-            for (int i = 0; i < words.Length; i++)
+            int j = 0;
+            while(j < words.Length)
             {
                 string prefix = "";
                 string postfix = "";
-                if (EndLineKeyword.Contains(words[i]))
+                string line = "";
+
+                //if(StartLineKeyword.Contains(words[j]))
+                //{
+                //    tabDepth++;
+                //    line = "\r\n" +  new string(' ', tabDepth * 4) + words[j];
+                //}
+                //else 
+                if(EndLineKeyword.Contains(words[j]))
                 {
-                    postfix = "\r\n";
-                    prefix = new string('\t', tabDepth);
-                    tabDepth--;
-                }else if (i > 0 && words[i - 1] == "=")
-                {
-                    postfix = "\r\n" + new string('\t', tabDepth);
+                    line = " " + words[j] + "\r\n";
                 }
-                else if(StartLineKeyword.Contains(words[i]))
+                else if(SingleLineKeyword.Contains(words[j]))
                 {
-                    tabDepth++;
-                    prefix = new string('\t', tabDepth);
+                    //tabDepth--;
+                    line = "\r\n" + new string(' ', tabDepth * 4) + words[j] + "\r\n";
+                    //tabDepth++;
+                }
+                else if(words[j] == "=")
+                {
+                    // MOVE
+                    if(words.Length > j+2 && words[j+2] != "..")
+                    {
+                        line = words[j] + " " + words[j + 1] + "\r\n";
+                        j += 1;
+                    }else if(words.Length > j + 2)
+                    {
+                        // concat
+                        line = words[j] + " " + words[j + 1];
+                        int vcount = 1;
+                        while (words[vcount + j + 1] == ".." && vcount + j < words.Length) // find concats
+                        {
+                            line += " " + words[j + vcount + 1] + " " + words[j + vcount + 2];
+                            vcount += 2;
+                        }
+                        line += "\r\n";
+                        j += vcount;
+                    }
+                }
+                else
+                {
+                    line = words[j] + " ";
                 }
 
-                result += " " + prefix + words[i] + postfix;
+                result += line;
+                Console.Write(line);
+                j++;
             }
             return result;
         }
 
+        private static string ClearnScript(string text)
+        {
+            text = text.Replace('\r', ' ').Replace('\n', ' ').Replace('\t', ' ');
+            while (text.Contains("  "))
+                text.Replace("  ", " ");
+            return text;
+        }
     }
 }
