@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <Configurations>Debug;Release;TestDebug;WebRelease</Configurations>
+    <Configurations>Debug;Release;TestDebug;WebRelease;PrivateRelease</Configurations>
     <Version>1.0.3</Version>
     <Copyright>Ferib Hellscream, Copyright (c) 2021</Copyright>
     <Description>Library to handle Lua (5.1) with ease.</Description>
