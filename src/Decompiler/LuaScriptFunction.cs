@@ -103,23 +103,20 @@ namespace LuaToolkit.Decompiler
             else
                 return "unk" + index;
         }
-        public void Complete(bool overwriteBlocks = false)
+        public void Complete(bool overwriteBlocks = false, bool debuginfo = false)
         {
             Cleanlines();
-            GenerateBlocks(overwriteBlocks);
+            GenerateBlocks(overwriteBlocks, debuginfo);
             UpdateClosures(); // fixes closure name referncing
-            HandleTailcallReturns(); // fix returns
+            HandleTailcallReturns(debuginfo); // fix returns
             OutlineConditions(); // moves IF code above IF chain
         }
-        public string GetText(bool debugInfo = true)
+        public string GetText(bool debugInfo = false)
         {
             if (this.Blocks.Count == 0)
-                this.Complete(); // i guess?
+                this.Complete(false, debugInfo);
 
-            //if (_text != null)
-            //    return _text; // stores end results
-
-            string result = this.ToString();
+            string result = this.ToString(); // func prototype
             if (debugInfo)
                 result += GenerateDebugCode();
             else
@@ -132,6 +129,8 @@ namespace LuaToolkit.Decompiler
             for (int i = 0; i < this.Lines.Count; i++)
                 this.Lines[i].ClearLine();
         }
+
+        // NOTE: this is garbage, might as well get rid of it?
         public string BeautifieCode()
         {
             // text based because we did wanky things instead of respecting the list	
@@ -198,7 +197,7 @@ namespace LuaToolkit.Decompiler
                 {
                     if (this.Blocks[b].Lines[i].Instr.OpCode == LuaOpcode.CLOSURE)
                         result += this.Blocks[b].Lines[i].GetFunctionRef().ScriptFunction.GetText(); // inline func in parent
-                    result += (this.Blocks[b].StartAddress + i).ToString("0000") + $": {new string(' ', tabLevel)}" + this.Blocks[b].Lines[i].Text.Replace("\t", "");
+                    result += (this.Blocks[b].StartAddress + i).ToString("0000") + $": {new string(' ', tabLevel)}" + this.Blocks[b].Lines[i].GetText().Replace("\t", "");
                 }
                 result += new string('-', 50) + $" ({this.Blocks[b].JumpsTo}) \r\n";
                 if (b == this.Blocks.Count - 1)
@@ -206,7 +205,7 @@ namespace LuaToolkit.Decompiler
             }
             return result;
         }
-        private string GenerateCleanCode()
+        private string GenerateCleanCode(bool debuginfo = false)
         {
             string result = "";
             for (int b = 0; b < this.Blocks.Count; b++)
@@ -216,7 +215,7 @@ namespace LuaToolkit.Decompiler
                     if (this.Blocks[b].Lines[i].Instr.OpCode == LuaOpcode.CLOSURE)
                         if (this.Blocks[b].Lines[i].GetFunctionRef() != null)
                             result += this.Blocks[b].Lines[i].GetFunctionRef().ScriptFunction.BeautifieCode(); // inline func in parent
-                    result += this.Blocks[b].Lines[i].Text;
+                    result += this.Blocks[b].Lines[i].GetText(debuginfo);
                 }
 
                 if (b == this.Blocks.Count - 1)
@@ -331,7 +330,7 @@ namespace LuaToolkit.Decompiler
                 parent.ScriptFunction.Lines[i].SetFunctionRef(this.Func);
             }
         }
-        private void HandleTailcallReturns()
+        private void HandleTailcallReturns(bool debuginfo = false)
         {
             // NOTE: Tailcalls have 2 returns when C functions or 1 when Lua functions
             // My job is to remove those RETURNS because they are only used in the Lua VM
@@ -350,11 +349,11 @@ namespace LuaToolkit.Decompiler
 
                         if (erase)
                         {
-#if DEBUG
-                            this.Blocks[i].Lines[j].Op1 = "-- TAILCALL RETURN"; // erase keyword
-#else
-                            this.Blocks[i].Lines[j].Op1 = ""; // erase keyword
-#endif
+                            if(debuginfo)
+                                this.Blocks[i].Lines[j].Op1 = "-- TAILCALL RETURN"; // erase keyword
+                            else
+                                this.Blocks[i].Lines[j].Op1 = ""; // erase keyword
+
                             this.Blocks[i].Lines[j].Op2 = ""; // erase variables
                             //this.Blocks[i].Lines[j].Op3 = ""; // erase (dont erase this, contains else)
                         }
@@ -407,7 +406,7 @@ namespace LuaToolkit.Decompiler
             return null;
         }
         // NOTE: Please do NOT touch this unless you 110% know what you are doing!!!
-        private void GenerateBlocks(bool overwriteBlocks = false)
+        private void GenerateBlocks(bool overwriteBlocks = false, bool debuginfo = false)
         {
             int index = 0;
             if (overwriteBlocks || this.Blocks.Count == 0)
@@ -526,11 +525,10 @@ namespace LuaToolkit.Decompiler
                 if (this.Blocks[i].GetBranchLine() != null &&
                     (this.Blocks[i].GetBranchLine().Instr.OpCode == LuaOpcode.FORLOOP || this.Blocks[i].GetBranchLine().Instr.OpCode == LuaOpcode.TFORLOOP))
                 {
-#if DEBUG
-                    this.Blocks[i].GetBranchLine().Text = "end -- ENDLOOP\r\n";
-#else
-                    this.Blocks[i].GetBranchLine().Text = "end\r\n";
-#endif
+                    if (debuginfo)
+                        this.Blocks[i].GetBranchLine().SetText("end -- ENDLOOP\r\n");
+                    else
+                        this.Blocks[i].GetBranchLine().SetText("end\r\n");
                 }
                 else if (this.Blocks[i].JumpsTo != -1 && this.Blocks[i].JumpsNext != -1 && this.Blocks[i].GetConditionLine() != null) // IF detected
                 {
@@ -627,33 +625,30 @@ namespace LuaToolkit.Decompiler
                     }
                     catch (Exception e)
                     {
+                        // TODO: wtf?
                         Console.WriteLine(e);
                     }
                 }
                 else if (this.Blocks[i].JumpsTo != -1 && this.Blocks[i].JumpsNext == -1)
                 {
-#if DEBUG
-                    this.Blocks[i].GetBranchLine().Postfix += "else -- ELSE";
-#else
-                    this.Blocks[i].GetBranchLine().Postfix += "else";
-#endif
+                    if (debuginfo)
+                        this.Blocks[i].GetBranchLine().Postfix += "else -- ELSE";
+                    else
+                        this.Blocks[i].GetBranchLine().Postfix += "else";
                 }
                 else if (this.Blocks[i].JumpsTo == -1 && this.Blocks[i].JumpsNext != -1 && this.Blocks[i].GetBranchLine() != null
                     && this.Blocks[i].GetBranchLine().Instr.OpCode != LuaOpcode.FORPREP) // also make sure if condifition is set (no forloop)
                 {
-
-#if DEBUG
-                    this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Postfix += "\r\nend -- ENDIF";
-#else
-                    this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Postfix += "\r\nend";
-#endif
+                    if(debuginfo)
+                        this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Postfix += "\r\nend -- ENDIF";
+                    else
+                        this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Postfix += "\r\nend";
                 }
 
                 else if (this.Blocks[i].JumpsTo == -1 && this.Blocks[i].JumpsNext == -1)
                 {
-#if DEBUG
-                    this.Blocks[i].GetBranchLine().Postfix += " -- END\r\n"; // already taken care of
-#endif
+                    if(debuginfo)
+                        this.Blocks[i].GetBranchLine().Postfix += " -- END\r\n"; // already taken care of
                 }
             }
         }

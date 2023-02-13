@@ -27,10 +27,11 @@ namespace LuaToolkit.Decompiler
             }
         }
 
-        public string Text
-        {
-            get { return GetText();  }
-        }
+        //// remove?
+        //public string Text
+        //{
+        //    get { return GetText();  }
+        //}
 
         private LuaFunction Func;
         private LuaDecoder Decoder;
@@ -91,7 +92,7 @@ namespace LuaToolkit.Decompiler
         {
             string result = "";
             foreach (var l in this.lines)
-                result += l.Text;
+                result += l.GetText();
             return result;
         }
 

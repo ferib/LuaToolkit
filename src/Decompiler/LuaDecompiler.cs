@@ -24,7 +24,7 @@ namespace LuaToolkit.Decompiler
         }
 
 
-        public string Decompile(bool debugInfo = true)
+        public string Decompile(bool debugInfo = false)
         {
             // keep lazy init?
             if (this.LuaFunctions == null)

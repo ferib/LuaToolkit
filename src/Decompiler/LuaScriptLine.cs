@@ -40,11 +40,11 @@ namespace LuaToolkit.Decompiler
         public string Postfix = "";
 
         private string _text;
-        public string Text
-        {
-            get { if (_text == null || _text == "") { return ToString(); } else { return _text; }; }
-            set { _text = value; }
-        }
+        //public string GetText
+        //{
+        //    get { if (_text == null || _text == "") { return ToString(); } else { return _text; }; }
+        //    set { _text = value; }
+        //}
 
         public LuaScriptLine(string wildcard)
         {
@@ -451,32 +451,44 @@ namespace LuaToolkit.Decompiler
             else
                 return value;
         }
-        public override string ToString()
+        
+        public void SetText(string text)
         {
+            // TODO: revisit this?
+            _text = text;
+        }
+        public string GetText(bool debuginfo = false)
+        {
+            if(_text != null && _text != "")
+                return _text;
+
             // TODO: leave tab to another level?
             string tab = "";// new string('\t', Depth); // NOTE: singple space for debugging
             string pre = "";
-#if DEBUG
-            pre = $"{this.Instr.ToString().PadRight(19)}";
-#endif
+            
+            if (debuginfo)
+                pre = $"{this.Instr.ToString().PadRight(19)}";
+
             if (this.Instr == null)
                 return $"{pre}{tab}{Prefix}{Op1}{Postfix}\r\n"; // wildcard
             else if (this.Op1 == "" && this.Op2 == "" && this.Op3 == "" && this.Prefix == "" && this.Postfix == "")
                 return $"";
-                //return $"{pre}\r\n";
+            //return $"{pre}\r\n";
             else
             {
                 if (IsCondition() && !Op3.Contains("then"))
                 {
-#if DEBUG
-                    return $"{pre}{Prefix}{Op1}{Op2}{Op3}{Postfix}\r\n";
-#else
+                    if (debuginfo)
+                        return $"{pre}{Prefix}{Op1}{Op2}{Op3}{Postfix}\r\n";
                     return $"{Prefix}{Op1}{Op2}{Op3}{Postfix} ";
-#endif
                 }
-                    
+
                 return $"{pre}{tab}{Prefix}{Op1}{Op2}{Op3}{Postfix}\r\n";
             }
+        }
+        public override string ToString()
+        {
+            return GetText();
         }
         public bool IsCondition()
         {
