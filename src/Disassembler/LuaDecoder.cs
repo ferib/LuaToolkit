@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using LuaToolkit.Models;
 using LuaToolkit.Core;
 using LuaToolkit.Disassembler;
-using LuaToolkit.Emulator;
 
 namespace LuaToolkit.Disassembler
 {
+    // TODO: add new classes for each version?
+    //
     public class LuaDecoder
     {
         public LuaCFile File;

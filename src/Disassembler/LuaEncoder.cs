@@ -4,7 +4,6 @@ using System.Text;
 using LuaToolkit.Models;
 using LuaToolkit.Core;
 using LuaToolkit.Disassembler;
-using LuaToolkit.Emulator;
 
 namespace LuaToolkit.Disassembler
 {

@@ -40,6 +40,7 @@ namespace LuaToolkit.Decompiler
             }
         }
 
+
         public LuaScriptFunction(LuaFunction func, LuaDecoder decoder)
         {
             this.Func = func;
@@ -52,7 +53,6 @@ namespace LuaToolkit.Decompiler
             this.UsedLocals.AddRange(this.Args);
             HandleUpvalues(); // get upvalues from parent TODO: Bugfix
         }
-
         public LuaScriptFunction(string name, int argsCount, LuaFunction func, LuaDecoder decoder)
         {
             this.Func = func;
@@ -65,28 +65,14 @@ namespace LuaToolkit.Decompiler
             this.UsedLocals.AddRange(this.Args);
             HandleUpvalues(); // get upvalues from parent TODO: Bugfix
         }
-
         public List<LuaScriptLine> GetLines()
         {
             return this.Lines;
         }
-
         public List<int> GetUsedLocals()
         {
             return this.UsedLocals;
         }
-
-        private void InitArgs(int count)
-        {
-            this.Args = new List<int>();
-            this.NameArgs = new List<string>();
-            for (int i = 0; i < count; i++)
-            {
-                this.Args.Add(i);
-                this.NameArgs.Add($"var{i}");
-            }
-        }
-
         public override string ToString()
         {
             string args = "(";
@@ -99,29 +85,6 @@ namespace LuaToolkit.Decompiler
             args += (this.HasVarargs ? "...)" : ")");
             return (this.IsLocal ? "local " : "") + $"function {GetName()}{args}\r\n";
         }
-
-        private string GetName()
-        {
-            //if (this.Func.Name == "" || this.Func.Name.Contains("@")) // unknownX
-            //{
-            //    // TODO: prefix functions so we can distiguins one parent from another? (like: unknown_0_1)
-            //    var parent = GetParentFunction();
-            //    if (parent == null)
-            //        return "unkErr";
-
-            //    // TODO: get all parents?
-            //    int unkCount = -1;
-            //    for (int i = 0; i < parent.Functions.IndexOf(this.Func); i++)
-            //    {
-            //        if (parent.Functions[i].ScriptFunction.IsLocal)
-            //            unkCount++;
-            //    }
-            //    return "unknown" + (unkCount + 1); // should give right index?
-            //}
-            //return this.Name;
-            return this.Func.Name;
-        }
-
         public LuaFunction GetParentFunction()
         {
             if (this.Decoder.File.Function == this.Func)
@@ -129,7 +92,298 @@ namespace LuaToolkit.Decompiler
 
             return FindParentFunction(this.Decoder.File.Function);
         }
+        public string GetConstant(int index, LuaFunction targetFunc = null)
+        {
+            if (targetFunc == null)
+                targetFunc = this.Func; // self
+            if (index > 255 && targetFunc.Constants[index - 256] != null)
+                return targetFunc.Constants[index - 256].ToString();
+            else if (targetFunc.Constants.Count > index)
+                return targetFunc.Constants[index].ToString();
+            else
+                return "unk" + index;
+        }
+        public void Complete(bool overwriteBlocks = false)
+        {
+            Cleanlines();
+            GenerateBlocks(overwriteBlocks);
+            UpdateClosures(); // fixes closure name referncing
+            HandleTailcallReturns(); // fix returns
+            OutlineConditions(); // moves IF code above IF chain
+        }
+        public string GetText(bool debugInfo = true)
+        {
+            if (this.Blocks.Count == 0)
+                this.Complete(); // i guess?
 
+            //if (_text != null)
+            //    return _text; // stores end results
+
+            string result = this.ToString();
+            if (debugInfo)
+                result += GenerateDebugCode();
+            else
+                result += GenerateCleanCode();
+
+            return result;
+        } 
+        public void Cleanlines()
+        {
+            for (int i = 0; i < this.Lines.Count; i++)
+                this.Lines[i].ClearLine();
+        }
+        public string BeautifieCode()
+        {
+            // text based because we did wanky things instead of respecting the list	
+            int tabCount = 1;
+            string[] lines = GetText().Replace("\r", "").Replace("\t", "").Split('\n');
+            string newText = "";
+            for (int i = 0; i < lines.Length; i++)
+            {
+                bool postAdd = false;
+                bool postSub = false;
+                if (lines[i].StartsWith("if") || lines[i].StartsWith("function") || lines[i].StartsWith("local function") || lines[i].StartsWith("for"))
+                    postAdd = true;
+                else if (lines[i].StartsWith("else"))
+                {
+                    if (i < lines.Length - 1 && lines[i + 1].StartsWith("if"))
+                    {
+                        // elseif	
+                        newText += $"{new string('\t', tabCount)}{lines[i]}{lines[i + 1]}\r\n";
+                        i += 1; // brrrr fuck y'all, i skip next one this way!	
+                        continue;
+                    }
+                    else
+                    {
+                        // else	
+                        tabCount -= 1;
+                        postAdd = true;
+                    }
+                }
+                else if (lines[i].StartsWith("end"))
+                    tabCount -= 1;
+
+                if (tabCount < 0)
+                    tabCount = 0;
+
+                if (lines[i].StartsWith("if"))
+                    newText += $"{new string('\t', tabCount)}{lines[i]}";
+                else if (lines[i].EndsWith("or") || lines[i].EndsWith("and") || lines[i].StartsWith(" not"))
+                    newText += $"{lines[i]}";
+                else if (lines[i] == "")
+                    newText += "";
+                else
+                    newText += $"{new string('\t', tabCount)}{lines[i]}\r\n";
+
+                if (lines[i].EndsWith("then"))
+                    newText += "\r\n";
+
+                if (postAdd)
+                    tabCount += 1;
+                if (postSub)
+                    tabCount -= 1;
+            }
+            return newText;
+        }
+        //
+        private string GenerateDebugCode()
+        {
+
+            string result = "";
+            int tabLevel = 0;
+            for (int b = 0; b < this.Blocks.Count; b++)
+            {
+                // print block content
+                for (int i = 0; i < this.Blocks[b].Lines.Count; i++)
+                {
+                    if (this.Blocks[b].Lines[i].Instr.OpCode == LuaOpcode.CLOSURE)
+                        result += this.Blocks[b].Lines[i].GetFunctionRef().ScriptFunction.GetText(); // inline func in parent
+                    result += (this.Blocks[b].StartAddress + i).ToString("0000") + $": {new string(' ', tabLevel)}" + this.Blocks[b].Lines[i].Text.Replace("\t", "");
+                }
+                result += new string('-', 50) + $" ({this.Blocks[b].JumpsTo}) \r\n";
+                if (b == this.Blocks.Count - 1)
+                    result += "\r\n"; // keep it clean?
+            }
+            return result;
+        }
+        private string GenerateCleanCode()
+        {
+            string result = "";
+            for (int b = 0; b < this.Blocks.Count; b++)
+            {
+                for (int i = 0; i < this.Blocks[b].Lines.Count; i++)
+                {
+                    if (this.Blocks[b].Lines[i].Instr.OpCode == LuaOpcode.CLOSURE)
+                        if (this.Blocks[b].Lines[i].GetFunctionRef() != null)
+                            result += this.Blocks[b].Lines[i].GetFunctionRef().ScriptFunction.BeautifieCode(); // inline func in parent
+                    result += this.Blocks[b].Lines[i].Text;
+                }
+
+                if (b == this.Blocks.Count - 1)
+                    result += "\r\n"; // keep it clean?
+            }
+            return result;
+        }
+        private void HandleUpvalues()
+        {
+            // NOTE: Upvalues are used for function prototypes and are referenced to in a global scope
+            // My job is to generate a list of static available upvalues so that the decompiler can
+            // reference to them, they are commonly used for function calls that are in scope of the root function.
+
+            //return;
+            LuaFunction parent = GetParentFunction();
+            if (parent == null)
+                return; // we in root UwU
+
+            //return;
+            // create Upvalues List from parent
+            int functionIndex = parent.Functions.IndexOf(this.Func);
+            for (int i = 0; i < parent.Instructions.Count; i++)
+            {
+                // TODO: bugfix
+                var instr = parent.Instructions[i];
+                if (!(instr.OpCode == LuaOpcode.CLOSURE && instr.Bx == functionIndex))
+                    continue;
+
+                string globalName = "";
+                this.IsLocal = true;
+                int j = i - 1;
+                // Find GETGLOBAL - if needed?
+                //while (j >= 0)
+                //{
+                //    if (parent.Instructions[j].OpCode == LuaOpcode.GETGLOBAL && parent.Instructions[i].A == parent.Instructions[j].A)
+                //    {
+                //        globalName = parent.Constants[parent.Instructions[j].Bx].ToString();
+                //        globalName = globalName.Substring(1, globalName.Length - 2);
+                //        break; // job's done
+                //    }
+                //    j--;
+                //}
+
+                j = i + 1; // instr after CLOSURE to start with
+                bool closure = false;
+                int setTableIndex = -1;
+                while (j < parent.Instructions.Count)
+                {
+                    if (parent.Instructions[j].OpCode == LuaOpcode.CLOSURE || parent.Instructions[j].OpCode == LuaOpcode.CLOSE || parent.Instructions[j].OpCode == LuaOpcode.RETURN)
+                        break; // end of closure
+                    //closure = true; // stop MOVEs after closure, keep going for settable/setglobal
+
+
+                    if (parent.Instructions[j].OpCode == LuaOpcode.MOVE && !closure)
+                    {
+                        // upvalues!
+                        if (parent.Instructions[j].A == 0) // 0 = _ENV
+                        {
+                            // TODO: handle value correct & erase script line
+                            LuaConstant cons;
+                            string obj = GetConstant(parent.Instructions[j].B, parent).ToString();
+                            //if(parent.ScriptFunction != null)
+                            //    obj = parent.ScriptFunction.Lines.FirstOrDefault().WriteIndex(parent.Instructions[j].B);
+                            //if (!obj.Contains("var"))
+                            //    cons = new PrototypeConstant($"{parent.Name}_{parent.Instructions[j].B}\0"); // TODO: parent name or actual name?
+                            //else
+                            //    cons = new StringConstant(obj); // idk?
+                            if (obj.Contains('\"'))
+                                cons = new StringConstant(obj.Substring(1, obj.Length - 2) + "\0");
+                            else
+                                cons = new StringConstant(obj + "\0");
+                            this.Func.Upvalues.Add(cons);
+                        }
+                    }
+                    else if (parent.Instructions[j].OpCode == LuaOpcode.SETTABLE)
+                    {
+                        // check the source and desitnation of the SETTABLE to find out both local and global name
+                        if (setTableIndex == -1 && parent.Instructions[i].A == parent.Instructions[j].C) // SETTABLE x y == CLOSURE y ?  
+                        {
+                            // find first part of the table
+
+                            // TODO: bugfix false locals
+                            this.IsLocal = false;
+                            this.Name = GetConstant(parent.Instructions[j].B, parent).ToString();
+                            this.Name = this.Name.Substring(1, this.Name.Length - 2);
+                            //closure = true;
+                            setTableIndex = j; // src
+                        }
+                        else if (setTableIndex > -1 && parent.Instructions[setTableIndex].A == parent.Instructions[j].C)
+                        {
+                            // find second part of the table, which is the root/global
+                            globalName = GetConstant(parent.Instructions[j].B, parent).ToString();
+                            //globalName = globalName.Substring(1, globalName.Length - 2);
+                            //break;
+                        }
+                    }
+                    else if (parent.Instructions[j].OpCode == LuaOpcode.SETGLOBAL && !closure && parent.Instructions[i].A == parent.Instructions[j].A) // CLOSURE x ? == SETGLOBAL x ?
+                    {
+                        // is global!
+                        this.IsLocal = false;
+                        this.Name = GetConstant(parent.Instructions[j].C, parent).ToString();
+                        this.Name = this.Name.Substring(1, this.Name.Length - 2);
+                        //closure = true;
+                        //break;
+                    }
+                    j++;
+                }
+                if (globalName != "")
+                    this.Name = globalName + ":" + this.Name;
+
+                // set line CLOSURE from parent
+                parent.ScriptFunction.Lines[i].SetFunctionRef(this.Func);
+            }
+        }
+        private void HandleTailcallReturns()
+        {
+            // NOTE: Tailcalls have 2 returns when C functions or 1 when Lua functions
+            // My job is to remove those RETURNS because they are only used in the Lua VM
+            for (int i = 0; i < this.Blocks.Count; i++)
+            {
+                for (int j = 0; j < this.Blocks[i].Lines.Count; j++)
+                {
+                    if (this.Blocks[i].Lines[j].Instr.OpCode == LuaOpcode.RETURN)
+                    {
+                        // check if previous 1/2 is a TAILCALL
+                        bool erase = false;
+                        if (j >= 1 && this.Blocks[i].Lines[j - 1].Instr.OpCode == LuaOpcode.TAILCALL)
+                            erase = true;
+                        else if (j >= 2 && this.Blocks[i].Lines[j - 2].Instr.OpCode == LuaOpcode.TAILCALL)
+                            erase = true;
+
+                        if (erase)
+                        {
+#if DEBUG
+                            this.Blocks[i].Lines[j].Op1 = "-- TAILCALL RETURN"; // erase keyword
+#else
+                            this.Blocks[i].Lines[j].Op1 = ""; // erase keyword
+#endif
+                            this.Blocks[i].Lines[j].Op2 = ""; // erase variables
+                            //this.Blocks[i].Lines[j].Op3 = ""; // erase (dont erase this, contains else)
+                        }
+                    }
+                }
+            }
+        }
+        private void OutlineConditions()
+        {
+            // NOTE: IF statements may have more then 2 instruction (IF, JMP) when they are chained
+            // My job is to optimize those merged IF blocks so that inline IFs are working fine
+            // EDIT: nvm I just tweak them and move the instructions that arent IF/JMP up so the merge is clean
+            foreach (var b in this.Blocks)
+                if (b.GetConditionLine() != null && b.IfChainIndex > 0)
+                    b.Optimize();
+        }
+        private void UpdateClosures()
+        {
+            // NOTE: update the names of the functions
+            for (int i = 0; i < this.Lines.Count; i++)
+            {
+                if (this.Lines[i].Instr.OpCode != LuaOpcode.CLOSURE)
+                    continue;
+
+                if (this.Func.Functions[this.Lines[i].Instr.Bx].ScriptFunction != null)
+                    this.Lines[i].Op3 = this.Func.Functions[this.Lines[i].Instr.Bx].ScriptFunction.Name;
+
+            }
+        }
         private LuaFunction FindParentFunction(LuaFunction function, LuaFunction search = null)
         {
             // NOTE: recursive, always nice to stackoverflow
@@ -152,7 +406,6 @@ namespace LuaToolkit.Decompiler
 
             return null;
         }
-
         // NOTE: Please do NOT touch this unless you 110% know what you are doing!!!
         private void GenerateBlocks(bool overwriteBlocks = false)
         {
@@ -319,7 +572,7 @@ namespace LuaToolkit.Decompiler
                             while (cIndex > ifIndex)
                             {
                                 // scan if's (and ONLT if's)
-                                if (this.Blocks[ifIndex].JumpsTo == this.Blocks[cIndex].StartAddress 
+                                if (this.Blocks[ifIndex].JumpsTo == this.Blocks[cIndex].StartAddress
                                     && this.Blocks[ifIndex].GetConditionLine() != null && this.Blocks[ifIndex].GetConditionLine().IsCondition())
                                 {
                                     found = true;
@@ -340,7 +593,7 @@ namespace LuaToolkit.Decompiler
                                     }
 
                                     if (ifIndex != lastifIndex && this.Blocks[ifIndex + 1].GetConditionLine() != null)
-                                        this.Blocks[ifIndex + 1].GetConditionLine().Op1 = "";  
+                                        this.Blocks[ifIndex + 1].GetConditionLine().Op1 = "";
                                     if (this.Blocks[ifIndex].IfChainIndex == -1)
                                         this.Blocks[ifIndex].IfChainIndex = ifIndex - i; // NOTE: numbers are NOT correct after rebase!
 
@@ -367,7 +620,7 @@ namespace LuaToolkit.Decompiler
                                 lastifIndex = ifIndex; // new IF end found!
 
                                 // TODO: this below shit is very buggy, temp fix for FORLOOPs?
-                                if(cIndex < ifIndex || this.Blocks[ifIndex].GetConditionLine() == null) // skip LOOPs?
+                                if (cIndex < ifIndex || this.Blocks[ifIndex].GetConditionLine() == null) // skip LOOPs?
                                     ifIndex--; // subtract or inf loop?? TODO: bugfix, may 
                             }
                         }
@@ -404,307 +657,36 @@ namespace LuaToolkit.Decompiler
                 }
             }
         }
-
-        public string GetConstant(int index, LuaFunction targetFunc = null)
+        private string GetName()
         {
-            if (targetFunc == null)
-                targetFunc = this.Func; // self
-            if (index > 255 && targetFunc.Constants[index - 256] != null)
-                return targetFunc.Constants[index - 256].ToString();
-            else if (targetFunc.Constants.Count > index)
-                return targetFunc.Constants[index].ToString();
-            else
-                return "unk" + index;
+            //if (this.Func.Name == "" || this.Func.Name.Contains("@")) // unknownX
+            //{
+            //    // TODO: prefix functions so we can distiguins one parent from another? (like: unknown_0_1)
+            //    var parent = GetParentFunction();
+            //    if (parent == null)
+            //        return "unkErr";
+
+            //    // TODO: get all parents?
+            //    int unkCount = -1;
+            //    for (int i = 0; i < parent.Functions.IndexOf(this.Func); i++)
+            //    {
+            //        if (parent.Functions[i].ScriptFunction.IsLocal)
+            //            unkCount++;
+            //    }
+            //    return "unknown" + (unkCount + 1); // should give right index?
+            //}
+            //return this.Name;
+            return this.Func.Name;
         }
-
-        private void HandleUpvalues()
+        private void InitArgs(int count)
         {
-            // NOTE: Upvalues are used for function prototypes and are referenced to in a global scope
-            // My job is to generate a list of static available upvalues so that the decompiler can
-            // reference to them, they are commonly used for function calls that are in scope of the root function.
-
-            //return;
-            LuaFunction parent = GetParentFunction();
-            if (parent == null)
-                return; // we in root UwU
-
-            //return;
-            // create Upvalues List from parent
-            int functionIndex = parent.Functions.IndexOf(this.Func);
-            for (int i = 0; i < parent.Instructions.Count; i++)
+            this.Args = new List<int>();
+            this.NameArgs = new List<string>();
+            for (int i = 0; i < count; i++)
             {
-                // TODO: bugfix
-                var instr = parent.Instructions[i];
-                if (!(instr.OpCode == LuaOpcode.CLOSURE && instr.Bx == functionIndex))
-                    continue;
-
-                string globalName = "";
-                this.IsLocal = true;
-                int j = i - 1;
-                // Find GETGLOBAL - if needed?
-                //while (j >= 0)
-                //{
-                //    if (parent.Instructions[j].OpCode == LuaOpcode.GETGLOBAL && parent.Instructions[i].A == parent.Instructions[j].A)
-                //    {
-                //        globalName = parent.Constants[parent.Instructions[j].Bx].ToString();
-                //        globalName = globalName.Substring(1, globalName.Length - 2);
-                //        break; // job's done
-                //    }
-                //    j--;
-                //}
-
-                j = i + 1; // instr after CLOSURE to start with
-                bool closure = false;
-                int setTableIndex = -1;
-                while (j < parent.Instructions.Count)
-                {
-                    if (parent.Instructions[j].OpCode == LuaOpcode.CLOSURE || parent.Instructions[j].OpCode == LuaOpcode.CLOSE || parent.Instructions[j].OpCode == LuaOpcode.RETURN)
-                        break; // end of closure
-                    //closure = true; // stop MOVEs after closure, keep going for settable/setglobal
-
-
-                    if (parent.Instructions[j].OpCode == LuaOpcode.MOVE && !closure)
-                    {
-                        // upvalues!
-                        if (parent.Instructions[j].A == 0) // 0 = _ENV
-                        {
-                            // TODO: handle value correct & erase script line
-                            LuaConstant cons;
-                            string obj = GetConstant(parent.Instructions[j].B, parent).ToString();
-                            //if(parent.ScriptFunction != null)
-                            //    obj = parent.ScriptFunction.Lines.FirstOrDefault().WriteIndex(parent.Instructions[j].B);
-                            //if (!obj.Contains("var"))
-                            //    cons = new PrototypeConstant($"{parent.Name}_{parent.Instructions[j].B}\0"); // TODO: parent name or actual name?
-                            //else
-                            //    cons = new StringConstant(obj); // idk?
-                            if(obj.Contains('\"'))
-                                cons = new StringConstant(obj.Substring(1, obj.Length-2) + "\0");
-                            else
-                                cons = new StringConstant(obj + "\0");
-                            this.Func.Upvalues.Add(cons);
-                        }
-                    }
-                    else if (parent.Instructions[j].OpCode == LuaOpcode.SETTABLE)
-                    {
-                        // check the source and desitnation of the SETTABLE to find out both local and global name
-                        if (setTableIndex == -1 && parent.Instructions[i].A == parent.Instructions[j].C) // SETTABLE x y == CLOSURE y ?  
-                        {
-                            // find first part of the table
-
-                            // TODO: bugfix false locals
-                            this.IsLocal = false;
-                            this.Name = GetConstant(parent.Instructions[j].B, parent).ToString();
-                            this.Name = this.Name.Substring(1, this.Name.Length - 2);
-                            //closure = true;
-                            setTableIndex = j; // src
-                        }
-                        else if (setTableIndex > -1 && parent.Instructions[setTableIndex].A == parent.Instructions[j].C)
-                        {
-                            // find second part of the table, which is the root/global
-                            globalName = GetConstant(parent.Instructions[j].B, parent).ToString();
-                            //globalName = globalName.Substring(1, globalName.Length - 2);
-                            //break;
-                        }
-                    }
-                    else if (parent.Instructions[j].OpCode == LuaOpcode.SETGLOBAL && !closure && parent.Instructions[i].A == parent.Instructions[j].A) // CLOSURE x ? == SETGLOBAL x ?
-                    {
-                        // is global!
-                        this.IsLocal = false;
-                        this.Name = GetConstant(parent.Instructions[j].C, parent).ToString();
-                        this.Name = this.Name.Substring(1, this.Name.Length - 2);
-                        //closure = true;
-                        //break;
-                    }
-                    j++;
-                }
-                if (globalName != "")
-                    this.Name = globalName + ":"+ this.Name;
-
-                // set line CLOSURE from parent
-                parent.ScriptFunction.Lines[i].SetFunctionRef(this.Func);
+                this.Args.Add(i);
+                this.NameArgs.Add($"var{i}");
             }
-        }
-
-        private void HandleTailcallReturns()
-        {
-            // NOTE: Tailcalls have 2 returns when C functions or 1 when Lua functions
-            // My job is to remove those RETURNS because they are only used in the Lua VM
-            for (int i = 0; i < this.Blocks.Count; i++)
-            {
-                for (int j = 0; j < this.Blocks[i].Lines.Count; j++)
-                {
-                    if (this.Blocks[i].Lines[j].Instr.OpCode == LuaOpcode.RETURN)
-                    {
-                        // check if previous 1/2 is a TAILCALL
-                        bool erase = false;
-                        if (j >= 1 && this.Blocks[i].Lines[j - 1].Instr.OpCode == LuaOpcode.TAILCALL)
-                            erase = true;
-                        else if (j >= 2 && this.Blocks[i].Lines[j - 2].Instr.OpCode == LuaOpcode.TAILCALL)
-                            erase = true;
-
-                        if (erase)
-                        {
-#if DEBUG
-                            this.Blocks[i].Lines[j].Op1 = "-- TAILCALL RETURN"; // erase keyword
-#else
-                            this.Blocks[i].Lines[j].Op1 = ""; // erase keyword
-#endif
-                            this.Blocks[i].Lines[j].Op2 = ""; // erase variables
-                            //this.Blocks[i].Lines[j].Op3 = ""; // erase (dont erase this, contains else)
-                        }
-                    }
-                }
-            }
-        }
-
-        private void OutlineConditions()
-        {
-            // NOTE: IF statements may have more then 2 instruction (IF, JMP) when they are chained
-            // My job is to optimize those merged IF blocks so that inline IFs are working fine
-            // EDIT: nvm I just tweak them and move the instructions that arent IF/JMP up so the merge is clean
-            foreach (var b in this.Blocks)
-                if (b.GetConditionLine() != null && b.IfChainIndex > 0)
-                    b.Optimize();
-        }
-
-        private void UpdateClosures()
-        {
-            // NOTE: update the names of the functions
-            for(int i = 0; i < this.Lines.Count; i++)
-            {
-                if (this.Lines[i].Instr.OpCode != LuaOpcode.CLOSURE)
-                    continue;
-
-                if (this.Func.Functions[this.Lines[i].Instr.Bx].ScriptFunction != null)
-                    this.Lines[i].Op3 = this.Func.Functions[this.Lines[i].Instr.Bx].ScriptFunction.Name;
-
-            }
-        }
-
-        public void Complete(bool overwriteBlocks = false)
-        {
-            Cleanlines();
-            GenerateBlocks(overwriteBlocks);
-            UpdateClosures(); // fixes closure name referncing
-            HandleTailcallReturns(); // fix returns
-            OutlineConditions(); // moves IF code above IF chain
-        }
-
-        public string GetText(bool debugInfo = true)
-        {
-            if (this.Blocks.Count == 0)
-                this.Complete(); // i guess?
-
-            //if (_text != null)
-            //    return _text; // stores end results
-
-            string result = this.ToString();
-            if (debugInfo)
-                result += GenerateDebugCode();
-            else
-                result += GenerateCleanCode();
-
-            return result;
-        }
-
-        private string GenerateDebugCode()
-        {
-            
-            string result = "";
-            int tabLevel = 0;
-            for (int b = 0; b < this.Blocks.Count; b++)
-            {
-                // print block content
-                for (int i = 0; i < this.Blocks[b].Lines.Count; i++)
-                {
-                    if (this.Blocks[b].Lines[i].Instr.OpCode == LuaOpcode.CLOSURE)
-                        result += this.Blocks[b].Lines[i].GetFunctionRef().ScriptFunction.GetText(); // inline func in parent
-                    result += (this.Blocks[b].StartAddress + i).ToString("0000") + $": {new string(' ', tabLevel)}" + this.Blocks[b].Lines[i].Text.Replace("\t", "");
-                }
-                result += new string('-', 50) + $" ({this.Blocks[b].JumpsTo}) \r\n";
-                if (b == this.Blocks.Count - 1)
-                    result += "\r\n"; // keep it clean?
-            }
-            return result;
-        }
-
-        private string GenerateCleanCode()
-        {
-            string result = "";
-            for (int b = 0; b < this.Blocks.Count; b++)
-            {
-                for (int i = 0; i < this.Blocks[b].Lines.Count; i++)
-                {
-                    if(this.Blocks[b].Lines[i].Instr.OpCode == LuaOpcode.CLOSURE)
-                        if (this.Blocks[b].Lines[i].GetFunctionRef() != null)
-                            result += this.Blocks[b].Lines[i].GetFunctionRef().ScriptFunction.BeautifieCode(); // inline func in parent
-                    result += this.Blocks[b].Lines[i].Text;
-                }
-
-                if (b == this.Blocks.Count - 1)
-                    result += "\r\n"; // keep it clean?
-            }
-            return result;
-        }
-
-        public void Cleanlines()
-        {
-            for (int i = 0; i < this.Lines.Count; i++)
-                this.Lines[i].ClearLine();
-        }
-
-        public string BeautifieCode()
-        {
-            // text based because we did wanky things instead of respecting the list	
-            int tabCount = 1;
-            string[] lines = GetText().Replace("\r", "").Replace("\t", "").Split('\n');
-            string newText = "";
-            for (int i = 0; i < lines.Length; i++)
-            {
-                bool postAdd = false;
-                bool postSub = false;
-                if (lines[i].StartsWith("if") || lines[i].StartsWith("function") || lines[i].StartsWith("local function") || lines[i].StartsWith("for"))
-                    postAdd = true;
-                else if (lines[i].StartsWith("else"))
-                {
-                    if (i < lines.Length - 1 && lines[i + 1].StartsWith("if"))
-                    {
-                        // elseif	
-                        newText += $"{new string('\t', tabCount)}{lines[i]}{lines[i + 1]}\r\n";
-                        i += 1; // brrrr fuck y'all, i skip next one this way!	
-                        continue;
-                    }
-                    else
-                    {
-                        // else	
-                        tabCount -= 1;
-                        postAdd = true;
-                    }
-                }
-                else if (lines[i].StartsWith("end"))
-                    tabCount -= 1;
-
-                if (tabCount < 0)
-                    tabCount = 0;
-
-                if (lines[i].StartsWith("if"))
-                    newText += $"{new string('\t', tabCount)}{lines[i]}";
-                else if (lines[i].EndsWith("or") || lines[i].EndsWith("and") || lines[i].StartsWith(" not"))
-                    newText += $"{lines[i]}";
-                else if (lines[i] == "")
-                    newText += "";
-                else
-                    newText += $"{new string('\t', tabCount)}{lines[i]}\r\n";
-
-                if (lines[i].EndsWith("then"))
-                    newText += "\r\n";
-
-                if (postAdd)
-                    tabCount += 1;
-                if (postSub)
-                    tabCount -= 1;
-            }
-            return newText;
         }
     }
 

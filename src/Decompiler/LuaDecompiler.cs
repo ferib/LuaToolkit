@@ -14,7 +14,11 @@ namespace LuaToolkit.Decompiler
         private Dictionary<int, int> UsedConstants; // to definde locals
 
         public List<LuaScriptFunction> LuaFunctions;
-        private LuaScriptLine LuaCode;
+        private LuaFunction RootFunction
+        {
+            get { return this.Decoder.File.Function; }
+        }
+        //private LuaScriptLine LuaCode;
 
         //public string LuaScript
         //{
@@ -27,38 +31,22 @@ namespace LuaToolkit.Decompiler
         }
         public string Decompile(bool debugInfo = true)
         {
+            // keep lazy init?
             if (this.LuaFunctions == null)
             {
+                // Start decompilation at RootFunction
                 this.LuaFunctions = new List<LuaScriptFunction>();
-                WriteFile();
+                this.RootFunction.Name = "CRoot"; // or maybe main?
+                DecompileFunction(this.RootFunction);
             }
 
-            string result = "";
-            result += this.Decoder.File.Function.ScriptFunction.GetText(debugInfo); // only need main, right?
-            //for(int i = 0; i < this.LuaFunctions.Count; i++)
-            //    result += this.LuaFunctions[i].Text;
-
-            if (this.LuaCode != null)
-                result += this.LuaCode.Text;
-
-            return result;
+            // only need RootFunction, right?
+            return this.RootFunction.ScriptFunction.GetText(debugInfo);
         }
         //
         //
         //
-        private void WriteFile()
-        {
-            // create Script Functions
-            this.Decoder.File.Function.Name = "CRoot"; // or main?
-            WriteF(this.Decoder.File.Function);
-
-            // NOTE: this is done on GetText
-            //// allign/format/whatever each function
-            //foreach (var f in this.LuaFunctions)
-            //    f.Complete();
-
-        }
-        private void WriteF(LuaFunction func)
+        private void DecompileFunction(LuaFunction func)
         {
             CreateScripFunction(func); // root first and then inside ?
             // TODO: write functions on CLOSURE and not each list?
@@ -68,7 +56,7 @@ namespace LuaToolkit.Decompiler
                 CreateScripFunction(func.Functions[i], func.ScriptFunction.Depth+1);
                 foreach (var f in func.Functions[i].Functions)
                 {
-                    WriteF(f); // children NOTE: write children in body of parent?
+                    DecompileFunction(f); // children NOTE: write children in body of parent?
                 }
             }
         }
@@ -88,6 +76,8 @@ namespace LuaToolkit.Decompiler
             }
             newFunction.Complete();
         }
+        
+        // Deprecated?
         private List<KeyValuePair<string, bool>> GetFunctionNames()
         {
             // NOTE: moving to LuaScriptFunction.HandleUpvalues()!!!

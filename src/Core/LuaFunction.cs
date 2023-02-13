@@ -7,7 +7,7 @@ namespace LuaToolkit.Core
 {
     public class LuaFunction
     {
-        public string Name;
+        public string Name = "";
         public int FirstLineNr;
         public int LastLineNr;
         public byte UpvaluesCount;
@@ -31,6 +31,8 @@ namespace LuaToolkit.Core
             this.Upvalues = new List<LuaConstant>();
             this.Functions = new List<LuaFunction>();
             this.DebugLines = new List<int>();
+            this.DebugLocals = new List<LuaLocal>();
+            this.DebugUpvalues = new List<string>();
         }
 
         public override string ToString()

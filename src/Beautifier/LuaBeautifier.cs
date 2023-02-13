@@ -5,6 +5,7 @@ using System.Linq;
 
 namespace LuaToolkit.Beautifier
 {
+    // TODO: merge into Decompiler?
     public static class LuaBeautifier
     {
         // NOTE: this is a little more complex when you do NOT have the LuaScriptBlock/LuaScriptLine info :/
