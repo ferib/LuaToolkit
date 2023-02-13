@@ -1,5 +1,6 @@
 ﻿using LuaToolkit.Models;
 using System.Collections.Generic;
+using System.Reflection.Emit;
 
 namespace LuaToolkit.Core
 {
@@ -21,21 +22,36 @@ namespace LuaToolkit.Core
 
         public int A
         {
-            get;
-            set;
+            get { return _A; }
+            set
+            {
+                _A = value;
+                UpdateData();
+            }
         }
-
+        private int _A; 
+        
         public int B
         {
-            get;
-            set;
+            get { return _B; }
+            set
+            {
+                _B = value;
+                UpdateData();
+            }
         }
+        private int _B;
 
         public int C
         {
-            get;
-            set;
+            get { return _C; }
+            set
+            {
+                _C = value;
+                UpdateData();
+            }
         }
+        private int _C;
 
         public int Bx
         {
@@ -44,6 +60,7 @@ namespace LuaToolkit.Core
             { 
                 B = value >> 9; // TODO: verift that this gets rid of the first 9 bits?
                 C = (value & ~0xFFE00); // TODO: verify that this gets rid of the last 9 bits?
+                UpdateData();
             } 
         }
 
@@ -145,8 +162,16 @@ namespace LuaToolkit.Core
         public LuaInstruction(LuaOpcode opcode)
         {
             this.OpCode = opcode;
-
+            Data = ((Data & ~0x3F) | ((int)opcode & 0x3F));
             SetVars();
+        }
+
+        private void UpdateData()
+        {
+            Data =  ((Data & ~0x3F) | ((int)this.OpCode & 0x3F ));
+            _A =     ((_A & ~0xFF )   | ((this._A >> 6)    & 0xFF ));
+            _B =     ((_B & ~0x1FF)   | ((this._B >> 23)   & 0x1FF));
+            _C =     ((_C & ~0x1FF)   | ((this._C >> 14)   & 0x1FF));
         }
 
         public bool HasBx()
