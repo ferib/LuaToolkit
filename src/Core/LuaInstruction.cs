@@ -21,45 +21,51 @@ namespace LuaToolkit
 
         public int A
         {
-            get { return _A; }
+            get { return (Data >> 6) & 0xFF; }
             set
             {
-                _A = value;
-                UpdateData();
+                //_A = value;
+                //Data = ((Data & ~0xFF) | ((value >> 6) & 0xFF));
+                Data = ((Data & ~0x00003FC0) | ((value & 0xFF) << 6) );
             }
         }
-        private int _A; 
-        
+
         public int B
         {
-            get { return _B; }
+            get { return (Data >> 23) & 0x1FF; }
             set
             {
-                _B = value;
-                UpdateData();
+                //_B = value;
+                //Data = ((Data & ~0x1FF) | ((value >> 23) & 0x1FF));
+                //UpdateData();
+                //Data = ((Data & ~0xFF800000)   | ((value >> 23) & 0x1FF));
+                Data = ((Data & ~0x7F800000) | ((value & 0x1FF) << 23));
             }
         }
-        private int _B;
 
         public int C
         {
-            get { return _C; }
+            get { return (Data >> 14) & 0x1FF; }
             set
             {
-                _C = value;
-                UpdateData();
+                //_C = value;
+                //Data = ((Data & ~0x1FF) | ((value >> 14) & 0x1FF));
+                //UpdateData();
+                Data = ((Data & ~0x007FC000) | ((value & 0x1FF) << 14));
             }
         }
-        private int _C;
 
         public int Bx
         {
-            get { return ((B << 9) & 0xFFE00 | C) & 0x3FFFF; }
+            get { return ((B << 9) & 0x000FFE00 | C) & 0x3FFFF; }
             set 
             { 
-                B = value >> 9; // TODO: verift that this gets rid of the first 9 bits?
-                C = (value & ~0xFFE00); // TODO: verify that this gets rid of the last 9 bits?
-                UpdateData();
+                int b = value >> 9; // TODO: verift that this gets rid of the first 9 bits?
+                int c = (value & ~0x000FFE00); // TODO: verify that this gets rid of the last 9 bits?
+                //UpdateData();
+                //Data = ((Data & ~0xFF800000)   | ((b >> 23) & 0x1FF));
+                Data = ((Data & ~0x7F800000)    | ((b & 0x1FF) << 23));
+                Data = ((Data & ~0x007FC000)      | ((c & 0x1FF) << 14));
             } 
         }
 
@@ -151,9 +157,9 @@ namespace LuaToolkit
             Data = data;
 
             OpCode = (LuaOpcode)(data & 0x3F);
-            A = (data >> 6) & 0xFF;
-            B = (data >> 23) & 0x1FF;
-            C = (data >> 14) & 0x1FF;
+            //_A = (data >> 6) & 0xFF;
+            //_B = (data >> 23) & 0x1FF;
+            //_C = (data >> 14) & 0x1FF;
 
             SetVars();
         }
@@ -165,13 +171,13 @@ namespace LuaToolkit
             SetVars();
         }
 
-        private void UpdateData()
-        {
-            Data =  ((Data & ~0x3F) | ((int)this.OpCode & 0x3F ));
-            _A =     ((_A & ~0xFF )   | ((this._A >> 6)    & 0xFF ));
-            _B =     ((_B & ~0x1FF)   | ((this._B >> 23)   & 0x1FF));
-            _C =     ((_C & ~0x1FF)   | ((this._C >> 14)   & 0x1FF));
-        }
+        //private void UpdateData()
+        //{
+        //    Data =  ((Data & ~0x3F) | ((int)OpCode & 0x3F ));
+        //    A =     ((Data & ~0xFF )   | ((A >> 6)    & 0xFF ));
+        //    B =     ((Data & ~0x1FF)   | ((B >> 23)   & 0x1FF));
+        //    C =     ((Data & ~0x1FF)   | ((C >> 14)   & 0x1FF));
+        //}
 
         public bool HasBx()
         {
