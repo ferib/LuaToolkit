@@ -9,26 +9,21 @@ namespace LuaToolkit.Decompiler
 {
     public class LuaDecompiler
     {
-        private LuaDecoder Decoder;
-
-        private Dictionary<int, int> UsedConstants; // to definde locals
-
         public List<LuaScriptFunction> LuaFunctions;
+
+        private LuaDecoder Decoder;
+        private Dictionary<int, int> UsedConstants; // to definde locals
         private LuaFunction RootFunction
         {
             get { return this.Decoder.File.Function; }
         }
-        //private LuaScriptLine LuaCode;
-
-        //public string LuaScript
-        //{
-        //    get { return Decompile(); }
-        //}
 
         public LuaDecompiler(LuaDecoder decoder)
         {
             this.Decoder = decoder;
         }
+
+
         public string Decompile(bool debugInfo = true)
         {
             // keep lazy init?
