@@ -38,11 +38,11 @@ namespace Example
     class Program
     {
         static void Main(string[] args)
-	    {
+        {
             LuaCFile luac = new LuaCFile(File.ReadAllBytes(@"C:\test.luac"));
             LuaDecoder decoder = new LuaDecoder(luac);
             Console.WriteLine($"the compiled Lua file contains {decoder.File.Function.Functions.Count} functions.");
-	    }
+        }
     }
 }
 ```

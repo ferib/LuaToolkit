@@ -1,4 +1,4 @@
-﻿namespace LuaToolkit.Models
+﻿namespace LuaToolkit
 {
     public enum VarArg
     {

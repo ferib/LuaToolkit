@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace LuaToolkit.Core
+namespace LuaToolkit
 {
 	// NOTE: unused, delete?
 	public class LuaLocal

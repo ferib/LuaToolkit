@@ -1,6 +1,4 @@
-﻿using LuaToolkit.Models;
-
-namespace LuaToolkit.Core
+﻿namespace LuaToolkit
 {
     public abstract class LuaConstant
     {
@@ -87,7 +85,7 @@ namespace LuaToolkit.Core
         public override string ToString()
         {
             string[] split = Value.Split('(');
-            if(split.Length > 1)
+            if (split.Length > 1)
                 return Value.Split('(')[0];
             return Value;
         }

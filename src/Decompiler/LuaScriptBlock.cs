@@ -1,10 +1,6 @@
-﻿using System;
+﻿using LuaToolkit.Disassembler;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using LuaToolkit.Core;
-using LuaToolkit.Disassembler;
-using LuaToolkit.Models;
 
 namespace LuaToolkit.Decompiler
 {
@@ -60,21 +56,21 @@ namespace LuaToolkit.Decompiler
                 this.JumpsTo = this.StartAddress + this.lines.Count + (short)l.Instr.sBx; // base + offset
                 return true;
             }
-            return false;  
+            return false;
         }
 
         public void RewriteVariables(int offset)
         {
             // Rewrite the variables x by adding mov prefix+x = x and then replacing all x by prefix+x
             List<int> changedVariables = new List<int>();
-            for(int i = 0; i < this.Lines.Count; i++)
+            for (int i = 0; i < this.Lines.Count; i++)
             {
                 LuaInstruction fake = new LuaInstruction(this.Lines[i].Instr.Data);
                 changedVariables.AddRange(fake.OffsetVariables(offset));
                 this.Lines[i].SetMain(fake);
             }
             var vars = changedVariables.Distinct();
-            foreach(var v in vars)
+            foreach (var v in vars)
             {
                 // TODO: add instr to start!
             }
@@ -138,9 +134,9 @@ namespace LuaToolkit.Decompiler
                 varA = cLine.Instr.A;
             else
                 if ((cLine.Instr.B & 1 << 8) == 0) // not const
-                    varA = cLine.Instr.B;
-                if ((cLine.Instr.C & 1 << 8) == 0) // not const
-                    varB = cLine.Instr.C;
+                varA = cLine.Instr.B;
+            if ((cLine.Instr.C & 1 << 8) == 0) // not const
+                varB = cLine.Instr.C;
 
             // transplants lines
             List<LuaScriptLine> tLines = new List<LuaScriptLine>();
@@ -151,11 +147,11 @@ namespace LuaToolkit.Decompiler
                 {
                     // check if block contains the variable
                     // TODO: clean this up or make OO??
-                    for(int j = 0; j < this.Lines.Count; j++)
+                    for (int j = 0; j < this.Lines.Count; j++)
                     {
                         if (j == i)
                             continue; // skip this
-                        if(this.Lines[j].Op1.Contains("var" + varA) || this.Lines[j].Op2.Contains("var" + varA) || this.Lines[j].Op3.Contains("var" + varA))
+                        if (this.Lines[j].Op1.Contains("var" + varA) || this.Lines[j].Op2.Contains("var" + varA) || this.Lines[j].Op3.Contains("var" + varA))
                         {
                             this.Lines[i].Op1 = this.Lines[i].Op1.Replace("var" + varA, "var" + this.IfChainIndex + varA);
                             this.Lines[i].Op2 = this.Lines[i].Op2.Replace("var" + varA, "var" + this.IfChainIndex + varA);
@@ -163,7 +159,7 @@ namespace LuaToolkit.Decompiler
                             break;
                         }
                     }
-                } 
+                }
                 if (varB != -1)
                 {
                     // check if block contains the variable

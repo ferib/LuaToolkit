@@ -1,9 +1,7 @@
-﻿using LuaToolkit.Disassembler;
-using LuaToolkit.Decompiler;
-using LuaToolkit.Models;
+﻿using LuaToolkit.Decompiler;
 using System.Collections.Generic;
 
-namespace LuaToolkit.Core
+namespace LuaToolkit
 {
     public class LuaFunction
     {

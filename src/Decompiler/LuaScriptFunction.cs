@@ -1,6 +1,4 @@
-﻿using LuaToolkit.Core;
-using LuaToolkit.Disassembler;
-using LuaToolkit.Models;
+﻿using LuaToolkit.Disassembler;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -31,7 +29,7 @@ namespace LuaToolkit.Decompiler
                 //    return GetName();
                 //}
                 //else
-                    return this.Func.Name;
+                return this.Func.Name;
             }
             set
             {
@@ -123,7 +121,7 @@ namespace LuaToolkit.Decompiler
                 result += GenerateCleanCode();
 
             return result;
-        } 
+        }
         public void Cleanlines()
         {
             for (int i = 0; i < this.Lines.Count; i++)
@@ -349,7 +347,7 @@ namespace LuaToolkit.Decompiler
 
                         if (erase)
                         {
-                            if(debuginfo)
+                            if (debuginfo)
                                 this.Blocks[i].Lines[j].Op1 = "-- TAILCALL RETURN"; // erase keyword
                             else
                                 this.Blocks[i].Lines[j].Op1 = ""; // erase keyword
@@ -639,7 +637,7 @@ namespace LuaToolkit.Decompiler
                 else if (this.Blocks[i].JumpsTo == -1 && this.Blocks[i].JumpsNext != -1 && this.Blocks[i].GetBranchLine() != null
                     && this.Blocks[i].GetBranchLine().Instr.OpCode != LuaOpcode.FORPREP) // also make sure if condifition is set (no forloop)
                 {
-                    if(debuginfo)
+                    if (debuginfo)
                         this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Postfix += "\r\nend -- ENDIF";
                     else
                         this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Postfix += "\r\nend";
@@ -647,7 +645,7 @@ namespace LuaToolkit.Decompiler
 
                 else if (this.Blocks[i].JumpsTo == -1 && this.Blocks[i].JumpsNext == -1)
                 {
-                    if(debuginfo)
+                    if (debuginfo)
                         this.Blocks[i].GetBranchLine().Postfix += " -- END\r\n"; // already taken care of
                 }
             }

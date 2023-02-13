@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using LuaToolkit.Models;
-using LuaToolkit.Core;
-using LuaToolkit.Disassembler;
 
 namespace LuaToolkit.Disassembler
 {
@@ -79,7 +76,7 @@ namespace LuaToolkit.Disassembler
         public void WriteInstructions(List<LuaInstruction> Instructions)
         {
             SetInt(Instructions.Count);
-            for(int i = 0; i < Instructions.Count; i++)
+            for (int i = 0; i < Instructions.Count; i++)
             {
                 SetInt(Instructions[i].Data);
             }
@@ -88,11 +85,11 @@ namespace LuaToolkit.Disassembler
         public void WriteConstants(List<LuaConstant> Constants)
         {
             SetInt(Constants.Count);
-            for(int i = 0; i < Constants.Count; i++)
+            for (int i = 0; i < Constants.Count; i++)
             {
                 SetByte((byte)Constants[i].Type);
 
-                switch(Constants[i].Type)
+                switch (Constants[i].Type)
                 {
                     case LuaType.Nil:
                         break;
@@ -101,7 +98,7 @@ namespace LuaToolkit.Disassembler
                         if (val.Value)
                             SetByte(1);
                         else
-                            SetByte(0); 
+                            SetByte(0);
                         break;
                     case LuaType.Number:
                         var num = (NumberConstant)Constants[i];
@@ -118,7 +115,7 @@ namespace LuaToolkit.Disassembler
         public void WriteFunctions(List<LuaFunction> Functions)
         {
             SetInt(Functions.Count);
-            for(int i = 0; i < Functions.Count; i++)
+            for (int i = 0; i < Functions.Count; i++)
             {
                 EncodeFunctionblock(Functions[i]);
             }
@@ -127,7 +124,7 @@ namespace LuaToolkit.Disassembler
         public void WriteDebugLines(List<int> Lines)
         {
             SetInt(Lines.Count);
-            for(int i = 0; i < Lines.Count; i++)
+            for (int i = 0; i < Lines.Count; i++)
             {
                 SetInt(Lines[i]);
             }
@@ -136,7 +133,7 @@ namespace LuaToolkit.Disassembler
         public void WriteDebugLocals(List<LuaLocal> Locals)
         {
             SetInt(Locals.Count);
-            for(int i = 0; i < Locals.Count; i++)
+            for (int i = 0; i < Locals.Count; i++)
             {
                 SetString(Locals[i].Name);
                 SetInt(Locals[i].ScopeStart);
@@ -147,7 +144,7 @@ namespace LuaToolkit.Disassembler
         public void WriteDebugUpvals(List<string> Upvals)
         {
             SetInt(Upvals.Count);
-            for(int i = 0; i < Upvals.Count; i++)
+            for (int i = 0; i < Upvals.Count; i++)
             {
                 SetString(Upvals[i]);
             }
@@ -184,14 +181,14 @@ namespace LuaToolkit.Disassembler
         public void SetString(string str, bool setLen = true)
         {
             //str += "\0";
-            if(setLen)
+            if (setLen)
             {
-                if(this.File.SizeTSize == 4)
+                if (this.File.SizeTSize == 4)
                     this.Buffer.AddRange(BitConverter.GetBytes((int)str.Length));
                 if (this.File.SizeTSize == 8)
                     this.Buffer.AddRange(BitConverter.GetBytes((long)str.Length));
             }
-                
+
             this.Buffer.AddRange(Encoding.UTF8.GetBytes(str));
         }
 

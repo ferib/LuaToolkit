@@ -1,8 +1,7 @@
-﻿using LuaToolkit.Models;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Reflection.Emit;
 
-namespace LuaToolkit.Core
+namespace LuaToolkit
 {
     public class LuaInstruction
     {

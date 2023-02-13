@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using LuaToolkit.Models;
-using LuaToolkit.Core;
-using LuaToolkit.Disassembler;
 
 namespace LuaToolkit.Disassembler
 {
@@ -18,8 +15,8 @@ namespace LuaToolkit.Disassembler
         {
             this.File = file;
             this.Index = 0;
-            
-            if(ReadHeader())
+
+            if (ReadHeader())
                 this.File.Function = DecodeFunctionblock(); // init the Lua stuff
         }
 
@@ -62,7 +59,7 @@ namespace LuaToolkit.Disassembler
             Function.LastLineNr = GetInt();    // Last line // 4 or 8?
 
             if (Function.Name != "")
-                Function.Name = Function.Name.Substring(0, Function.Name.Length-1);
+                Function.Name = Function.Name.Substring(0, Function.Name.Length - 1);
 
             // point around
             Function.UpvaluesCount = GetByte();
@@ -84,7 +81,7 @@ namespace LuaToolkit.Disassembler
 
             // Decode debuginfo: Locals
             Function.DebugLocals = ReadDebugLocals();
-            
+
             // Decode debuginfo: Upvalues
             Function.DebugUpvalues = ReadDebugUpvalues();
 
@@ -183,7 +180,7 @@ namespace LuaToolkit.Disassembler
             {
                 int total = 0;
                 int digitn = 0;
-                for(int i = n; i < n2; i++)
+                for (int i = n; i < n2; i++)
                 {
                     total += 2 ^ digitn * GetBits(input, i);
                 }
@@ -193,7 +190,7 @@ namespace LuaToolkit.Disassembler
             {
                 int pn = 2 ^ (n - 1);
                 bool res = false;
-                if(pn != 0)
+                if (pn != 0)
                     res = ((input % (pn + pn) >= pn));
                 //bool res = ((input % (pn + pn) >= pn) && 1 || 0);
                 if (res)
@@ -256,9 +253,9 @@ namespace LuaToolkit.Disassembler
 
         private string GetString(long len = 0)
         {
-            if(len == 0)
+            if (len == 0)
             {
-                if(this.File.SizeTSize == 4)
+                if (this.File.SizeTSize == 4)
                     len = GetInt(); // get_size_t (4 byte?)
                 else if (this.File.SizeTSize == 8)
                     len = GetLong(); // get_size_t (8 byte?)
@@ -268,8 +265,8 @@ namespace LuaToolkit.Disassembler
                 return "error";
 
             string str = "";
-            for(int i = 0; i < len && this.Index + i < this.File.Buffer.Length; i++)
-                str += (char)this.File.Buffer[this.Index+i];
+            for (int i = 0; i < len && this.Index + i < this.File.Buffer.Length; i++)
+                str += (char)this.File.Buffer[this.Index + i];
             this.Index += (int)len;
             return str;
         }

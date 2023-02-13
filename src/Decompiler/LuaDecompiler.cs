@@ -1,9 +1,5 @@
-﻿using System;
+﻿using LuaToolkit.Disassembler;
 using System.Collections.Generic;
-using System.Text;
-using LuaToolkit.Models;
-using LuaToolkit.Core;
-using LuaToolkit.Disassembler;
 
 namespace LuaToolkit.Decompiler
 {
@@ -48,7 +44,7 @@ namespace LuaToolkit.Decompiler
             for (int i = 0; i < func.Functions.Count; i++)
             {
                 func.Functions[i].Name = func.Name + "_" + i; // set default name
-                CreateScripFunction(func.Functions[i], func.ScriptFunction.Depth+1);
+                CreateScripFunction(func.Functions[i], func.ScriptFunction.Depth + 1);
                 foreach (var f in func.Functions[i].Functions)
                 {
                     DecompileFunction(f); // children NOTE: write children in body of parent?
@@ -66,12 +62,12 @@ namespace LuaToolkit.Decompiler
                 newFunction.GetLines().Add(new LuaScriptLine(func.Instructions[i], this.Decoder, func)
                 {
                     Number = i,
-                    Depth = dpth+1
+                    Depth = dpth + 1
                 });
             }
             newFunction.Complete();
         }
-        
+
         // Deprecated?
         private List<KeyValuePair<string, bool>> GetFunctionNames()
         {
@@ -84,10 +80,10 @@ namespace LuaToolkit.Decompiler
             // to move a constant (second part of func name) into the global
             // also, while we are at it, lets check if it sets global or not
 
-            for(int i = 0; i < this.Decoder.File.Function.Instructions.Count; i++)
+            for (int i = 0; i < this.Decoder.File.Function.Instructions.Count; i++)
             {
                 var instr = this.Decoder.File.Function.Instructions[i];
-                switch(instr.OpCode)
+                switch (instr.OpCode)
                 {
                     case LuaOpcode.CLOSURE:
                         string name = "";
@@ -104,13 +100,13 @@ namespace LuaToolkit.Decompiler
                             if (this.Decoder.File.Function.Instructions[j].OpCode == LuaOpcode.GETGLOBAL)
                             {
                                 globalName = this.Decoder.File.Function.Constants[j].ToString();
-                                globalName = globalName.Substring(1, globalName.Length-2);
+                                globalName = globalName.Substring(1, globalName.Length - 2);
                                 break; // job's done
                             }
                             j++;
                         }
 
-                        j = i+1;
+                        j = i + 1;
                         // Find SETTABLE
                         while (j < this.Decoder.File.Function.Instructions.Count)
                         {
@@ -120,13 +116,13 @@ namespace LuaToolkit.Decompiler
                             if (this.Decoder.File.Function.Instructions[j].OpCode == LuaOpcode.MOVE)
                             {
                                 // upvalues!
-                                if(this.Decoder.File.Function.Instructions[j].A == 0) // 0 = _ENV
+                                if (this.Decoder.File.Function.Instructions[j].A == 0) // 0 = _ENV
                                 {
                                     LuaConstant cons;
                                     //if (this.Decoder.File.Function.Constants.Count > this.Decoder.File.Function.Instructions[j].B)
                                     //    cons = this.Decoder.File.Function.Constants[this.Decoder.File.Function.Instructions[j].B];
                                     //else
-                                        cons = new StringConstant("unknown" + this.Decoder.File.Function.Instructions[j].B);
+                                    cons = new StringConstant("unknown" + this.Decoder.File.Function.Instructions[j].B);
                                     this.Decoder.File.Function.Upvalues.Add(cons);
                                 }
                             }
@@ -134,15 +130,16 @@ namespace LuaToolkit.Decompiler
                             {
                                 isGlobal = true;
                                 name = this.Decoder.File.Function.Constants[this.Decoder.File.Function.Instructions[j].C].ToString();
-                                name = name.Substring(1, name.Length-2);
+                                name = name.Substring(1, name.Length - 2);
                                 break; // job's done
-                            }else if(this.Decoder.File.Function.Instructions[j].OpCode == LuaOpcode.SETGLOBAL)
+                            }
+                            else if (this.Decoder.File.Function.Instructions[j].OpCode == LuaOpcode.SETGLOBAL)
                             {
                                 // is global!
                                 isGlobal = true;
                                 name = this.Decoder.File.Function.Constants[this.Decoder.File.Function.Instructions[j].C].ToString();
                                 name = name.Substring(1, name.Length - 2);
-                                break; 
+                                break;
                             }
                             j++;
                         }
