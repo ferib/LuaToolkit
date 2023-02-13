@@ -590,7 +590,7 @@ namespace LuaToolkit.Decompiler
             OutlineConditions(); // moves IF code above IF chain
         }
 
-        public string GetText()
+        public string GetText(bool debugInfo = true)
         {
             if (this.Blocks.Count == 0)
                 this.Complete(); // i guess?
@@ -599,11 +599,11 @@ namespace LuaToolkit.Decompiler
             //    return _text; // stores end results
 
             string result = this.ToString();
-#if DEBUG
-            result += GenerateDebugCode();
-#else
-            result += GenerateCleanCode();
-#endif
+            if (debugInfo)
+                result += GenerateDebugCode();
+            else
+                result += GenerateCleanCode();
+
             return result;
         }
 

@@ -50,7 +50,6 @@ namespace LuaToolkit.Decompiler
         {
             this.Op1 = wildcard;
         }
-
         public LuaScriptLine(LuaInstruction instr, LuaDecoder decoder, LuaFunction func)
         {
             this.Instr = instr;
@@ -59,7 +58,6 @@ namespace LuaToolkit.Decompiler
             SetType();
             SetMain();
         }
-
         public void SetMain(LuaInstruction Instr = null)
         {
             if (Instr == null)
@@ -414,71 +412,14 @@ namespace LuaToolkit.Decompiler
                     break;
             }
         }
-
-        private void SetType()
-        {
-            switch (this.Instr.OpCode)
-            {
-                case LuaOpcode.LOADK:
-                case LuaOpcode.GETGLOBAL:
-                case LuaOpcode.SETGLOBAL:
-                case LuaOpcode.CLOSURE:
-                    this.OpType = OpcodeType.ABx;
-                    break;
-                case LuaOpcode.FORLOOP:
-                case LuaOpcode.FORPREP:
-                case LuaOpcode.JMP:
-                    this.OpType = OpcodeType.AsBx;
-                    break;
-                default:
-                    this.OpType = OpcodeType.ABC;
-                    break;
-            }
-        }
-
-        private string GetConstant(int index)
-        {
-            if (index >= this.Func.Constants.Count)
-                return "\"unk" + index.ToString() + "\""; // indicates incorrect behavior
-
-            return this.Func.Constants[index].ToString();
-        }
-
-        private string WriteConstant(int index, LuaFunction targetFunc = null)
-        {
-            if (targetFunc == null)
-                targetFunc = this.Func; // self
-            if (index > 255 && targetFunc.Constants[index - 256] != null)
-                return targetFunc.Constants[index - 256].ToString();
-            else
-                return WriteIndex(index);
-        }
-
         public void SetFunctionRef(LuaFunction func)
         {
             this.FunctionRef = func;
         }
-
         public LuaFunction GetFunctionRef()
         {
             return this.FunctionRef;
         }
-
-        private LuaScriptBlock FindBlockOwner()
-        {
-            // NOTE: there are no blocks yet when creating lines!
-            bool match = false;
-            LuaScriptLine line;
-            foreach(var b in this.Func.ScriptFunction.Blocks)
-            {
-                line = b.Lines.Single(x => x == this);
-                if (line == null)
-                    continue;
-                return b;
-            }
-            return null;
-        }
-
         // NOTE: use this on LuaScriptFunction.GetConstant ??
         public string WriteIndex(int value, bool useLocalKeyword = true)
         {
@@ -502,7 +443,6 @@ namespace LuaToolkit.Decompiler
                 }
             }
         }
-
         public int ToIndex(int value, out bool isConstant)
         {
             // this is the logic from lua's source code (lopcodes.h)
@@ -511,7 +451,6 @@ namespace LuaToolkit.Decompiler
             else
                 return value;
         }
-
         public override string ToString()
         {
             // TODO: leave tab to another level?
@@ -539,7 +478,6 @@ namespace LuaToolkit.Decompiler
                 return $"{pre}{tab}{Prefix}{Op1}{Op2}{Op3}{Postfix}\r\n";
             }
         }
-
         public bool IsCondition()
         {
             switch(this.Instr.OpCode)
@@ -554,7 +492,6 @@ namespace LuaToolkit.Decompiler
             }
             return false;
         }
-
         public bool IsBranch()
         {
             switch(this.Instr.OpCode)
@@ -567,7 +504,6 @@ namespace LuaToolkit.Decompiler
             }
             return false;
         }
-
         public bool IsMove()
         {
             switch (this.Instr.OpCode)
@@ -577,21 +513,71 @@ namespace LuaToolkit.Decompiler
             }
             return false;
         }
-
         public void AddPrefix(string str)
         {
             this.Prefix = str + this.Prefix;
         }
-
         public void AddPostfix(string str)
         {
             this.Postfix += str;
         }
-
         public void ClearLine()
         {
             this.Prefix = "";
             this.Postfix = "";
+        }
+        
+        // helpers
+        //
+        private LuaScriptBlock FindBlockOwner()
+        {
+            // NOTE: there are no blocks yet when creating lines!
+            bool match = false;
+            LuaScriptLine line;
+            foreach (var b in this.Func.ScriptFunction.Blocks)
+            {
+                line = b.Lines.Single(x => x == this);
+                if (line == null)
+                    continue;
+                return b;
+            }
+            return null;
+        }
+        private void SetType()
+        {
+            switch (this.Instr.OpCode)
+            {
+                case LuaOpcode.LOADK:
+                case LuaOpcode.GETGLOBAL:
+                case LuaOpcode.SETGLOBAL:
+                case LuaOpcode.CLOSURE:
+                    this.OpType = OpcodeType.ABx;
+                    break;
+                case LuaOpcode.FORLOOP:
+                case LuaOpcode.FORPREP:
+                case LuaOpcode.JMP:
+                    this.OpType = OpcodeType.AsBx;
+                    break;
+                default:
+                    this.OpType = OpcodeType.ABC;
+                    break;
+            }
+        }
+        private string GetConstant(int index)
+        {
+            if (index >= this.Func.Constants.Count)
+                return "\"unk" + index.ToString() + "\""; // indicates incorrect behavior
+
+            return this.Func.Constants[index].ToString();
+        }
+        private string WriteConstant(int index, LuaFunction targetFunc = null)
+        {
+            if (targetFunc == null)
+                targetFunc = this.Func; // self
+            if (index > 255 && targetFunc.Constants[index - 256] != null)
+                return targetFunc.Constants[index - 256].ToString();
+            else
+                return WriteIndex(index);
         }
     }
 }

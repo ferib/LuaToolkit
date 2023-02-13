@@ -16,18 +16,36 @@ namespace LuaToolkit.Decompiler
         public List<LuaScriptFunction> LuaFunctions;
         private LuaScriptLine LuaCode;
 
-        public string LuaScript
-        {
-            get { return GetScript(); }
-        }
+        //public string LuaScript
+        //{
+        //    get { return Decompile(); }
+        //}
 
         public LuaDecompiler(LuaDecoder decoder)
         {
             this.Decoder = decoder;
-            this.LuaFunctions = new List<LuaScriptFunction>();
-            WriteFile();
         }
+        public string Decompile(bool debugInfo = true)
+        {
+            if (this.LuaFunctions == null)
+            {
+                this.LuaFunctions = new List<LuaScriptFunction>();
+                WriteFile();
+            }
 
+            string result = "";
+            result += this.Decoder.File.Function.ScriptFunction.GetText(debugInfo); // only need main, right?
+            //for(int i = 0; i < this.LuaFunctions.Count; i++)
+            //    result += this.LuaFunctions[i].Text;
+
+            if (this.LuaCode != null)
+                result += this.LuaCode.Text;
+
+            return result;
+        }
+        //
+        //
+        //
         private void WriteFile()
         {
             // create Script Functions
@@ -40,7 +58,6 @@ namespace LuaToolkit.Decompiler
             //    f.Complete();
 
         }
-
         private void WriteF(LuaFunction func)
         {
             CreateScripFunction(func); // root first and then inside ?
@@ -55,7 +72,6 @@ namespace LuaToolkit.Decompiler
                 }
             }
         }
-
         private void CreateScripFunction(LuaFunction func, int dpth = 0, bool isGlobal = false)
         {
             LuaScriptFunction newFunction = new LuaScriptFunction(func, this.Decoder);
@@ -72,7 +88,6 @@ namespace LuaToolkit.Decompiler
             }
             newFunction.Complete();
         }
-
         private List<KeyValuePair<string, bool>> GetFunctionNames()
         {
             // NOTE: moving to LuaScriptFunction.HandleUpvalues()!!!
@@ -155,19 +170,6 @@ namespace LuaToolkit.Decompiler
             }
 
             return names;
-        }
-
-        private string GetScript()
-        {
-            string result = "";
-            result += this.Decoder.File.Function.ScriptFunction.GetText(); // only need main, right?
-            //for(int i = 0; i < this.LuaFunctions.Count; i++)
-            //    result += this.LuaFunctions[i].Text;
-
-            if(this.LuaCode != null)
-                result += this.LuaCode.Text;
-
-            return result;
         }
     }
 }

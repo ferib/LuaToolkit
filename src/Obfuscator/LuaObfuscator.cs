@@ -29,7 +29,7 @@ namespace LuaToolkit.Obfuscator
             this.Settings = new LOSettings(ref this.Decoder, settings);
             this.Settings.Execute();
 
-            return this.Decompiler.LuaScript;
+            return this.Decompiler.Decompile();
         }
     }
 }
