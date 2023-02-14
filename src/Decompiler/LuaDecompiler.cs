@@ -22,22 +22,22 @@ namespace LuaToolkit.Decompiler
 
         public string Decompile(bool debugInfo = false)
         {
-            // keep lazy init?
-            if (this.LuaFunctions == null)
-            {
-                // Start decompilation at RootFunction
-                this.LuaFunctions = new List<LuaScriptFunction>();
-                this.RootFunction.Name = "CRoot"; // or maybe main?
-                DecompileFunction(this.RootFunction);
-            }
+            //// keep lazy init?
+            //if (this.LuaFunctions == null)
+            //{
+            // Start decompilation at RootFunction
+            this.LuaFunctions = new List<LuaScriptFunction>();
+            this.RootFunction.Name = "CRoot"; // or maybe main?
+            InitializeScriptFunction(this.RootFunction);
+            //}
 
-            // only need RootFunction, right?
-            return this.RootFunction.ScriptFunction.GetText(debugInfo);
+            // Decompile main ScriptFunction will also decompile its childs
+            return this.RootFunction.ScriptFunction.Decompile(debugInfo);
         }
         //
         //
         //
-        private void DecompileFunction(LuaFunction func)
+        private void InitializeScriptFunction(LuaFunction func)
         {
             CreateScripFunction(func); // root first and then inside ?
             // TODO: write functions on CLOSURE and not each list?
@@ -47,7 +47,7 @@ namespace LuaToolkit.Decompiler
                 CreateScripFunction(func.Functions[i], func.ScriptFunction.Depth + 1);
                 foreach (var f in func.Functions[i].Functions)
                 {
-                    DecompileFunction(f); // children NOTE: write children in body of parent?
+                    InitializeScriptFunction(f); // children NOTE: write children in body of parent?
                 }
             }
         }
@@ -65,7 +65,7 @@ namespace LuaToolkit.Decompiler
                     Depth = dpth + 1
                 });
             }
-            newFunction.Complete();
+            newFunction.Finalize();
         }
 
         // Deprecated?

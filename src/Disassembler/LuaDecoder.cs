@@ -95,7 +95,7 @@ namespace LuaToolkit.Disassembler
             for (int i = 0; i < count; i++)
             {
                 // TODO: handle CLOSURE??
-                LuaInstruction instr = new LuaInstruction(GetInt());
+                LuaInstruction instr = new LuaInstruction(GetUInt());
                 Instructions.Add(instr);
             }
             return Instructions;
@@ -210,6 +210,12 @@ namespace LuaToolkit.Disassembler
         {
             this.Index += 4;
             return BitConverter.ToInt32(this.File.Buffer, this.Index - 4);
+        }
+
+        private uint GetUInt()
+        {
+            this.Index += 4;
+            return BitConverter.ToUInt32(this.File.Buffer, this.Index - 4);
         }
 
         //private double ReadNumber(byte numSize)

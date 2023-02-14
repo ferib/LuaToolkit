@@ -7,7 +7,7 @@ namespace LuaToolkit
     {
         private const int HalfMax18Bit = 2 << 16;	// == 2^16 -1 == 131071
 
-        public int Data
+        public uint Data
         {
             get;
             private set;
@@ -21,51 +21,55 @@ namespace LuaToolkit
 
         public int A
         {
-            get { return (Data >> 6) & 0xFF; }
+            get { return (int)(Data >> 6) & 0xFF; }
             set
             {
                 //_A = value;
                 //Data = ((Data & ~0xFF) | ((value >> 6) & 0xFF));
-                Data = ((Data & ~0x00003FC0) | ((value & 0xFF) << 6) );
+                Data = (uint)((Data & ~0x00003FC0) | (((uint)value & 0xFF) << 6) );
             }
         }
 
         public int B
         {
-            get { return (Data >> 23) & 0x1FF; }
+            get { return (int)(Data >> 23) & 0x1FF; }
             set
             {
                 //_B = value;
                 //Data = ((Data & ~0x1FF) | ((value >> 23) & 0x1FF));
                 //UpdateData();
                 //Data = ((Data & ~0xFF800000)   | ((value >> 23) & 0x1FF));
-                Data = ((Data & ~0x7F800000) | ((value & 0x1FF) << 23));
+                Data = (uint)((Data & ~0xFF800000) | (((uint)value & 0x1FF) << 23));
             }
         }
 
         public int C
         {
-            get { return (Data >> 14) & 0x1FF; }
+            get { return (int)(Data >> 14) & 0x1FF; }
             set
             {
                 //_C = value;
                 //Data = ((Data & ~0x1FF) | ((value >> 14) & 0x1FF));
                 //UpdateData();
-                Data = ((Data & ~0x007FC000) | ((value & 0x1FF) << 14));
+                Data = (uint)((Data & ~0x007FC000) | (((uint)value & 0x1FF) << 14));
             }
         }
 
         public int Bx
         {
-            get { return ((B << 9) & 0x000FFE00 | C) & 0x3FFFF; }
+            //get { return ((B << 9) & 0x000FFE00 | C) & 0x3FFFF; }
+            get { return ((B << 9) & 0xFFE00 | C) & 0x3FFFF; }
             set 
             { 
-                int b = value >> 9; // TODO: verift that this gets rid of the first 9 bits?
-                int c = (value & ~0x000FFE00); // TODO: verify that this gets rid of the last 9 bits?
+                int b = (value >> 9); // TODO: verift that this gets rid of the first 9 bits?
+                int c = (value & ~0xFFE00); // TODO: verify that this gets rid of the last 9 bits?
                 //UpdateData();
                 //Data = ((Data & ~0xFF800000)   | ((b >> 23) & 0x1FF));
-                Data = ((Data & ~0x7F800000)    | ((b & 0x1FF) << 23));
-                Data = ((Data & ~0x007FC000)      | ((c & 0x1FF) << 14));
+                B = b;
+                C = c;
+                
+                // TODO?
+                //Data = (uint)((Data & ~0x007FC000) | ((c & 0x1FF) << 14));
             } 
         }
 
@@ -152,7 +156,7 @@ namespace LuaToolkit
             return originals;
         }
 
-        public LuaInstruction(int data)
+        public LuaInstruction(uint data)
         {
             Data = data;
 
@@ -167,7 +171,7 @@ namespace LuaToolkit
         public LuaInstruction(LuaOpcode opcode)
         {
             this.OpCode = opcode;
-            Data = ((Data & ~0x3F) | ((int)opcode & 0x3F));
+            Data = (uint)((Data & ~0x3F) | ((uint)opcode & 0x3F));
             SetVars();
         }
 

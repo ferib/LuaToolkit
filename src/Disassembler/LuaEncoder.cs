@@ -78,7 +78,7 @@ namespace LuaToolkit.Disassembler
             SetInt(Instructions.Count);
             for (int i = 0; i < Instructions.Count; i++)
             {
-                SetInt(Instructions[i].Data);
+                SetUInt(Instructions[i].Data);
             }
         }
 
@@ -159,6 +159,11 @@ namespace LuaToolkit.Disassembler
         }
 
         public void SetInt(int d)
+        {
+            this.Buffer.AddRange(BitConverter.GetBytes(d));
+        }
+
+        public void SetUInt(uint d)
         {
             this.Buffer.AddRange(BitConverter.GetBytes(d));
         }

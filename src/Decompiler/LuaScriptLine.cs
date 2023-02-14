@@ -36,11 +36,6 @@ namespace LuaToolkit.Decompiler
         public string Postfix = "";
 
         private string _text;
-        //public string GetText
-        //{
-        //    get { if (_text == null || _text == "") { return ToString(); } else { return _text; }; }
-        //    set { _text = value; }
-        //}
 
         public LuaScriptLine(string wildcard)
         {
@@ -433,7 +428,11 @@ namespace LuaToolkit.Decompiler
                 {
                     this.Func.ScriptFunction.GetUsedLocals().Add(value);
                     if (useLocalKeyword)
-                        return "local var" + index;
+                        return "var" + index; // TODO: disable 'local' for now and assume anything
+                                              // named 'var' is local? (as _G[] is used for globals)
+
+                        //return "local var" + index; // TODO: do not over-use this??
+                        // TODO2: some variables might be referenced inside a if, make sure to define at start?
                     else
                         return "var" + index;
                 }

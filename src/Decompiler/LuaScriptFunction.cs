@@ -24,11 +24,6 @@ namespace LuaToolkit.Decompiler
         {
             get
             {
-                //if (this.Func == null || this.Func.Name == null || this.Func.Name == "" || this.Func.Name.Contains("@"))
-                //{
-                //    return GetName();
-                //}
-                //else
                 return this.Func.Name;
             }
             set
@@ -101,7 +96,7 @@ namespace LuaToolkit.Decompiler
             else
                 return "unk" + index;
         }
-        public void Complete(bool overwriteBlocks = false, bool debuginfo = false)
+        public void Finalize(bool overwriteBlocks = false, bool debuginfo = false)
         {
             Cleanlines();
             GenerateBlocks(overwriteBlocks, debuginfo);
@@ -109,18 +104,15 @@ namespace LuaToolkit.Decompiler
             HandleTailcallReturns(debuginfo); // fix returns
             OutlineConditions(); // moves IF code above IF chain
         }
-        public string GetText(bool debugInfo = false)
+        public string Decompile(bool debugInfo = false, bool recompile = false)
         {
-            if (this.Blocks.Count == 0)
-                this.Complete(false, debugInfo);
+            if (this.Blocks.Count == 0 || recompile)
+                this.Finalize(false, debugInfo);
 
-            string result = this.ToString(); // func prototype
-            if (debugInfo)
-                result += GenerateDebugCode();
-            else
-                result += GenerateCleanCode();
+            //string result = this.ToString(); // func prototype
+            //result += ;
 
-            return result;
+            return this.Decompilebeautiful();
         }
         public void Cleanlines()
         {
@@ -129,11 +121,17 @@ namespace LuaToolkit.Decompiler
         }
 
         // NOTE: this is garbage, might as well get rid of it?
-        public string BeautifieCode()
+        public string Decompilebeautiful()
         {
             // text based because we did wanky things instead of respecting the list	
-            int tabCount = 1;
-            string[] lines = GetText().Replace("\r", "").Replace("\t", "").Split('\n');
+            int tabCount = 0;
+
+            //string[] lines = GetText().Replace("\r", "").Replace("\t", "").Split('\n');
+            string test = GenerateCode();
+
+            test = test.Replace("\r", "");
+            string[] lines = test.Split('\n');
+
             string newText = "";
             for (int i = 0; i < lines.Length; i++)
             {
@@ -183,44 +181,58 @@ namespace LuaToolkit.Decompiler
             return newText;
         }
         //
-        private string GenerateDebugCode()
-        {
 
-            string result = "";
-            int tabLevel = 0;
-            for (int b = 0; b < this.Blocks.Count; b++)
-            {
-                // print block content
-                for (int i = 0; i < this.Blocks[b].Lines.Count; i++)
-                {
-                    if (this.Blocks[b].Lines[i].Instr.OpCode == LuaOpcode.CLOSURE)
-                        result += this.Blocks[b].Lines[i].GetFunctionRef().ScriptFunction.GetText(); // inline func in parent
-                    result += (this.Blocks[b].StartAddress + i).ToString("0000") + $": {new string(' ', tabLevel)}" + this.Blocks[b].Lines[i].GetText().Replace("\t", "");
-                }
-                result += new string('-', 50) + $" ({this.Blocks[b].JumpsTo}) \r\n";
-                if (b == this.Blocks.Count - 1)
-                    result += "\r\n"; // keep it clean?
-            }
-            return result;
-        }
-        private string GenerateCleanCode(bool debuginfo = false)
+        
+        // keep for internal debug usage?
+        //private string GenerateDebugCode()
+        //{
+        //    string result = "";
+        //    int tabLevel = 0;
+        //    for (int b = 0; b < this.Blocks.Count; b++)
+        //    {
+        //        // print block content
+        //        for (int i = 0; i < this.Blocks[b].Lines.Count; i++)
+        //        {
+        //            if (this.Blocks[b].Lines[i].Instr.OpCode == LuaOpcode.CLOSURE)
+        //                result += this.Blocks[b].Lines[i].GetFunctionRef().ScriptFunction.Decompile(); // inline func in parent
+        //            result += (this.Blocks[b].StartAddress + i).ToString("0000") 
+        //                + $": {new string(' ', tabLevel)}" + this.Blocks[b].Lines[i].GetText().Replace("\t", "");
+        //        }
+        //        result += new string('-', 50) + $" ({this.Blocks[b].JumpsTo}) \r\n";
+        //        if (b == this.Blocks.Count - 1)
+        //            result += "\r\n"; // keep it clean?
+        //    }
+        //    return result;
+        //}
+        private string GenerateCode()
         {
+            // prototype
             string result = "";
+            string args = "(";
+            for (int i = 0; i < this.NameArgs.Count; i++)
+            {
+                args += this.NameArgs[i];
+                if (i < this.NameArgs.Count - 1 || this.HasVarargs)
+                    args += ", ";
+            }
+            args += (this.HasVarargs ? "...)" : ")");
+            result = (this.IsLocal ? "local " : "") + $"function {GetName()}{args}\r\n";
+
+            // body
             for (int b = 0; b < this.Blocks.Count; b++)
             {
                 for (int i = 0; i < this.Blocks[b].Lines.Count; i++)
                 {
                     if (this.Blocks[b].Lines[i].Instr.OpCode == LuaOpcode.CLOSURE)
                         if (this.Blocks[b].Lines[i].GetFunctionRef() != null)
-                            result += this.Blocks[b].Lines[i].GetFunctionRef().ScriptFunction.BeautifieCode(); // inline func in parent
-                    result += this.Blocks[b].Lines[i].GetText(debuginfo);
+                            result += (this.Blocks[b].Lines[i].GetFunctionRef().ScriptFunction.Decompilebeautiful()); // inline func in parent
+                    result += (this.Blocks[b].Lines[i].GetText().Replace("\t", ""));
                 }
 
-                if (b == this.Blocks.Count - 1)
-                    result += "\r\n"; // keep it clean?
             }
             return result;
         }
+
         private void HandleUpvalues()
         {
             // NOTE: Upvalues are used for function prototypes and are referenced to in a global scope
