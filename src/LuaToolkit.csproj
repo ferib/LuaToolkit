@@ -13,6 +13,7 @@
     <PackageTags>Lua, Decompiler, Decoder, Encoder, Obfuscator, Disassembler, Beautifier</PackageTags>
     <RepositoryUrl>https://github.com/ferib/LuaToolkit</RepositoryUrl>
     <PackageProjectUrl>https://github.com/ferib/LuaToolkit</PackageProjectUrl>
+    <LangVersion>preview</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
