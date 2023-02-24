@@ -51,9 +51,13 @@ namespace LuaToolkit.Decompiler
         {
             // this only checks for outgoing, we split incommmings somwhere else
             this.lines.Add(l);
-            if (l.IsBranch() || l.Instr.OpCode == LuaOpcode.TFORLOOP || l.Instr.OpCode == LuaOpcode.FORLOOP)
+            if (l.IsBranch() || l.Instr.OpCode == LuaOpcode.TFORLOOP
+                || l.Instr.OpCode == LuaOpcode.FORLOOP) // || l.Instr.OpCode == LuaOpcode.FORPREP)
             {
-                this.JumpsTo = this.StartAddress + this.lines.Count + (short)l.Instr.sBx; // base + offset
+                short off = 1;
+                if ((short)l.Instr.sBx < 0)
+                    off = -1;
+                this.JumpsTo = this.StartAddress + this.lines.Count + (short)l.Instr.sBx + off; // base + offset
                 return true;
             }
             return false;
