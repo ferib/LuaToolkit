@@ -228,7 +228,7 @@ namespace LuaToolkit.Decompiler
                 case LuaOpcode.TESTSET:
                     this.Op1 = $"if var{Instr.B} ~= {Instr.C} then; ";
                     this.Op2 = $"var{Instr.A} = ";
-                    this.Op3 = $"var{Instr.B}; end";
+                    this.Op3 = $"var{Instr.B}; end -- TESTSET";
                     break;
                 case LuaOpcode.CALL:
                     // TODO: there is something off here?

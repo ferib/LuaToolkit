@@ -360,10 +360,11 @@ namespace LuaToolkit.Decompiler
 
                         if (erase)
                         {
-                            if (debuginfo)
-                                this.Blocks[i].Lines[j].Op1 = "-- TAILCALL RETURN"; // erase keyword
-                            else
-                                this.Blocks[i].Lines[j].Op1 = ""; // erase keyword
+#if DEBUG
+                            this.Blocks[i].Lines[j].Op1 = "-- TAILCALL RETURN"; // erase keyword
+#else
+                            this.Blocks[i].Lines[j].Op1 = ""; // erase keyword
+#endif
 
                             this.Blocks[i].Lines[j].Op2 = ""; // erase variables
                             //this.Blocks[i].Lines[j].Op3 = ""; // erase (dont erase this, contains else)
@@ -499,7 +500,7 @@ namespace LuaToolkit.Decompiler
                         block.JumpsTo = -1;
                         block.JumpsNext = -1;
                         if (block.Lines[block.Lines.Count - 1].Instr.OpCode == LuaOpcode.RETURN)
-                            block.Lines[block.Lines.Count - 1].Op1 = "end"; // replace last RETURN with END
+                            block.Lines[block.Lines.Count - 1].Op1 = ""; //"end -- return"; // make empty, will be 'end' in processing of blocks
                         continue;
                     }
                     // Conditions without JMP
@@ -556,7 +557,8 @@ namespace LuaToolkit.Decompiler
             {
                 // IF: JMP != -1 && ELSE != -1 (&& GetConditionLine != NULL; ELSE; FORLOOP END (dont care))
                 // ELSE: JMP != -1 && ELSE == -1
-                // ENDIF: JMP == -1 && ELSE != -1
+                // END-BLOCK: JMP == -1 && ELSE != -1
+                //   -> END if/func for all blocks JMP == END-BLOCK.Address
                 // END: JMP == -1 && ELSE == -1
                 var block = this.Blocks[i];
                 var bline = block.GetBranchLine(); 
@@ -572,12 +574,33 @@ namespace LuaToolkit.Decompiler
                     //else
                     // NOTE: can have multiple endings?
 
+                    //var xrefs = this.Blocks.FindAll(x => x.GetBranchLine() != null && (x.JumpsTo == block.StartAddress)); // || x.JumpsNext == block.StartAddress));
                     var xrefs = this.Blocks.FindAll(x => x.GetBranchLine() != null && (x.JumpsTo == block.StartAddress || x.JumpsNext == block.StartAddress));
 
-                    foreach(var x in xrefs)
-                        bline.Postfix += "end\r\n";
+                    for (int j = 0; j < xrefs.Count; j++)
+                    {
+                        if (xrefs[j].IfChainIndex > 0)
+                            continue;
+
+                        // check if it has an ELSE (ELSE: JMP != -1 && ELSE == -1)
+                        if (xrefs[j].JumpsNext == -1)
+                        {
+                            // This is an ELSE
+                            continue;
+                        }
+
+                        var xbline = xrefs[j].GetBranchLine();
+                        if (xbline == null || (xbline.Instr.OpCode == LuaOpcode.FORLOOP))
+                            continue;
+#if DEBUG
+                        bline.Postfix += $"end -- -{j}\r\n";
+#else
+                        bline.Postfix += $"end\r\n";
+#endif
+                    }
                 }
-                else if (block.JumpsTo != -1 && block.JumpsNext != -1 
+                else 
+                if (block.JumpsTo != -1 && block.JumpsNext != -1 
                     && block.GetConditionLine() != null) // IF detected
                 {
                     // TODO: revisit this!!!!
@@ -587,7 +610,11 @@ namespace LuaToolkit.Decompiler
                         if (block.JumpsTo == block.JumpsNext)
                         {
                             // NOTE: Bugfix to prevent merging with next blocks?
+#if DEBUG
+                            block.Lines[block.Lines.Count - 1].Postfix = "\r\nend -- self\r\n";
+#else
                             block.Lines[block.Lines.Count - 1].Postfix = "\r\nend";
+#endif
                             block.IfChainIndex = 0; // mark as solved
                         }
                         else
@@ -713,18 +740,85 @@ namespace LuaToolkit.Decompiler
                     //}
                     //else
                     //{
-                        
+
+                    // NOTE: untested?
+                    var xrefs = this.Blocks.FindAll(x => (x.JumpsTo == block.StartAddress || x.JumpsNext == block.StartAddress));
+                    //var xrefs = this.Blocks.FindAll(x => (x.JumpsTo == block.StartAddress)); // || x.JumpsNext == block.StartAddress));
+                    for (int j = 0; j < xrefs.Count; j++)
+                    {
+                        if (xrefs[j].IfChainIndex > 0)
+                            continue; // only need END for first IF in chain
+
+                        // check if it has an ELSE (ELSE: JMP != -1 && ELSE == -1)
+                        if (xrefs[j].JumpsTo == -1) // block.JumpsNext)
+                        {
+                            // This is an ELSE
+                            continue;
+                        }
+
                         if (lastLine.Instr.OpCode == LuaOpcode.RETURN)
-                            lastLine.Postfix += "\r\nend"; // ???
+#if DEBUG
+                            lastLine.Postfix += $"\r\nend -- _{j}\r\n"; // ???
+#else
+                            lastLine.Postfix += $"\r\nend"; // ???
+#endif
                         else
-                            lastLine.Prefix += "end\r\n";
+#if DEBUG
+                            lastLine.Prefix += $"end -- _{j}\r\n";
+#else
+                            lastLine.Prefix += $"end\r\n";
+#endif
+                    }
                     //}
-                    
+
                 }
                 else if (block.JumpsTo == -1 && block.JumpsNext == -1)
                 {
-                    if (debuginfo)
-                        bline.Postfix += " -- END\r\n"; // already taken care of
+                    // IF: 
+                    // ELSE: ELSE == -1
+                    // END-BLOCK: JMP == -1
+                    //   -> END if/func for all blocks JMP == END-BLOCK.Address
+                    // END: JMP == -1 && ELSE == -1
+
+                    var lastLine = block.Lines[block.Lines.Count - 1];
+                    //var xrefs = this.Blocks.FindAll(x => (x.JumpsTo == block.StartAddress));
+                    var xrefs = this.Blocks.FindAll(x => (x.JumpsTo == block.StartAddress || x.JumpsNext == block.StartAddress));
+                    for (int j = 0; j < xrefs.Count; j++)
+                    {
+                        if (xrefs[j].IfChainIndex > 0)
+                            continue; // only need END for first IF in chain
+
+                        // Direct jumps only?
+                        //if (xrefs[j].JumpsTo != block.StartAddress)
+                        //if (xrefs[j].JumpsTo == block.StartAddress || xrefs[j].JumpsTo == -1)
+                        //if (!(xrefs[j].JumpsTo == -1 && xrefs[j].JumpsNext == block.StartAddress))
+                        if (!(xrefs[j].JumpsTo == block.StartAddress && xrefs[j].JumpsNext != -1))
+                        {
+                            // This is an ELSE
+                            continue;
+                        }
+
+                        if (lastLine.Instr.OpCode == LuaOpcode.RETURN)
+#if DEBUG
+                            lastLine.Postfix += $"\r\nend -- {j}\r\n"; // ???
+#else
+                            lastLine.Postfix += $"\r\nend"; // ???
+#endif
+                        else
+#if DEBUG
+                            lastLine.Prefix += $"end -- {j}\r\n";
+#else
+                            lastLine.Prefix += $"end\r\n";
+#endif
+                    }
+
+                    // Do it anyways?
+#if DEBUG
+                    lastLine.Prefix += $"end -- x\r\n";
+#else
+                    lastLine.Prefix += $"end\r\n";
+#endif
+
                 }
             }
         }
