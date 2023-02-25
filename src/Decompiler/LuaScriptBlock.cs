@@ -54,10 +54,10 @@ namespace LuaToolkit.Decompiler
             if (l.IsBranch() || l.Instr.OpCode == LuaOpcode.TFORLOOP
                 || l.Instr.OpCode == LuaOpcode.FORLOOP) // || l.Instr.OpCode == LuaOpcode.FORPREP)
             {
-                short off = 0;
+                short off = 1;
                 if ((short)l.Instr.sBx < 0)
-                    off = -1;
-                this.JumpsTo = this.StartAddress + this.lines.Count + (short)l.Instr.sBx + off; // base + offset
+                    off = 0;
+                this.JumpsTo = (this.StartAddress + this.lines.Count-1) + (short)l.Instr.sBx + off; // base + offset
                 return true;
             }
             return false;
