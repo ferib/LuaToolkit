@@ -693,9 +693,9 @@ namespace LuaToolkit.Decompiler
                     //    lastLine.Prefix += "end\r\n";
                     var lastLine = this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1];
                     if (lastLine.Instr.OpCode == LuaOpcode.RETURN)
-                        lastLine.Postfix = "\r\nend";
+                        lastLine.Postfix += "\r\nend";
                     else
-                        lastLine.Prefix = "end\r\n";
+                        lastLine.Prefix += "end\r\n";
                 }
 
                 else if (this.Blocks[i].JumpsTo == -1 && this.Blocks[i].JumpsNext == -1)
