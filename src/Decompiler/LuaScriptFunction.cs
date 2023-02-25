@@ -563,17 +563,19 @@ namespace LuaToolkit.Decompiler
                 // ELSE: JMP != -1 && ELSE == -1
                 // ENDIF: JMP == -1 && ELSE != -1
                 // END: JMP == -1 && ELSE == -1
-                var bline = this.Blocks[i].GetBranchLine();
+                var block = this.Blocks[i];
+                var bline = block.GetBranchLine(); 
                 if (bline != null &&
                     (bline.Instr.OpCode == LuaOpcode.FORLOOP || bline.Instr.OpCode == LuaOpcode.TFORLOOP))
                 {
                     if (debuginfo)
-                        this.Blocks[i].GetBranchLine().SetText("end -- ENDLOOP\r\n");
+                        bline.SetText("end -- ENDLOOP\r\n");
                     else
-                        this.Blocks[i].GetBranchLine().SetText("end\r\n");
+                        bline.SetText("end\r\n");
                 }
-                else if (this.Blocks[i].JumpsTo != -1 && this.Blocks[i].JumpsNext != -1 && this.Blocks[i].GetConditionLine() != null) // IF detected
+                else if (block.JumpsTo != -1 && block.JumpsNext != -1 && block.GetConditionLine() != null) // IF detected
                 {
+                    // TODO: revisit this!!!!
                     try
                     {
                         // merge
@@ -596,7 +598,7 @@ namespace LuaToolkit.Decompiler
 
                         // iterate from lastifIndex to i and split
                         int ifIndex = lastifIndex;
-                        if (this.Blocks[i].IfChainIndex != -1)
+                        if (block.IfChainIndex != -1)
                             continue; // skip if already discovered
 
                         while (ifIndex >= i)
@@ -673,7 +675,7 @@ namespace LuaToolkit.Decompiler
                         Console.WriteLine(e);
                     }
                 }
-                else if (this.Blocks[i].JumpsTo != -1 && this.Blocks[i].JumpsNext == -1)
+                else if (block.JumpsTo != -1 && block.JumpsNext == -1)
                 {
                     if (debuginfo)
                         bline.Prefix += "else -- ELSE";
@@ -682,7 +684,7 @@ namespace LuaToolkit.Decompiler
                         bline.Prefix += "else";
                     //this.Blocks[i].GetBranchLine().Postfix += "else";
                 }
-                else if (this.Blocks[i].JumpsTo == -1 && this.Blocks[i].JumpsNext != -1 && bline != null
+                else if (block.JumpsTo == -1 && block.JumpsNext != -1 && bline != null
                     && bline.Instr.OpCode != LuaOpcode.FORPREP) // also make sure if condifition is set (no forloop)
                 {
                     // NOTE: make sure this is correct??
@@ -691,14 +693,14 @@ namespace LuaToolkit.Decompiler
                     //    lastLine.Prefix += "end -- ENDIF\r\n";
                     //else
                     //    lastLine.Prefix += "end\r\n";
-                    var lastLine = this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1];
+                    var lastLine = block.Lines[block.Lines.Count - 1];
                     if (lastLine.Instr.OpCode == LuaOpcode.RETURN)
                         lastLine.Postfix += "\r\nend";
                     else
                         lastLine.Prefix += "end\r\n";
                 }
 
-                else if (this.Blocks[i].JumpsTo == -1 && this.Blocks[i].JumpsNext == -1)
+                else if (block.JumpsTo == -1 && block.JumpsNext == -1)
                 {
                     if (debuginfo)
                         bline.Postfix += " -- END\r\n"; // already taken care of
