@@ -575,23 +575,26 @@ namespace LuaToolkit.Decompiler
                     // NOTE: can have multiple endings?
 
                     //var xrefs = this.Blocks.FindAll(x => x.GetBranchLine() != null && (x.JumpsTo == block.StartAddress)); // || x.JumpsNext == block.StartAddress));
-                    var xrefs = this.Blocks.FindAll(x => x.GetBranchLine() != null && (x.JumpsTo == block.StartAddress || x.JumpsNext == block.StartAddress));
-
+                    //var xrefs = this.Blocks.FindAll(x => x.GetBranchLine() != null && (x.JumpsTo == block.StartAddress || x.JumpsNext == block.StartAddress));
+                    var xrefs = this.Blocks.FindAll(x => (x.JumpsTo == block.StartAddress || x.JumpsNext == block.StartAddress));
                     for (int j = 0; j < xrefs.Count; j++)
                     {
                         if (xrefs[j].IfChainIndex > 0)
                             continue;
 
-                        // check if it has an ELSE (ELSE: JMP != -1 && ELSE == -1)
-                        if (xrefs[j].JumpsNext == -1)
-                        {
-                            // This is an ELSE
-                            continue;
-                        }
+                        //// check if it has an ELSE (ELSE: JMP != -1 && ELSE == -1)
+                        //if (xrefs[j].JumpsNext == -1)
+                        //{
+                        //    // This is an ELSE
+                        //    continue;
+                        //}
 
-                        var xbline = xrefs[j].GetBranchLine();
-                        if (xbline == null || (xbline.Instr.OpCode == LuaOpcode.FORLOOP))
+                        if (!(xrefs[j].JumpsTo == block.StartAddress || (xrefs[j].JumpsTo != -1 && xrefs[j].JumpsNext == block.StartAddress)))
                             continue;
+
+                        //var xbline = xrefs[j].GetBranchLine();
+                        //if (xbline == null || (xbline.Instr.OpCode == LuaOpcode.FORLOOP))
+                        //    continue;
 #if DEBUG
                         bline.Postfix += $"end -- -{j}\r\n";
 #else
@@ -719,6 +722,7 @@ namespace LuaToolkit.Decompiler
                 }
                 else if (block.JumpsTo != -1 && block.JumpsNext == -1)
                 {
+                    // TODO: verify else?
                     if (debuginfo)
                         bline.Prefix += "else -- ELSE";
                     //this.Blocks[i].GetBranchLine().Postfix += "else -- ELSE";
@@ -727,48 +731,48 @@ namespace LuaToolkit.Decompiler
                     //this.Blocks[i].GetBranchLine().Postfix += "else";
                 }
                 else if (block.JumpsTo == -1 && block.JumpsNext != -1 
-                    && (bline != null) // && bline.IsBranch())
-                    && bline.Instr.OpCode != LuaOpcode.FORPREP) // also make sure if condifition is set (no forloop)
+                    //&& (bline != null) // && bline.IsBranch())
+                    //&& bline.Instr.OpCode != LuaOpcode.FORPREP
+                    ) // also make sure if condifition is set (no forloop)
                 {
                     // TODO: Validate if this is an actual end?
                     var nextBlock = this.Blocks[i + 1];
                     var nextLine = nextBlock.Lines[0];
                     var lastLine = block.Lines[block.Lines.Count - 1];
-                    //if (nextLine.Instr.OpCode == LuaOpcode.FORPREP)
-                    //{
-                    //    lastLine.Prefix += "end\r\n";
-                    //}
-                    //else
-                    //{
 
                     // NOTE: untested?
                     var xrefs = this.Blocks.FindAll(x => (x.JumpsTo == block.StartAddress || x.JumpsNext == block.StartAddress));
                     //var xrefs = this.Blocks.FindAll(x => (x.JumpsTo == block.StartAddress)); // || x.JumpsNext == block.StartAddress));
-                    for (int j = 0; j < xrefs.Count; j++)
-                    {
-                        if (xrefs[j].IfChainIndex > 0)
-                            continue; // only need END for first IF in chain
-
-                        // check if it has an ELSE (ELSE: JMP != -1 && ELSE == -1)
-                        if (xrefs[j].JumpsTo == -1) // block.JumpsNext)
+                    //bool okdo = false;
+                    //if(okdo)
+                        for (int j = 0; j < xrefs.Count; j++)
                         {
-                            // This is an ELSE
-                            continue;
-                        }
+                            // TODO: take last if??
+                            if (xrefs[j].IfChainIndex > 0)
+                                continue; // only need END for first IF in chain
 
-                        if (lastLine.Instr.OpCode == LuaOpcode.RETURN)
-#if DEBUG
-                            lastLine.Postfix += $"\r\nend -- _{j}\r\n"; // ???
-#else
-                            lastLine.Postfix += $"\r\nend"; // ???
-#endif
-                        else
-#if DEBUG
-                            lastLine.Prefix += $"end -- _{j}\r\n";
-#else
-                            lastLine.Prefix += $"end\r\n";
-#endif
-                    }
+                            //// check if it has an ELSE (ELSE: JMP != -1 && ELSE == -1)
+                            //if (xrefs[j].JumpsTo == -1) // block.JumpsNext)
+                            //{
+                            //    // This is an ELSE
+                            //    continue;
+                            //}
+                            if (!(xrefs[j].JumpsTo == block.StartAddress || (xrefs[j].JumpsTo != -1 && xrefs[j].JumpsNext == block.StartAddress)))
+                                continue;
+
+                            if (lastLine.Instr.OpCode == LuaOpcode.RETURN)
+    #if DEBUG
+                                lastLine.Postfix += $"\r\nend -- _{j}\r\n"; // ???
+    #else
+                                lastLine.Postfix += $"\r\nend"; // ???
+    #endif
+                            else
+    #if DEBUG
+                                lastLine.Prefix += $"end -- _{j}\r\n";
+    #else
+                                lastLine.Prefix += $"end\r\n";
+    #endif
+                        }
                     //}
 
                 }
@@ -783,35 +787,48 @@ namespace LuaToolkit.Decompiler
                     var lastLine = block.Lines[block.Lines.Count - 1];
                     //var xrefs = this.Blocks.FindAll(x => (x.JumpsTo == block.StartAddress));
                     var xrefs = this.Blocks.FindAll(x => (x.JumpsTo == block.StartAddress || x.JumpsNext == block.StartAddress));
-                    for (int j = 0; j < xrefs.Count; j++)
-                    {
-                        if (xrefs[j].IfChainIndex > 0)
-                            continue; // only need END for first IF in chain
-
-                        // Direct jumps only?
-                        //if (xrefs[j].JumpsTo != block.StartAddress)
-                        //if (xrefs[j].JumpsTo == block.StartAddress || xrefs[j].JumpsTo == -1)
-                        //if (!(xrefs[j].JumpsTo == -1 && xrefs[j].JumpsNext == block.StartAddress))
-                        if (!(xrefs[j].JumpsTo == block.StartAddress && xrefs[j].JumpsNext != -1))
+                    bool doLast = false;
+                    if(doLast)
+                        for (int j = 0; j < xrefs.Count; j++)
                         {
-                            // This is an ELSE
-                            continue;
+                            // TODO: take last if??
+                            if (xrefs[j].IfChainIndex > 0)
+                                continue; // only need END for first IF in chain
+
+                            // xrefs contains list of ANY blocks landing at location of block,
+                            // to make sure it is an if we check for IF or ELSE blocks, block must
+                            // have either `JumpsTo` set to us, or `JumpsNext` to us + JumpsTo != -1
+
+                            //if (xrefs[j].JumpsTo != block.StartAddress)
+                            //if (xrefs[j].JumpsTo == -1)
+                            if (!(xrefs[j].JumpsTo == block.StartAddress || (xrefs[j].JumpsTo != -1 && xrefs[j].JumpsNext == block.StartAddress)))
+                            //if(xrefs[j].JumpsTo == block.StartAddress)
+                            //if (xrefs[j].JumpsTo == block.StartAddress || xrefs[j].JumpsTo == -1)
+                            //if (!(xrefs[j].JumpsTo == -1 && xrefs[j].JumpsNext == block.StartAddress))
+                            //if (!(xrefs[j].JumpsTo == block.StartAddress && xrefs[j].JumpsNext != -1))
+                            //if (!(xrefs[j].JumpsNext == -1 && xrefs[j].GetBranchLine() != null)) // MUST have a branchLine, otherwise its just a follow block
+                            //if (
+                            //    (xrefs[j].JumpsNext == -1 || xrefs[j].GetBranchLine() == null) // ELSE or not a branch at all
+                            //    //|| (xrefs[j].JumpsNext != -1 && xrefs[j].GetBranchLine() == null)
+                            //    )
+                            {
+                                // This is an ELSE
+                                continue;
+                            }
+
+                            if (lastLine.Instr.OpCode == LuaOpcode.RETURN)
+    #if DEBUG
+                                lastLine.Postfix += $"\r\nend -- {j}\r\n"; // ???
+    #else
+                                lastLine.Postfix += $"\r\nend"; // ???
+    #endif
+                            else
+    #if DEBUG
+                                lastLine.Prefix += $"end -- {j}\r\n";
+    #else
+                                lastLine.Prefix += $"end\r\n";
+    #endif
                         }
-
-                        if (lastLine.Instr.OpCode == LuaOpcode.RETURN)
-#if DEBUG
-                            lastLine.Postfix += $"\r\nend -- {j}\r\n"; // ???
-#else
-                            lastLine.Postfix += $"\r\nend"; // ???
-#endif
-                        else
-#if DEBUG
-                            lastLine.Prefix += $"end -- {j}\r\n";
-#else
-                            lastLine.Prefix += $"end\r\n";
-#endif
-                    }
-
                     // Do it anyways?
 #if DEBUG
                     lastLine.Prefix += $"end -- x\r\n";
