@@ -36,16 +36,21 @@ namespace LuaToolkit.Decompiler
         }
         //
         //
-        //
+        // Initialises a function:
+        //   - Gives function a name.
+        //   - interates over childeren:
+        //      - creates a script function
+        //      - initialize.
         private void InitializeScriptFunction(LuaFunction func)
         {
             CreateScripFunction(func); // root first and then inside ?
             // TODO: write functions on CLOSURE and not each list?
             for (int i = 0; i < func.Functions.Count; i++)
             {
-                func.Functions[i].Name = func.Name + "_" + i; // set default name
-                CreateScripFunction(func.Functions[i], func.ScriptFunction.Depth + 1);
-                foreach (var f in func.Functions[i].Functions)
+                var child = func.Functions[i];
+                child.Name = func.Name + "_" + i; // set default name
+                CreateScripFunction(child, func.ScriptFunction.Depth + 1);
+                foreach (var f in child.Functions)
                 {
                     InitializeScriptFunction(f); // children NOTE: write children in body of parent?
                 }

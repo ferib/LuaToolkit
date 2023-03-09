@@ -49,6 +49,14 @@ namespace LuaToolkit.Decompiler
             SetType();
             SetMain();
         }
+
+        /// <summary>
+        /// Decompiles the LuaInstruction to Lua Operands.
+        /// Each Lua Bytescode has it's own Lua Script operands
+        /// The parameters are based on the registers.
+        /// TODO cleanup
+        /// </summary>
+        /// <param name="Instr">Instruction to decompile.</param>
         public void SetMain(LuaInstruction Instr = null)
         {
             if (Instr == null)

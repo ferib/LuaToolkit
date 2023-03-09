@@ -627,6 +627,22 @@ if true then
 end
 return var0";
 
+/* 
+function CRoot()
+	var0 = "unk262143"
+	var1 = _G["unk262142"]
+	if var0 == var0 then
+		var1 = "unk262143"
+		var2 = "unk262142"
+		var3 = "unk262143"
+	end -- _0
+	for var4=var1, var2, var3 do
+		var0 = var4
+	end -- -1
+	return var0
+end -- x
+*/
+
             // NOTE: This one is cucked rly bad?
             luacin.Function.Instructions.AddRange(new LuaInstruction[]
             {
@@ -634,6 +650,7 @@ return var0";
                 new LuaInstruction(LuaOpcode.GETGLOBAL)     { A=1, Bx=-2 },     // var0 = _G["GG"]
                 new LuaInstruction(LuaOpcode.EQ)            { A=0, B=0, C=0 },  // if 
                 new LuaInstruction(LuaOpcode.JMP)           { sBx=6 },          // goto +6 
+
                 new LuaInstruction(LuaOpcode.LOADK)         { A=1, Bx=-1 },     // var1 = 1
                 new LuaInstruction(LuaOpcode.LOADK)         { A=2, Bx=-2 },     // var2 = 100
                 new LuaInstruction(LuaOpcode.LOADK)         { A=3, Bx=-1 },     // var2 = 1
@@ -658,7 +675,7 @@ return var0";
             LuaDecompiler decompiler = new LuaDecompiler(decoder);
 
             string test = decompiler.Decompile(true);
-            test = test.Replace(" ", "").Replace("\t", "").Replace("\n", "").Replace("\r", "");
+            // test = test.Replace(" ", "").Replace("\t", "").Replace("\n", "").Replace("\r", "");
 
             Assert.True(test.Contains($"endreturnvar0endend"),
                 "Decompiler failed to find end of shared if + for statement");

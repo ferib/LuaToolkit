@@ -1,8 +1,11 @@
 ﻿using LuaToolkit.Disassembler;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Reflection.Emit;
+using System.Threading;
 
 namespace LuaToolkit.Decompiler
 {
@@ -108,7 +111,9 @@ namespace LuaToolkit.Decompiler
         public string Decompile(bool debugInfo = false, bool recompile = false)
         {
             if (this.Blocks.Count == 0 || recompile)
+            {
                 this.Finalize(false, debugInfo);
+            }
 
             //string result = this.ToString(); // func prototype
             //result += ;
@@ -417,154 +422,412 @@ namespace LuaToolkit.Decompiler
 
             return null;
         }
+
+        /// <summary>
+        /// Split lines of a function in separate blocks.
+        /// Each block ends with a branch.
+        /// </summary>
+        private void GenerateBlocksForLines()
+        {
+            int index = 0;
+            while (index < this.Lines.Count)
+            {
+                LuaScriptBlock newBlock = new LuaScriptBlock(index, this.Decoder, this.Func);
+                // Add all instructions to the new block until we encounter the end of a block.
+                while (index < this.Lines.Count)
+                {
+                    if (newBlock.AddScriptLine(this.Lines[index]))
+                    {
+                        // break out of while when next instruction is new block
+                        break; 
+                    }
+                    index++;
+                }
+                index++;
+                this.Blocks.Add(newBlock);
+            }
+        }
+
+        private void GenerateBlocksImpl()
+        {
+            // Removes all blocks.
+            // Should only be called when we want to generate blocks for the first time
+            // or want to overwrite the already generated blocks.
+            this.Blocks.Clear();
+
+            GenerateBlocksForLines();
+
+            // add block jumpsFrom and split
+            List<KeyValuePair<int, int>> BlockSplitLines = new List<KeyValuePair<int, int>>();// block, line
+            foreach(var block in this.Blocks)
+            {
+                if (block.JumpsTo == -1)
+                    continue;
+
+                // Find all blocks (targets) that have a jump to this block.
+                var targets = this.Blocks.FindAll(x => x.HasLineNumber(block.JumpsTo));
+
+                // If there are no blocks that jump to this block, continue.
+                if (targets.Count == 0)
+                    continue;
+
+                // Find a block that starts 
+
+                var targetpair = new KeyValuePair<int, int>(this.Blocks.FindIndex(x => x.StartAddress == targets[0].StartAddress), block.JumpsTo);
+
+                //// Hacky way to check if previous instr is FORLOOP and have it jump to self-ish?
+                //var line = this.Blocks[i].Lines[targetpair.Value - 2]; // -1 to rebase index, -1 to get previous line
+                //if (line.Instr.OpCode == LuaOpcode.FORLOOP)
+                //    targetpair = new KeyValuePair<int, int>(targetpair.Key, targetpair.Value - 1);
+                BlockSplitLines.Add(targetpair);
+
+                
+
+
+                //foreach (var tb in targets)
+                //    BlockSplitLines.Add(new KeyValuePair<int, int>(this.Blocks.FindIndex(x => x.StartAddress == tb.StartAddress), i));
+            }
+
+            BlockSplitLines = BlockSplitLines.OrderBy(x => x.Value).ToList(); // important to sort by lineNumber or other blocks wont get done otherwise
+                                                                              // cut blocks and make new ones
+            for (int i = 0; i < BlockSplitLines.Count; i++)
+            {
+                int k = BlockSplitLines[i].Key;
+                int v = BlockSplitLines[i].Value; // -1; // subtract by 1 to allign with Block Index
+                if (this.Blocks[k].StartAddress + this.Blocks[k].Lines.Count < v ||
+                    this.Blocks[k].StartAddress > v)
+                    continue; // already circumcised this boi
+
+                if (this.Blocks.Find(x => x.StartAddress == v) != null)
+                    continue; // been there, done that
+
+                LuaScriptBlock splitBlock = new LuaScriptBlock(v, this.Decoder, this.Func);
+                for (int j = v - this.Blocks[k].StartAddress; j < this.Blocks[k].Lines.Count; j++)
+                    splitBlock.Lines.Add(this.Blocks[k].Lines[j]); // copy from old to new
+
+                // delete old lines
+                if (splitBlock.Lines.Count > 0)
+                    this.Blocks[k].Lines.RemoveRange(v - this.Blocks[k].StartAddress, splitBlock.Lines.Count);
+
+                this.Blocks.Insert(k + 1, splitBlock); // insert new block after modified one
+                                                       // update BlockSplitLines indexing
+                for (int j = i + 1; j < BlockSplitLines.Count; j++)
+                    BlockSplitLines[j] = new KeyValuePair<int, int>(BlockSplitLines[j].Key + 1, BlockSplitLines[j].Value); // offset remaining blocks
+            }
+
+            // fix JumpsTo and JumpsNext ?
+            this.Blocks.OrderBy(x => x.StartAddress);
+            for (int i = 0; i < this.Blocks.Count; i++)
+            {
+                var block = this.Blocks[i];
+                // last return
+                if (i == this.Blocks.Count - 1)
+                {
+                    // Last block shouldnt jump to anywhere
+                    block.JumpsTo = -1;
+                    block.JumpsNext = -1;
+                    if (block.Lines[block.Lines.Count - 1].Instr.OpCode == LuaOpcode.RETURN)
+                        block.Lines[block.Lines.Count - 1].Op1 = ""; //"end -- return"; // make empty, will be 'end' in processing of blocks
+                    continue;
+                }
+                if (block.Lines.Count == 0)
+                {
+                    continue;
+                }
+                // Get the last instruction of the block (this is always a branch
+                switch (block.Lines[block.Lines.Count - 1].Instr.OpCode)
+                {
+                    // TODO: check which instructions dont pick the next one
+                    case LuaOpcode.TFORLOOP:
+                    case LuaOpcode.FORLOOP: // calculate LOOP jump
+                        short off = 1; // TODO?
+                        if ((short)this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Instr.sBx < 0)
+                            off = 0; // TODO: VERIFY
+                        block.JumpsTo = (block.StartAddress + block.Lines.Count -1) + (short)block.Lines[block.Lines.Count - 1].Instr.sBx + off; // TODO: verify math
+                        block.JumpsNext = this.Blocks[i + 1].StartAddress;
+                        break; // jmp?
+                                //case LuaOpcode.LOADBOOL: // pc++
+                                //    this.Blocks[i].JumpsTo = (this.Blocks[i].StartAddress + this.Blocks[i].Lines.Count - 1) + 2; // skips one if C
+                                //    this.Blocks[i].JumpsNext = (this.Blocks[i].StartAddress + this.Blocks[i].Lines.Count - 1) + 1; // next block
+                                //    break;
+                    case LuaOpcode.JMP: // pc++
+
+                        // check previous instruction is a compare instruction 
+                        if (block.Lines.Count > 1 && block.Lines[block.Lines.Count - 2].IsCondition()) // check for IF
+                        {
+                            // if/test/testset
+                            short off2 = 1; // TODO?
+                            if ((short)this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Instr.sBx < 0)
+                                off2 = 0;
+                            block.JumpsTo = (block.StartAddress + block.Lines.Count - 1) + (short)block.Lines[block.Lines.Count - 1].Instr.sBx + off2; // TODO: verify math
+                            block.JumpsNext = this.Blocks[i + 1].StartAddress;
+                        }
+                        else
+                        {
+                            // unknown jump
+                            short off2 = 1; // TODO?
+                            if ((short)this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Instr.sBx < 0)
+                                off2 = 0;
+                            block.JumpsTo = (block.StartAddress + block.Lines.Count - 1) + (short)block.Lines[block.Lines.Count - 1].Instr.sBx + off2; // TODO: verify math
+                            block.JumpsNext = -1; // this.Blocks[i + 1].StartAddress;
+                        }
+                        break;
+                    default:
+                        block.JumpsTo = -1; // erase from possible previous block?
+                        block.JumpsNext = this.Blocks[i + 1].StartAddress;
+                        break;
+                }
+                
+            }
+        }
+
+        private void SetBlocksForJumps()
+        {
+            foreach(var block in Blocks)
+            {
+                if(block.JumpsNext != -1)
+                {
+                    var targets = this.Blocks.FindAll(x => (block.JumpsNext == x.StartAddress));
+                    if(targets.Count > 0)
+                    {
+                        Debug.Assert(targets.Count == 1, "Every block can only jump to 1 block");
+                        block.JumpsNextBlock = targets[0];
+                        targets[0].BrancherBlocks.Add(block);
+                    }
+                }
+                if(block.JumpsTo != -1)
+                {
+                    var targets = this.Blocks.FindAll(x => (block.JumpsTo == x.StartAddress));
+                    if (targets.Count > 0)
+                    {
+                        Debug.Assert(targets.Count == 1, "Every block can only jump to 1 block");
+                        block.JumpsToBlock = targets[0];
+                        targets[0].BrancherBlocks.Add(block);
+                    }
+                }
+                
+            }
+        }
+
+        /// <summary>
+        /// Handles chain of ifs:
+        /// Example: if A and B then: 
+        /// </summary>
+        /// <param name="blockIndex"></param>
+        /// <param name="block"></param>
+        private void HandleIfBlockMergeChain(int blockIndex, LuaScriptBlock block, bool debugInfo)
+        {
+            try
+            {
+                // Empty If Statement
+                if (block.JumpsTo == block.JumpsNext)
+                {
+                    // NOTE: Bugfix to prevent merging with next blocks?
+#if DEBUG
+                    block.Lines[block.Lines.Count - 1].Postfix = "\r\nend -- self\r\n";
+#else
+                            block.Lines[block.Lines.Count - 1].Postfix = "\r\nend";
+#endif
+                    block.IfChainIndex = 0; // mark as solved
+                    return;
+                }
+
+                // merge
+                int lastifIndex = -1;
+                int bIndex = blockIndex + 1; // search end of IF
+                while (bIndex < this.Blocks.Count)
+                {
+                    if (this.Blocks[bIndex].JumpsTo == -1 || this.Blocks[bIndex].JumpsNext == -1)
+                    {
+                        lastifIndex = bIndex - 1;
+                        break; // IF found
+                    }
+                    bIndex++;
+                }
+                // TODO: find the bodyblock for the last IF and compare against previous IF to find merge chain,
+                // re-do group IF's that do not match the ifbodyblock end/start-1 and figure out if its and/or 
+                // depending on where the jump is set to. The last one should always be classified as 'and'
+                // can be used to figure out the END of the ifbodyblock, we check others by keeping in mind
+                // they can be both and/or, meaning ifbodyblock (and) || ifbodyblock-1 (or)
+
+                // iterate from lastifIndex to i and split
+                int ifIndex = lastifIndex;
+                if (block.IfChainIndex != -1)
+                {
+                    // skip if already discovered
+                    return; 
+                }
+                while (ifIndex >= blockIndex)
+                {
+                    // NOTE: not always the case??
+                    // TODO: INF loop somtimes!!
+                    var ifbodyBlockEnd = this.Blocks[lastifIndex].JumpsToBlock;
+                    //var ifbodyBlockEnd = this.Blocks.ToList().Single(x => x.StartAddress == this.Blocks[lastifIndex].JumpsTo); // end JMP
+                    var ifbodyBlockStart = this.Blocks[lastifIndex + 1]; // start +1
+
+                    // NOTE: iterate from end to here to which block it JMPs to
+                    bool found = false;
+                    int cIndex = this.Blocks.IndexOf(ifbodyBlockEnd); // start from endblock
+                    while (cIndex > ifIndex)
+                    {
+                        // scan if's (and ONLT if's)
+                        var conditionLine = this.Blocks[ifIndex].GetConditionLine();
+                        
+                        if(this.Blocks[ifIndex].JumpsTo != this.Blocks[cIndex].StartAddress || conditionLine == null
+                            || !conditionLine.IsCondition())
+                        {
+                            cIndex--;
+                            continue;
+                        }
+                        
+                        found = true;
+                        bool jmpsToStart = this.Blocks[ifIndex].JumpsTo == ifbodyBlockStart.StartAddress; // is or?
+                        if (jmpsToStart)
+                        {
+                            if (ifIndex != lastifIndex)
+                                conditionLine.Op3 = "or";
+                            if (conditionLine.Instr.A == 0)
+                                conditionLine.Op2 = conditionLine.Op2.Replace("==", "~=");
+                        }
+                        else
+                        {
+                            if (ifIndex != lastifIndex)
+                                conditionLine.Op3 = "and";
+                            if (conditionLine.Instr.A == 1)
+                                conditionLine.Op2 = conditionLine.Op2.Replace("==", "~=");
+                        }
+
+                        if (ifIndex != lastifIndex && this.Blocks[ifIndex + 1].GetConditionLine() != null)
+                        {
+                            this.Blocks[ifIndex + 1].GetConditionLine().Op1 = "";
+                        }
+                        if (this.Blocks[ifIndex].IfChainIndex == -1)
+                        {
+                            this.Blocks[ifIndex].IfChainIndex = ifIndex - blockIndex; // NOTE: numbers are NOT correct after rebase!
+                        }
+                        break;
+                    }
+                    ifIndex--;
+                    if (!found)
+                    {
+                        ifIndex++;
+                        if (this.Blocks[ifIndex + 1].IfChainIndex != -1)
+                        {
+                            // cleanup existing end of merged ifchain
+                            int ifIndexFix = ifIndex + 1;
+                            do
+                            {
+                                this.Blocks[ifIndexFix].IfChainIndex = ifIndexFix - ifIndex - 1; // rebase
+                                ifIndexFix++;
+                            }
+                            while (this.Blocks[ifIndexFix].IfChainIndex != -1);
+                        }
+
+                        lastifIndex = ifIndex; // new IF end found!
+
+                        // TODO: this below shit is very buggy, temp fix for FORLOOPs?
+                        if (cIndex < ifIndex || this.Blocks[ifIndex].GetConditionLine() == null) // skip LOOPs?
+                            ifIndex--; // subtract or inf loop?? TODO: bugfix, may 
+                    }
+                } 
+            }
+            catch (Exception e)
+            {
+                // TODO: wtf?
+                Console.WriteLine(e);
+            }
+        }
+
+        private void HandleElseBlock(LuaScriptLine branchLine, bool debugInfo)
+        {
+            if (debugInfo)
+            {
+                branchLine.Prefix += "else -- ELSE";
+            }
+            //this.Blocks[i].GetBranchLine().Postfix += "else -- ELSE";
+            else
+            {
+                branchLine.Prefix += "else";
+            }
+            //this.Blocks[i].GetBranchLine().Postfix += "else";
+        }
+
+        /// <summary>
+        /// I have no clue what this does, but I think it is to handle the last block of the if.
+        /// </summary>
+        private void HandleLastBlockOfIf(int currentBlockIndex, LuaScriptBlock currentBlock) 
+        {
+            // TODO: Validate if this is an actual end?
+            var nextBlock = this.Blocks[currentBlockIndex + 1];
+            var nextLine = nextBlock.Lines[0];
+            var lastLine = currentBlock.Lines[currentBlock.Lines.Count - 1];
+
+            // NOTE: untested?
+            var xrefs = this.Blocks.FindAll(x => (x.JumpsTo == currentBlock.StartAddress || x.JumpsNext == currentBlock.StartAddress));
+            //var xrefs = this.Blocks.FindAll(x => (x.JumpsTo == block.StartAddress)); // || x.JumpsNext == block.StartAddress));
+            //bool okdo = false;
+            //if(okdo)
+            foreach (var branchee in currentBlock.BrancherBlocks)
+            {
+                // TODO: take last if??
+                if (branchee.IfChainIndex > 0)
+                {
+                    continue;// only need END for first IF in chain
+                }
+
+                //// check if it has an ELSE (ELSE: JMP != -1 && ELSE == -1)
+                //if (xrefs[j].JumpsTo == -1) // block.JumpsNext)
+                //{
+                //    // This is an ELSE
+                //    continue;
+                //}
+                if (!(branchee.JumpsTo == currentBlock.StartAddress || (branchee.JumpsTo != -1 && branchee.JumpsNext == currentBlock.StartAddress)))
+                    continue;
+
+                if (lastLine.Instr.OpCode == LuaOpcode.RETURN)
+                {
+#if DEBUG
+                    var index = currentBlock.BrancheeBlocks.IndexOf(branchee);
+                    lastLine.Postfix += $"\r\nend -- _{index}\r\n"; // ???
+#else
+                    lastLine.Postfix += $"\r\nend"; // ???
+#endif
+                }
+                else
+                {
+#if DEBUG
+                    var index = currentBlock.BrancheeBlocks.IndexOf(branchee);
+                    lastLine.Prefix += $"end -- _{index}\r\n";
+#else
+                    lastLine.Prefix += $"end\r\n";
+#endif
+                }
+            }  
+        }
+        
         // NOTE: Please do NOT touch this unless you 110% know what you are doing!!!
         private void GenerateBlocks(bool overwriteBlocks = false, bool debuginfo = false)
         {
-            int index = 0;
-
             // Generate block (if needed)
             if (overwriteBlocks || this.Blocks.Count == 0)
             {
-                this.Blocks.Clear();
-                while (index < this.Lines.Count)
-                {
-                    LuaScriptBlock b = new LuaScriptBlock(index, this.Decoder, this.Func);
-                    while (index < this.Lines.Count)
-                    {
-                        if (b.AddScriptLine(this.Lines[index]))
-                            break; // break if instruction is new block
-                        index++;
-                    }
-                    index++;
-                    this.Blocks.Add(b); // save block
-                }
-
-                // add block jumpsFrom and split
-                List<KeyValuePair<int, int>> BlockSplitLines = new List<KeyValuePair<int, int>>();// block, line
-                for (int i = 0; i < this.Blocks.Count; i++)
-                {
-                    if (this.Blocks[i].JumpsTo == -1)
-                        continue;
-                    var targets = this.Blocks.FindAll(x => x.HasLineNumber(this.Blocks[i].JumpsTo));
-                    if (targets.Count > 0)
-                    {
-                        var targetpair = new KeyValuePair<int, int>(this.Blocks.FindIndex(x => x.StartAddress == targets[0].StartAddress), this.Blocks[i].JumpsTo);
-
-                        //// Hacky way to check if previous instr is FORLOOP and have it jump to self-ish?
-                        //var line = this.Blocks[i].Lines[targetpair.Value - 2]; // -1 to rebase index, -1 to get previous line
-                        //if (line.Instr.OpCode == LuaOpcode.FORLOOP)
-                        //    targetpair = new KeyValuePair<int, int>(targetpair.Key, targetpair.Value - 1);
-                        BlockSplitLines.Add(targetpair);
-                    }
-                       
-                    //foreach (var tb in targets)
-                    //    BlockSplitLines.Add(new KeyValuePair<int, int>(this.Blocks.FindIndex(x => x.StartAddress == tb.StartAddress), i));
-                }
-
-                BlockSplitLines = BlockSplitLines.OrderBy(x => x.Value).ToList(); // important to sort by lineNumber or other blocks wont get done otherwise
-                                                                                  // cut blocks and make new ones
-                for (int i = 0; i < BlockSplitLines.Count; i++)
-                {
-                    int k = BlockSplitLines[i].Key;
-                    int v = BlockSplitLines[i].Value; // -1; // subtract by 1 to allign with Block Index
-                    if (this.Blocks[k].StartAddress + this.Blocks[k].Lines.Count < v ||
-                        this.Blocks[k].StartAddress > v)
-                        continue; // already circumcised this boi
-
-                    if (this.Blocks.Find(x => x.StartAddress == v) != null)
-                        continue; // been there, done that
-
-                    LuaScriptBlock splitBlock = new LuaScriptBlock(v, this.Decoder, this.Func);
-                    for (int j = v - this.Blocks[k].StartAddress; j < this.Blocks[k].Lines.Count; j++)
-                        splitBlock.Lines.Add(this.Blocks[k].Lines[j]); // copy from old to new
-
-                    // delete old lines
-                    if (splitBlock.Lines.Count > 0)
-                        this.Blocks[k].Lines.RemoveRange(v - this.Blocks[k].StartAddress, splitBlock.Lines.Count);
-
-                    this.Blocks.Insert(k + 1, splitBlock); // insert new block after modified one
-                                                                                // update BlockSplitLines indexing
-                    for (int j = i + 1; j < BlockSplitLines.Count; j++)
-                        BlockSplitLines[j] = new KeyValuePair<int, int>(BlockSplitLines[j].Key + 1, BlockSplitLines[j].Value); // offset remaining blocks
-                }
-
-                // fix JumpsTo and JumpsNext ?
-                this.Blocks.OrderBy(x => x.StartAddress);
-                for (int i = 0; i < this.Blocks.Count; i++)
-                {
-                    var block = this.Blocks[i];
-                    // last return
-                    if (i == this.Blocks.Count - 1)
-                    {
-                        // Last block shouldnt jump to anywhere
-                        block.JumpsTo = -1;
-                        block.JumpsNext = -1;
-                        if (block.Lines[block.Lines.Count - 1].Instr.OpCode == LuaOpcode.RETURN)
-                            block.Lines[block.Lines.Count - 1].Op1 = ""; //"end -- return"; // make empty, will be 'end' in processing of blocks
-                        continue;
-                    }
-                    // Conditions without JMP
-                    if (block.Lines.Count > 0)
-                    {
-                        switch (block.Lines[block.Lines.Count - 1].Instr.OpCode)
-                        {
-                            // TODO: check which instructions dont pick the next one
-                            case LuaOpcode.TFORLOOP:
-                            case LuaOpcode.FORLOOP: // calculate LOOP jump
-                                short off = 1; // TODO?
-                                if ((short)this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Instr.sBx < 0)
-                                    off = 0; // TODO: VERIFY
-                                block.JumpsTo = (block.StartAddress + block.Lines.Count -1) + (short)block.Lines[block.Lines.Count - 1].Instr.sBx + off; // TODO: verify math
-                                block.JumpsNext = this.Blocks[i + 1].StartAddress;
-                                break; // jmp?
-                                       //case LuaOpcode.LOADBOOL: // pc++
-                                       //    this.Blocks[i].JumpsTo = (this.Blocks[i].StartAddress + this.Blocks[i].Lines.Count - 1) + 2; // skips one if C
-                                       //    this.Blocks[i].JumpsNext = (this.Blocks[i].StartAddress + this.Blocks[i].Lines.Count - 1) + 1; // next block
-                                       //    break;
-                            case LuaOpcode.JMP: // pc++
-                                
-                                // check previous condition
-                                if (block.Lines.Count > 1 && block.Lines[block.Lines.Count - 2].IsCondition()) // check for IF
-                                {
-                                    // if/test/testset
-                                    short off2 = 1; // TODO?
-                                    if ((short)this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Instr.sBx < 0)
-                                        off2 = 0;
-                                    block.JumpsTo = (block.StartAddress + block.Lines.Count - 1) + (short)block.Lines[block.Lines.Count - 1].Instr.sBx + off2; // TODO: verify math
-                                    block.JumpsNext = this.Blocks[i + 1].StartAddress;
-                                }
-                                else
-                                {
-                                    // unknown jump
-                                    short off2 = 1; // TODO?
-                                    if ((short)this.Blocks[i].Lines[this.Blocks[i].Lines.Count - 1].Instr.sBx < 0)
-                                        off2 = 0;
-                                    block.JumpsTo = (block.StartAddress + block.Lines.Count - 1) + (short)block.Lines[block.Lines.Count - 1].Instr.sBx + off2; // TODO: verify math
-                                    block.JumpsNext = -1; // this.Blocks[i + 1].StartAddress;
-                                }
-                                break;
-                            default:
-                                block.JumpsTo = -1; // erase from possible previous block?
-                                block.JumpsNext = this.Blocks[i + 1].StartAddress;
-                                break;
-                        }
-                    }
-                }
+                GenerateBlocksImpl();
+                SetBlocksForJumps();
             }
 
             // Split block on xref/jump back
-            for (int i = 0; i < this.Blocks.Count; i++)
+            for (int currentBlockIndex = 0; currentBlockIndex < this.Blocks.Count; currentBlockIndex++)
             {
                 // IF: JMP != -1 && ELSE != -1 (&& GetConditionLine != NULL; ELSE; FORLOOP END (dont care))
                 // ELSE: JMP != -1 && ELSE == -1
                 // END-BLOCK: JMP == -1 && ELSE != -1
                 //   -> END if/func for all blocks JMP == END-BLOCK.Address
                 // END: JMP == -1 && ELSE == -1
-                var block = this.Blocks[i];
-                var bline = block.GetBranchLine(); 
-                if (bline != null
-                    && ( bline.Instr.OpCode == LuaOpcode.FORLOOP
-                      || bline.Instr.OpCode == LuaOpcode.TFORLOOP))
+                var currentBlock = this.Blocks[currentBlockIndex];
+                var branchLine = currentBlock.GetBranchLine();
+                if (branchLine != null
+                    && (branchLine.Instr.OpCode == LuaOpcode.FORLOOP
+                      || branchLine.Instr.OpCode == LuaOpcode.TFORLOOP))
                 {
                     //if (bline.Instr.OpCode == LuaOpcode.JMP)
                     //{
@@ -576,11 +839,13 @@ namespace LuaToolkit.Decompiler
 
                     //var xrefs = this.Blocks.FindAll(x => x.GetBranchLine() != null && (x.JumpsTo == block.StartAddress)); // || x.JumpsNext == block.StartAddress));
                     //var xrefs = this.Blocks.FindAll(x => x.GetBranchLine() != null && (x.JumpsTo == block.StartAddress || x.JumpsNext == block.StartAddress));
-                    var xrefs = this.Blocks.FindAll(x => (x.JumpsTo == block.StartAddress || x.JumpsNext == block.StartAddress));
-                    for (int j = 0; j < xrefs.Count; j++)
+                    // All blocks that jump to this block.
+                    foreach(var brancheeBlock in currentBlock.BrancherBlocks)
                     {
-                        if (xrefs[j].IfChainIndex > 0)
+                        if (brancheeBlock.IfChainIndex > 0)
+                        {
                             continue;
+                        }
 
                         //// check if it has an ELSE (ELSE: JMP != -1 && ELSE == -1)
                         //if (xrefs[j].JumpsNext == -1)
@@ -589,253 +854,104 @@ namespace LuaToolkit.Decompiler
                         //    continue;
                         //}
 
-                        if (!(xrefs[j].JumpsTo == block.StartAddress || (xrefs[j].JumpsTo != -1 && xrefs[j].JumpsNext == block.StartAddress)))
+                        if (!(brancheeBlock.JumpsTo == currentBlock.StartAddress || (brancheeBlock.JumpsTo != -1 && brancheeBlock.JumpsNext == currentBlock.StartAddress)))
                             continue;
 
                         //var xbline = xrefs[j].GetBranchLine();
                         //if (xbline == null || (xbline.Instr.OpCode == LuaOpcode.FORLOOP))
                         //    continue;
 #if DEBUG
-                        bline.Postfix += $"end -- -{j}\r\n";
+                        var bracheeIndex = currentBlock.BrancheeBlocks.IndexOf(brancheeBlock);
+                        branchLine.Postfix += $"end -- -{bracheeIndex}\r\n";
 #else
-                        bline.Postfix += $"end\r\n";
+                        branchLine.Postfix += $"end\r\n";
 #endif
                     }
                 }
-                else 
-                if (block.JumpsTo != -1 && block.JumpsNext != -1 
-                    && block.GetConditionLine() != null) // IF detected
+                else
                 {
-                    // TODO: revisit this!!!!
-                    try
+                    if (currentBlock.JumpsTo != -1 && currentBlock.JumpsNext != -1
+                        && currentBlock.GetConditionLine() != null) // IF detected
                     {
-                        // check if empty statement
-                        if (block.JumpsTo == block.JumpsNext)
-                        {
-                            // NOTE: Bugfix to prevent merging with next blocks?
+                        HandleIfBlockMergeChain(currentBlockIndex, currentBlock, debuginfo);
+                    }
+                    else if (currentBlock.JumpsTo != -1 && currentBlock.JumpsNext == -1)
+                    {
+                        // TODO: verify else?
+                        HandleElseBlock(branchLine, debuginfo);
+
+                    }
+                    else if (currentBlock.JumpsTo == -1 && currentBlock.JumpsNext != -1
+                        //&& (bline != null) // && bline.IsBranch())
+                        //&& bline.Instr.OpCode != LuaOpcode.FORPREP
+                        ) // also make sure if condifition is set (no forloop)
+                    {
+                        // TODO: Validate if this is an actual end?
+                        HandleLastBlockOfIf(currentBlockIndex, currentBlock);
+
+                    }
+                    // No clue what this case means.
+                    else if (currentBlock.JumpsTo == -1 && currentBlock.JumpsNext == -1)
+                    {
+                        // IF: 
+                        // ELSE: ELSE == -1
+                        // END-BLOCK: JMP == -1
+                        //   -> END if/func for all blocks JMP == END-BLOCK.Address
+                        // END: JMP == -1 && ELSE == -1
+
+                        var lastLine = currentBlock.Lines[currentBlock.Lines.Count - 1];
+                        //var xrefs = this.Blocks.FindAll(x => (x.JumpsTo == block.StartAddress));
+                        var xrefs = this.Blocks.FindAll(x => (x.JumpsTo == currentBlock.StartAddress || x.JumpsNext == currentBlock.StartAddress));
+                        bool doLast = false;
+                        if (doLast)
+                            for (int j = 0; j < xrefs.Count; j++)
+                            {
+                                // TODO: take last if??
+                                if (xrefs[j].IfChainIndex > 0)
+                                    continue; // only need END for first IF in chain
+
+                                // xrefs contains list of ANY blocks landing at location of block,
+                                // to make sure it is an if we check for IF or ELSE blocks, block must
+                                // have either `JumpsTo` set to us, or `JumpsNext` to us + JumpsTo != -1
+
+                                //if (xrefs[j].JumpsTo != block.StartAddress)
+                                //if (xrefs[j].JumpsTo == -1)
+                                if (!(xrefs[j].JumpsTo == currentBlock.StartAddress || (xrefs[j].JumpsTo != -1 && xrefs[j].JumpsNext == currentBlock.StartAddress)))
+                                //if(xrefs[j].JumpsTo == block.StartAddress)
+                                //if (xrefs[j].JumpsTo == block.StartAddress || xrefs[j].JumpsTo == -1)
+                                //if (!(xrefs[j].JumpsTo == -1 && xrefs[j].JumpsNext == block.StartAddress))
+                                //if (!(xrefs[j].JumpsTo == block.StartAddress && xrefs[j].JumpsNext != -1))
+                                //if (!(xrefs[j].JumpsNext == -1 && xrefs[j].GetBranchLine() != null)) // MUST have a branchLine, otherwise its just a follow block
+                                //if (
+                                //    (xrefs[j].JumpsNext == -1 || xrefs[j].GetBranchLine() == null) // ELSE or not a branch at all
+                                //    //|| (xrefs[j].JumpsNext != -1 && xrefs[j].GetBranchLine() == null)
+                                //    )
+                                {
+                                    // This is an ELSE
+                                    continue;
+                                }
+
+                                if (lastLine.Instr.OpCode == LuaOpcode.RETURN)
 #if DEBUG
-                            block.Lines[block.Lines.Count - 1].Postfix = "\r\nend -- self\r\n";
+                                    lastLine.Postfix += $"\r\nend -- {j}\r\n"; // ???
 #else
-                            block.Lines[block.Lines.Count - 1].Postfix = "\r\nend";
+                                lastLine.Postfix += $"\r\nend"; // ???
 #endif
-                            block.IfChainIndex = 0; // mark as solved
-                        }
-                        else
-                        {
-                            // merge
-                            int lastifIndex = -1;
-                            int bIndex = i + 1; // search end of IF
-                            while (bIndex < this.Blocks.Count)
-                            {
-                                if (this.Blocks[bIndex].JumpsTo == -1 || this.Blocks[bIndex].JumpsNext == -1)
-                                {
-                                    lastifIndex = bIndex - 1;
-                                    break; // IF found
-                                }
-                                bIndex++;
-                            }
-                            // TODO: find the bodyblock for the last IF and compare against previous IF to find merge chain,
-                            // re-do group IF's that do not match the ifbodyblock end/start-1 and figure out if its and/or 
-                            // depending on where the jump is set to. The last one should always be classified as 'and'
-                            // can be used to figure out the END of the ifbodyblock, we check others by keeping in mind
-                            // they can be both and/or, meaning ifbodyblock (and) || ifbodyblock-1 (or)
-
-                            // iterate from lastifIndex to i and split
-                            int ifIndex = lastifIndex;
-                            if (block.IfChainIndex != -1)
-                                continue; // skip if already discovered
-
-                            while (ifIndex >= i)
-                            {
-                                // NOTE: not always the case??
-                                // TODO: INF loop somtimes!!
-                                var ifbodyBlockEnd = this.Blocks.ToList().Single(x => x.StartAddress == this.Blocks[lastifIndex].JumpsTo); // end JMP
-                                var ifbodyBlockStart = this.Blocks[lastifIndex + 1]; // start +1
-
-                                // NOTE: iterate from end to here to which block it JMPs to
-                                bool found = false;
-                                int cIndex = this.Blocks.IndexOf(ifbodyBlockEnd); // start from endblock
-                                while (cIndex > ifIndex)
-                                {
-                                    // scan if's (and ONLT if's)
-                                    var conditionLine = this.Blocks[ifIndex].GetConditionLine();
-
-                                    if (this.Blocks[ifIndex].JumpsTo == this.Blocks[cIndex].StartAddress
-                                        && conditionLine != null && conditionLine.IsCondition())
-                                    {
-                                        found = true;
-                                        bool jmpsToStart = this.Blocks[ifIndex].JumpsTo == ifbodyBlockStart.StartAddress; // is or?
-                                        if (jmpsToStart)
-                                        {
-                                            if (ifIndex != lastifIndex)
-                                                conditionLine.Op3 = "or";
-                                            if (conditionLine.Instr.A == 0)
-                                                conditionLine.Op2 = conditionLine.Op2.Replace("==", "~=");
-                                        }
-                                        else
-                                        {
-                                            if (ifIndex != lastifIndex)
-                                                conditionLine.Op3 = "and";
-                                            if (conditionLine.Instr.A == 1)
-                                                conditionLine.Op2 = conditionLine.Op2.Replace("==", "~=");
-                                        }
-
-                                        if (ifIndex != lastifIndex && this.Blocks[ifIndex + 1].GetConditionLine() != null)
-                                            this.Blocks[ifIndex + 1].GetConditionLine().Op1 = "";
-                                        if (this.Blocks[ifIndex].IfChainIndex == -1)
-                                            this.Blocks[ifIndex].IfChainIndex = ifIndex - i; // NOTE: numbers are NOT correct after rebase!
-
-                                        break;
-                                    }
-                                    cIndex--;
-                                }
-                                ifIndex--;
-                                if (!found)
-                                {
-                                    ifIndex++;
-                                    if (this.Blocks[ifIndex + 1].IfChainIndex != -1)
-                                    {
-                                        // cleanup existing end of merged ifchain
-                                        int ifIndexFix = ifIndex + 1;
-                                        do
-                                        {
-                                            this.Blocks[ifIndexFix].IfChainIndex = ifIndexFix - ifIndex - 1; // rebase
-                                            ifIndexFix++;
-                                        }
-                                        while (this.Blocks[ifIndexFix].IfChainIndex != -1);
-                                    }
-
-                                    lastifIndex = ifIndex; // new IF end found!
-
-                                    // TODO: this below shit is very buggy, temp fix for FORLOOPs?
-                                    if (cIndex < ifIndex || this.Blocks[ifIndex].GetConditionLine() == null) // skip LOOPs?
-                                        ifIndex--; // subtract or inf loop?? TODO: bugfix, may 
-                                }
-                            }
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        // TODO: wtf?
-                        Console.WriteLine(e);
-                    }
-                }
-                else if (block.JumpsTo != -1 && block.JumpsNext == -1)
-                {
-                    // TODO: verify else?
-                    if (debuginfo)
-                        bline.Prefix += "else -- ELSE";
-                    //this.Blocks[i].GetBranchLine().Postfix += "else -- ELSE";
-                    else
-                        bline.Prefix += "else";
-                    //this.Blocks[i].GetBranchLine().Postfix += "else";
-                }
-                else if (block.JumpsTo == -1 && block.JumpsNext != -1 
-                    //&& (bline != null) // && bline.IsBranch())
-                    //&& bline.Instr.OpCode != LuaOpcode.FORPREP
-                    ) // also make sure if condifition is set (no forloop)
-                {
-                    // TODO: Validate if this is an actual end?
-                    var nextBlock = this.Blocks[i + 1];
-                    var nextLine = nextBlock.Lines[0];
-                    var lastLine = block.Lines[block.Lines.Count - 1];
-
-                    // NOTE: untested?
-                    var xrefs = this.Blocks.FindAll(x => (x.JumpsTo == block.StartAddress || x.JumpsNext == block.StartAddress));
-                    //var xrefs = this.Blocks.FindAll(x => (x.JumpsTo == block.StartAddress)); // || x.JumpsNext == block.StartAddress));
-                    //bool okdo = false;
-                    //if(okdo)
-                        for (int j = 0; j < xrefs.Count; j++)
-                        {
-                            // TODO: take last if??
-                            if (xrefs[j].IfChainIndex > 0)
-                                continue; // only need END for first IF in chain
-
-                            //// check if it has an ELSE (ELSE: JMP != -1 && ELSE == -1)
-                            //if (xrefs[j].JumpsTo == -1) // block.JumpsNext)
-                            //{
-                            //    // This is an ELSE
-                            //    continue;
-                            //}
-                            if (!(xrefs[j].JumpsTo == block.StartAddress || (xrefs[j].JumpsTo != -1 && xrefs[j].JumpsNext == block.StartAddress)))
-                                continue;
-
-                            if (lastLine.Instr.OpCode == LuaOpcode.RETURN)
-    #if DEBUG
-                                lastLine.Postfix += $"\r\nend -- _{j}\r\n"; // ???
-    #else
-                                lastLine.Postfix += $"\r\nend"; // ???
-    #endif
-                            else
-    #if DEBUG
-                                lastLine.Prefix += $"end -- _{j}\r\n";
-    #else
-                                lastLine.Prefix += $"end\r\n";
-    #endif
-                        }
-                    //}
-
-                }
-                else if (block.JumpsTo == -1 && block.JumpsNext == -1)
-                {
-                    // IF: 
-                    // ELSE: ELSE == -1
-                    // END-BLOCK: JMP == -1
-                    //   -> END if/func for all blocks JMP == END-BLOCK.Address
-                    // END: JMP == -1 && ELSE == -1
-
-                    var lastLine = block.Lines[block.Lines.Count - 1];
-                    //var xrefs = this.Blocks.FindAll(x => (x.JumpsTo == block.StartAddress));
-                    var xrefs = this.Blocks.FindAll(x => (x.JumpsTo == block.StartAddress || x.JumpsNext == block.StartAddress));
-                    bool doLast = false;
-                    if(doLast)
-                        for (int j = 0; j < xrefs.Count; j++)
-                        {
-                            // TODO: take last if??
-                            if (xrefs[j].IfChainIndex > 0)
-                                continue; // only need END for first IF in chain
-
-                            // xrefs contains list of ANY blocks landing at location of block,
-                            // to make sure it is an if we check for IF or ELSE blocks, block must
-                            // have either `JumpsTo` set to us, or `JumpsNext` to us + JumpsTo != -1
-
-                            //if (xrefs[j].JumpsTo != block.StartAddress)
-                            //if (xrefs[j].JumpsTo == -1)
-                            if (!(xrefs[j].JumpsTo == block.StartAddress || (xrefs[j].JumpsTo != -1 && xrefs[j].JumpsNext == block.StartAddress)))
-                            //if(xrefs[j].JumpsTo == block.StartAddress)
-                            //if (xrefs[j].JumpsTo == block.StartAddress || xrefs[j].JumpsTo == -1)
-                            //if (!(xrefs[j].JumpsTo == -1 && xrefs[j].JumpsNext == block.StartAddress))
-                            //if (!(xrefs[j].JumpsTo == block.StartAddress && xrefs[j].JumpsNext != -1))
-                            //if (!(xrefs[j].JumpsNext == -1 && xrefs[j].GetBranchLine() != null)) // MUST have a branchLine, otherwise its just a follow block
-                            //if (
-                            //    (xrefs[j].JumpsNext == -1 || xrefs[j].GetBranchLine() == null) // ELSE or not a branch at all
-                            //    //|| (xrefs[j].JumpsNext != -1 && xrefs[j].GetBranchLine() == null)
-                            //    )
-                            {
-                                // This is an ELSE
-                                continue;
-                            }
-
-                            if (lastLine.Instr.OpCode == LuaOpcode.RETURN)
-    #if DEBUG
-                                lastLine.Postfix += $"\r\nend -- {j}\r\n"; // ???
-    #else
-                                lastLine.Postfix += $"\r\nend"; // ???
-    #endif
-                            else
-    #if DEBUG
-                                lastLine.Prefix += $"end -- {j}\r\n";
-    #else
-                                lastLine.Prefix += $"end\r\n";
-    #endif
-                        }
-                    // Do it anyways?
+                                else
 #if DEBUG
-                    lastLine.Prefix += $"end -- x\r\n";
+                                    lastLine.Prefix += $"end -- {j}\r\n";
+#else
+                                lastLine.Prefix += $"end\r\n";
+#endif
+                            }
+                        // Do it anyways?
+#if DEBUG
+                        lastLine.Prefix += $"end -- x\r\n";
 #else
                     lastLine.Prefix += $"end\r\n";
 #endif
 
+                    }
                 }
             }
         }

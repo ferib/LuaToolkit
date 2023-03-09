@@ -7,9 +7,13 @@ namespace LuaToolkit.Decompiler
     public class LuaScriptBlock
     {
         public int JumpsTo = -1; // -1 will never happen or its inf loop (iirc)
+        public LuaScriptBlock JumpsToBlock;
         public int JumpsNext = -1; // the next instruction (if any)
+        public LuaScriptBlock JumpsNextBlock;
         public int StartAddress;
         public int IfChainIndex = -1;
+
+        public List<LuaScriptBlock> BrancherBlocks;
 
         private int tabIndex;
         public int TabIndex
@@ -45,22 +49,30 @@ namespace LuaToolkit.Decompiler
             this.Func = func;
             this.StartAddress = address;
             this.lines = new List<LuaScriptLine>();
+            this.BrancherBlocks = new List<LuaScriptBlock>();
         }
 
+        /// <summary>
+        /// Adds a new line to the block.
+        /// </summary>
+        /// <param name="l"></param>
+        /// <returns>
+        /// Return true if we encounter the end of a block
+        /// Blocks end when there is a branch.
+        /// </returns>
         public bool AddScriptLine(LuaScriptLine l)
         {
             // this only checks for outgoing, we split incommmings somwhere else
             this.lines.Add(l);
-            if (l.IsBranch() || l.Instr.OpCode == LuaOpcode.TFORLOOP
-                || l.Instr.OpCode == LuaOpcode.FORLOOP) // || l.Instr.OpCode == LuaOpcode.FORPREP)
+            if (!l.IsBranch()) // || !l.Instr.OpCode == LuaOpcode.FORPREP)
             {
-                short off = 1;
-                if ((short)l.Instr.sBx < 0)
-                    off = 0;
-                this.JumpsTo = (this.StartAddress + this.lines.Count-1) + (short)l.Instr.sBx + off; // base + offset
-                return true;
+                return false;
             }
-            return false;
+
+            short off = ((short)l.Instr.sBx < 0) ? (short) 0 : (short) 1;
+    
+            this.JumpsTo = (this.StartAddress + this.lines.Count-1) + (short)l.Instr.sBx + off; // base + offset
+            return true;
         }
 
         public void RewriteVariables(int offset)
@@ -96,9 +108,14 @@ namespace LuaToolkit.Decompiler
             return result;
         }
 
+        /// <summary>
+        /// Checks if a line is inside this block.
+        /// </summary>
+        /// <param name="index"> index to search for</param>
+        /// <returns>true if index is inside this block, false otherwise</returns>
         public bool HasLineNumber(int index)
         {
-            return this.StartAddress < index && index < this.StartAddress + this.lines.Count;
+            return this.StartAddress <= index && index < this.StartAddress + this.lines.Count;
         }
 
         public LuaScriptLine GetBranchLine() // second last line
