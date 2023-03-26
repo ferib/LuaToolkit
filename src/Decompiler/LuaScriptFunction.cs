@@ -787,7 +787,7 @@ namespace LuaToolkit.Decompiler
                 if (lastLine.Instr.OpCode == LuaOpcode.RETURN)
                 {
 #if DEBUG
-                    var index = currentBlock.BrancheeBlocks.IndexOf(branchee);
+                    var index = currentBlock.BrancherBlocks.IndexOf(branchee);
                     lastLine.Postfix += $"\r\nend -- _{index}\r\n"; // ???
 #else
                     lastLine.Postfix += $"\r\nend"; // ???
@@ -796,7 +796,7 @@ namespace LuaToolkit.Decompiler
                 else
                 {
 #if DEBUG
-                    var index = currentBlock.BrancheeBlocks.IndexOf(branchee);
+                    var index = currentBlock.BrancherBlocks.IndexOf(branchee);
                     lastLine.Prefix += $"end -- _{index}\r\n";
 #else
                     lastLine.Prefix += $"end\r\n";
@@ -861,7 +861,7 @@ namespace LuaToolkit.Decompiler
                         //if (xbline == null || (xbline.Instr.OpCode == LuaOpcode.FORLOOP))
                         //    continue;
 #if DEBUG
-                        var bracheeIndex = currentBlock.BrancheeBlocks.IndexOf(brancheeBlock);
+                        var bracheeIndex = currentBlock.BrancherBlocks.IndexOf(brancheeBlock);
                         branchLine.Postfix += $"end -- -{bracheeIndex}\r\n";
 #else
                         branchLine.Postfix += $"end\r\n";
