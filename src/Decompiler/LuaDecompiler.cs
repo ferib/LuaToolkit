@@ -1,4 +1,5 @@
-﻿using LuaToolkit.Disassembler;
+﻿using LuaToolkit.Ast;
+using LuaToolkit.Disassembler;
 using System.Collections.Generic;
 
 namespace LuaToolkit.Decompiler
@@ -31,8 +32,12 @@ namespace LuaToolkit.Decompiler
             InitializeScriptFunction(this.RootFunction);
             //}
 
+            var func = ASTParser.Parse(this.RootFunction.ScriptFunction);
+            RunPasses passes = new RunPasses();
+            passes.Run(func);
+            return func.Dump();
             // Decompile main ScriptFunction will also decompile its childs
-            return this.RootFunction.ScriptFunction.Decompile(debugInfo);
+            // return this.RootFunction.ScriptFunction.Decompile(debugInfo);
         }
         //
         //

@@ -1,7 +1,10 @@
-﻿using LuaToolkit.Util;
+﻿using LuaToolkit.Ast;
+using LuaToolkit.Util;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -10,12 +13,18 @@ namespace LuaToolkit.Ast
 {
     public enum STATEMENT_TYPE
     {
-        VAR, IF, IF_ELSE, FUNCTION_DEF
+        EMPTY, ASSIGN, IF, IF_ELSE, FUNCTION_DEF, LIST, JMP, FUNCTION, RETURN
+    }
+
+    public enum EXPRESSION_TYPE
+    {
+        EMPTY, CONST, VAR, NOT, OR, AND, EQ, NOT_EQ, LESS_THAN, LESS_OR_EQUAL, 
+        BIGGER_THAN, BIGGER_OR_EQUAL
     }
 
     public enum VAL_TYPE
     {
-        VOID, INT, DOUBLE, CHAR, STRING, BOOL
+        NIL, INT, DOUBLE, CHAR, STRING, BOOL
     }
 
     [System.Runtime.InteropServices.StructLayout(LayoutKind.Explicit)]
@@ -24,39 +33,38 @@ namespace LuaToolkit.Ast
         public AstType()
         {
             Assigned = false;
-            Void = false;
+            Nil = false;
             Int = 0;
         }
 
-
-        [System.Runtime.InteropServices.FieldOffset(0)]
+        [FieldOffset(0)]
         public bool Assigned;
 
-        [System.Runtime.InteropServices.FieldOffset(1)]
-        public bool Void;
+        [FieldOffset(1)]
+        public bool Nil;
 
-        [System.Runtime.InteropServices.FieldOffset(2)]
+        [FieldOffset(2)]
         public VAL_TYPE Type;
 
-        [System.Runtime.InteropServices.FieldOffset(6)]
+        [FieldOffset(6)]
         public int Int;
 
-        [System.Runtime.InteropServices.FieldOffset(6)]
+        [FieldOffset(6)]
         public double Double;
 
-        [System.Runtime.InteropServices.FieldOffset(6)]
+        [FieldOffset(6)]
         public char Char;
 
-        //[System.Runtime.InteropServices.FieldOffset(3)]
-        //public string String;
-
-        [System.Runtime.InteropServices.FieldOffset(6)]
+        [FieldOffset(6)]
         public bool Bool;
+
+        // [FieldOffset(15)]
+        // public string String;
 
         public void Set(bool val)
         {
             Assigned = true;
-            Void = false;
+            Nil = false;
             Bool = val;
             Type = VAL_TYPE.BOOL;
         }
@@ -64,7 +72,7 @@ namespace LuaToolkit.Ast
         public void Set(int val)
         {
             Assigned = true;
-            Void = false;
+            Nil = false;
             Int = val;
             Type = VAL_TYPE.INT;
         }
@@ -72,29 +80,159 @@ namespace LuaToolkit.Ast
         public void Set(double val)
         {
             Assigned = true;
-            Void = false;
+            Nil = false;
             Double = val;
             Type = VAL_TYPE.DOUBLE;
         }
         public void Set(char val)
         {
             Assigned = true;
-            Void = false;
+            Nil = false;
             Char = val;
             Type = VAL_TYPE.CHAR;
         }
         public void Set(string val)
         {
             Assigned = true;
-            Void = false;
+            Nil = false;
             // String = val;
             Type = VAL_TYPE.STRING;
         }
-        public void SetVoid()
+        public void SetNil()
         {
             Assigned = true;
-            Void = true;
-            Type = VAL_TYPE.VOID;
+            Nil = true;
+            Type = VAL_TYPE.NIL;
+        }
+
+        public AstType Equals(AstType second)
+        {
+            Debug.Assert(Type == second.Type, "Comparing values from different types");
+            AstType result = new AstType();
+            switch (Type)
+            {
+                case VAL_TYPE.INT:
+                    result.Set(Int == second.Int);
+                    break;
+                case VAL_TYPE.DOUBLE:
+                    result.Set(Double == second.Double);
+                    break;
+                case VAL_TYPE.CHAR:
+                    result.Set(Char == second.Char);
+                    break;
+                case VAL_TYPE.BOOL:
+                    result.Set(Bool == second.Bool);
+                    break;
+                case VAL_TYPE.NIL:
+                default:
+                    Debug.Assert(false, "Type: '" + Type.ToString() + "' Not supported");
+                    return result;
+            }
+            return result;
+        }
+
+        public AstType SmallerThan(AstType second)
+        {
+            Debug.Assert(Type == second.Type, "Comparing values from different types");
+            AstType result = new AstType();
+            switch (Type)
+            {
+                case VAL_TYPE.INT:
+                    result.Set(Int < second.Int);
+                    break;
+                case VAL_TYPE.DOUBLE:
+                    result.Set(Double < second.Double);
+                    break;
+                case VAL_TYPE.CHAR:
+                    result.Set(Char < second.Char);
+                    break;
+                case VAL_TYPE.BOOL:
+                    result.Set(Int < second.Int);
+                    break;
+                case VAL_TYPE.NIL:
+                default:
+                    Debug.Assert(false, "Type: '" + Type.ToString() + "' Not supported");
+                    return result;
+            }
+            return result;
+        }
+
+        public AstType LargerThan(AstType second)
+        {
+            Debug.Assert(Type == second.Type, "Comparing values from different types");
+            AstType result = new AstType();
+            switch (Type)
+            {
+                case VAL_TYPE.INT:
+                    result.Set(Int > second.Int);
+                    break;
+                case VAL_TYPE.DOUBLE:
+                    result.Set(Double > second.Double);
+                    break;
+                case VAL_TYPE.CHAR:
+                    result.Set(Char > second.Char);
+                    break;
+                case VAL_TYPE.BOOL:
+                    result.Set(Int > second.Int);
+                    break;
+                case VAL_TYPE.NIL:
+                default:
+                    Debug.Assert(false, "Type: '" + Type.ToString() + "' Not supported");
+                    return result;
+            }
+            return result;
+        }
+
+        public AstType SmallerOrEqualThan(AstType second)
+        {
+            Debug.Assert(Type == second.Type, "Comparing values from different types");
+            AstType result = new AstType();
+            switch (Type)
+            {
+                case VAL_TYPE.INT:
+                    result.Set(Int <= second.Int);
+                    break;
+                case VAL_TYPE.DOUBLE:
+                    result.Set(Double <= second.Double);
+                    break;
+                case VAL_TYPE.CHAR:
+                    result.Set(Char <= second.Char);
+                    break;
+                case VAL_TYPE.BOOL:
+                    result.Set(Int <= second.Int);
+                    break;
+                case VAL_TYPE.NIL:
+                default:
+                    Debug.Assert(false, "Type: '" + Type.ToString() + "' Not supported");
+                    return result;
+            }
+            return result;
+        }
+
+        public AstType LargerOrEqualThan(AstType second)
+        {
+            Debug.Assert(Type == second.Type, "Comparing values from different types");
+            AstType result = new AstType();
+            switch (Type)
+            {
+                case VAL_TYPE.INT:
+                    result.Set(Int >= second.Int);
+                    break;
+                case VAL_TYPE.DOUBLE:
+                    result.Set(Double >= second.Double);
+                    break;
+                case VAL_TYPE.CHAR:
+                    result.Set(Char >= second.Char);
+                    break;
+                case VAL_TYPE.BOOL:
+                    result.Set(Int >= second.Int);
+                    break;
+                case VAL_TYPE.NIL:
+                default:
+                    Debug.Assert(false, "Type: '" + Type.ToString() + "' Not supported");
+                    return result;
+            }
+            return result;
         }
     }
 
@@ -130,10 +268,10 @@ namespace LuaToolkit.Ast
             result.Set(val);
             return result;
         }
-        public static AstType CreateVoid()
+        public static AstType CreateNil()
         {
             var result = new AstType();
-            result.SetVoid();
+            result.SetNil();
             return result;
         }
     }
@@ -143,6 +281,10 @@ namespace LuaToolkit.Ast
         public abstract string Dump();
 
         public abstract AstType Execute();
+
+        public STATEMENT_TYPE Type = STATEMENT_TYPE.EMPTY;
+
+        public StatementList Parent;
     }
 
     public abstract class Expression
@@ -150,19 +292,36 @@ namespace LuaToolkit.Ast
         public abstract string Dump();
 
         public abstract AstType Execute();
+
+        public EXPRESSION_TYPE Type = EXPRESSION_TYPE.EMPTY;
     }
 
     public class EmptyStatement : Statement
     {
         public override string Dump()
         {
-            Debug.Assert(false, "There should never be an empty statement");
+            // Debug.Assert(false, "There should never be an empty statement");
             return "Empty" + StringUtil.NewLineChar;
         }
 
         public override AstType Execute()
         {
-            Debug.Assert(false, "There should never be an empty statement");
+            // Debug.Assert(false, "There should never be an empty statement");
+            return new AstType();
+        }
+    }
+
+    public class EmptyExpression : Expression
+    {
+        public override string Dump()
+        {
+            // Debug.Assert(false, "There should never be an empty expression");
+            return "Empty" + StringUtil.NewLineChar;
+        }
+
+        public override AstType Execute()
+        {
+            // Debug.Assert(false, "There should never be an empty expression");
             return new AstType();
         }
     }
@@ -172,17 +331,25 @@ namespace LuaToolkit.Ast
         public StatementList()
         {
             Statements = new List<Statement> ();
+            Type = STATEMENT_TYPE.LIST;
         }
         public StatementList(List<Statement> statements)
         {
             foreach(var statement in statements)
             {
-                Statements.Add(statement);
+                Add(statement);
             }
         }
         public void Add(Statement statement)
         {
             Statements.Add(statement);
+            statement.Parent = this;
+        }
+
+        public void Insert(int index, Statement statement)
+        {
+            Statements.Insert(index, statement);
+            statement.Parent = this;
         }
         public override string Dump()
         {
@@ -213,11 +380,13 @@ namespace LuaToolkit.Ast
         {
             Name = name;
             Content = new AstType();
+            Type = EXPRESSION_TYPE.VAR;
         }
         public Variable(string name, AstType content)
         {
             Name = name;
             Content = content;
+            Type = EXPRESSION_TYPE.VAR;
         }
 
         public override string Dump()
@@ -239,6 +408,7 @@ namespace LuaToolkit.Ast
         public Constant(AstType content)
         {
             Content = content;
+            Type = EXPRESSION_TYPE.CONST;
         }
 
         public override string Dump()
@@ -254,9 +424,9 @@ namespace LuaToolkit.Ast
                   //  return Content.String.ToString();
                 case VAL_TYPE.BOOL:
                     return Content.Bool.ToString();
-                case VAL_TYPE.VOID:
-                    Debug.Assert(false, "Cannot create a constant of void type");
-                    return "void";
+                case VAL_TYPE.NIL:
+                    //Debug.Assert(false, "Cannot create a constant of void type");
+                    return "nil";
                 default:
                     Debug.Assert(false, "Unsupported Constant type '" 
                         + Content.Type.ToString() + "'");
@@ -271,4 +441,25 @@ namespace LuaToolkit.Ast
 
         public AstType Content;
     }
+}
+
+public class JumpStatement : Statement
+{
+    public JumpStatement(Statement statement)
+    {
+        Statement = statement;
+        Type = STATEMENT_TYPE.JMP;
+    }
+
+    public override string Dump()
+    {
+        return "Jump '" + Statement.Dump() + "'";
+    }
+
+    public override AstType Execute()
+    {
+        return Statement.Execute();
+    }
+
+    public Statement Statement;
 }

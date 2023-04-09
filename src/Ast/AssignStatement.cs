@@ -9,23 +9,24 @@ namespace LuaToolkit.Ast
     {
         public AssignStatement(Variable var, Expression expression)
         {
-            this.var = var;
+            this.Var = var;
             Expression = expression;
+            Type = STATEMENT_TYPE.ASSIGN;
         }
         public override string Dump()
         {
             string result = "";
-            result += var.Dump() + " = " + Expression.Dump() + StringUtil.NewLineChar;
+            result += Var.Dump() + " = " + Expression.Dump() + StringUtil.NewLineChar;
             return result;
         }
 
         public override AstType Execute()
         {
-            var.Content = Expression.Execute();
-            return TypeCreator.CreateBool(var.Content.Assigned);
+            Var.Content = Expression.Execute();
+            return TypeCreator.CreateBool(Var.Content.Assigned);
         }
 
-        public Variable var;
+        public Variable Var;
 
         public Expression Expression;
     }

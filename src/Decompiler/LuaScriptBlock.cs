@@ -1,5 +1,6 @@
 ﻿using LuaToolkit.Disassembler;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 namespace LuaToolkit.Decompiler
@@ -14,6 +15,7 @@ namespace LuaToolkit.Decompiler
         public int IfChainIndex = -1;
 
         public List<LuaScriptBlock> BrancherBlocks;
+        public LuaScriptFunction ScriptFunction;
 
         private int tabIndex;
         public int TabIndex
@@ -64,6 +66,8 @@ namespace LuaToolkit.Decompiler
         {
             // this only checks for outgoing, we split incommmings somwhere else
             this.lines.Add(l);
+            Debug.Assert(l.Block == null);
+            l.Block = this;
             if (!l.IsBranch()) // || !l.Instr.OpCode == LuaOpcode.FORPREP)
             {
                 return false;
@@ -72,6 +76,7 @@ namespace LuaToolkit.Decompiler
             short off = ((short)l.Instr.sBx < 0) ? (short) 0 : (short) 1;
     
             this.JumpsTo = (this.StartAddress + this.lines.Count-1) + (short)l.Instr.sBx + off; // base + offset
+            
             return true;
         }
 

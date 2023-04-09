@@ -433,6 +433,7 @@ namespace LuaToolkit.Decompiler
             while (index < this.Lines.Count)
             {
                 LuaScriptBlock newBlock = new LuaScriptBlock(index, this.Decoder, this.Func);
+                newBlock.ScriptFunction = this;
                 // Add all instructions to the new block until we encounter the end of a block.
                 while (index < this.Lines.Count)
                 {
@@ -602,6 +603,13 @@ namespace LuaToolkit.Decompiler
                     {
                         Debug.Assert(targets.Count == 1, "Every block can only jump to 1 block");
                         block.JumpsToBlock = targets[0];
+                        foreach(var l in block.Lines)
+                        {
+                            if(l.IsBranch())
+                            {
+                                l.JumpsTo = block.JumpsToBlock;
+                            }
+                        }
                         targets[0].BrancherBlocks.Add(block);
                     }
                 }

@@ -23,8 +23,10 @@ namespace LuaToolkit.Decompiler
         private OpcodeType OpType;
 
         private LuaDecoder Decoder;
-        private LuaFunction Func;
+        public LuaFunction Func;
+        public LuaScriptBlock Block;
         public LuaInstruction Instr;
+        public LuaScriptBlock JumpsTo;
         public List<int> BranchInc = new List<int>();
 
         private LuaFunction FunctionRef;
@@ -446,7 +448,7 @@ namespace LuaToolkit.Decompiler
                 }
             }
         }
-        public int ToIndex(int value, out bool isConstant)
+        public static int ToIndex(int value, out bool isConstant)
         {
             // this is the logic from lua's source code (lopcodes.h)
             if (isConstant = (value & 1 << 8) != 0)

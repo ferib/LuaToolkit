@@ -525,7 +525,7 @@ return false";
             
             Assert.True(test.Contains("ifvar1<var0then"),
                 "Decompiled failed to locate start of if statement");
-            Assert.True(test.Contains("elsevar2=nil;"),
+            Assert.True(test.Contains("elsevar2=nil"),
                 "Decompiled failed to locate else statement");
             Assert.True(test.Contains("returnvar2end"),
                 "Decompiled failed to locate start of if-else statement"); 
