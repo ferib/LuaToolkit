@@ -27,7 +27,7 @@ namespace LuaToolkit.Util
             return ErrorMsg;
         }
 
-        public static implicit operator Expected<T>(T val) => new Expected<T>(val);
+        public static implicit operator Expected<T>(T val) => new(val);
 
 
         bool Error = true;

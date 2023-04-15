@@ -51,9 +51,9 @@ namespace LuaToolkit.Ast
         public Statement Statement;
     }
 
-    public class IfElseStatment : Statement
+    public class IfElseStatement : Statement
     {
-        public IfElseStatment(Expression expression, Statement ifStatement,
+        public IfElseStatement(Expression expression, Statement ifStatement,
             Statement elseStatement)
         {
             Expression = expression;
@@ -62,7 +62,7 @@ namespace LuaToolkit.Ast
             Type = STATEMENT_TYPE.IF_ELSE;
         }
 
-        public IfElseStatment(Expression expression)
+        public IfElseStatement(Expression expression)
         {
             Expression = expression;
             Type = STATEMENT_TYPE.IF_ELSE;
@@ -95,5 +95,149 @@ namespace LuaToolkit.Ast
         public Expression Expression;
         public Statement IfBody;
         public Statement ElseBody;
+    }
+
+    public class ElseIfStatement : Statement
+    {
+        public ElseIfStatement(Expression expr, Statement statement)
+        {
+            ElseIfStatements = new List<IfStatement>
+            {
+                new IfStatement(expr, statement)
+            };
+        }
+
+        public ElseIfStatement(IfStatement ifStatement)
+        {
+            ElseIfStatements = new List<IfStatement>
+            {
+                ifStatement
+            };
+        }
+
+        public void AddStatement(Expression expr, Statement statement)
+        {
+            ElseIfStatements.Add(new IfStatement(expr, statement));
+        }
+
+        public void AddStatement(IfStatement ifStatement)
+        {
+            ElseIfStatements.Add(ifStatement);
+        }
+
+        public override string Dump()
+        {
+            string result = "";
+            foreach (var ifStatement in ElseIfStatements)
+            {
+                result += "if ";
+                result += ifStatement.Expression.Dump();
+                result += " then" + StringUtil.NewLineChar;
+                result += ifStatement.Statement.Dump();
+                if (ElseIfStatements.IndexOf(ifStatement) != ElseIfStatements.Count - 1)
+                {
+                    result += "else ";
+                }
+            }
+            result += "end" + StringUtil.NewLineChar;
+            return result;
+        }
+
+        public override AstType Execute()
+        {
+            foreach(var ifStatement in ElseIfStatements)
+            {
+                if(ifStatement.Expression.Execute().Bool)
+                {
+                    return ifStatement.Statement.Execute();
+                }
+            }
+            return new AstType();
+        }
+
+        List<IfStatement> ElseIfStatements;
+    }
+
+    public class ElseIfElseStatement : Statement
+    {
+        public ElseIfElseStatement(Expression expr, Statement statement)
+        {
+            ElseIfStatements = new List<IfStatement>
+            {
+                new IfStatement(expr, statement)
+            };
+        }
+
+        public ElseIfElseStatement(IfStatement ifStatement)
+        {
+            ElseIfStatements = new List<IfStatement>
+            {
+                ifStatement
+            };
+        }
+
+        public ElseIfElseStatement(Expression expr, Statement statement, Statement elseStatment)
+        {
+            ElseIfStatements = new List<IfStatement>
+            {
+                new IfStatement(expr, statement)
+            };
+            ElseStatement = elseStatment;
+        }
+
+        public ElseIfElseStatement(IfStatement ifStatement, Statement elseStatment)
+        {
+            ElseIfStatements = new List<IfStatement>
+            {
+                ifStatement
+            };
+            ElseStatement = elseStatment;
+        }
+
+        public void AddStatement(Expression expr, Statement statement)
+        {
+            ElseIfStatements.Add(new IfStatement(expr, statement));
+        }
+
+        public void AddStatement(IfStatement ifStatement)
+        {
+            ElseIfStatements.Add(ifStatement);
+        }
+
+        public override string Dump()
+        {
+            string result = "";
+            foreach (var ifStatement in ElseIfStatements)
+            {
+                result += "if ";
+                result += ifStatement.Expression.Dump();
+                result += " then" + StringUtil.NewLineChar;
+                result += ifStatement.Statement.Dump() ;
+                result += "else";
+                if (ElseIfStatements.IndexOf(ifStatement) != ElseIfStatements.Count - 1)
+                {
+                    result += " ";
+                }
+            }
+            result += StringUtil.NewLineChar;
+            result += ElseStatement.Dump();
+            result += "end" + StringUtil.NewLineChar;
+            return result;
+        }
+
+        public override AstType Execute()
+        {
+            foreach (var ifStatement in ElseIfStatements)
+            {
+                if (ifStatement.Expression.Execute().Bool)
+                {
+                    return ifStatement.Statement.Execute();
+                }
+            }
+            return ElseStatement.Execute();
+        }
+
+        List<IfStatement> ElseIfStatements;
+        Statement ElseStatement;
     }
 }

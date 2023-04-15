@@ -66,7 +66,7 @@ namespace LuaToolkit.Ast.Passes
             // Also process the else block
             // RunOnBlock(jumpStatement.Value);
             //if the ifbody ends with a jmp `jumpStatement` is the next statement in the if chain
-            var ifElse = new IfElseStatment(ifOrErr.Value.Expression, ifOrErr.Value.Statement, jumpStatementOrErr.Value.Statement);
+            var ifElse = new IfElseStatement(ifOrErr.Value.Expression, ifOrErr.Value.Statement, jumpStatementOrErr.Value.Statement);
             block.Statements.Remove(jumpStatementOrErr.Value);
             block.Statements[ifIndex] = ifElse;
             return true;
