@@ -13,7 +13,7 @@ namespace LuaToolkit.Ast
 {
     public enum STATEMENT_TYPE
     {
-        EMPTY, ASSIGN, IF, IF_ELSE, FUNCTION_DEF, LIST, JMP, FUNCTION, RETURN
+        EMPTY, ASSIGN, IF, IF_ELSE, ELSEIF, ELSEIF_ELSE, FUNCTION_DEF, LIST, JMP, FUNCTION, RETURN
     }
 
     public enum EXPRESSION_TYPE
@@ -281,6 +281,20 @@ namespace LuaToolkit.Ast
         public abstract string Dump();
 
         public abstract AstType Execute();
+
+        public Statement GetNextStatement()
+        {
+            if(Parent == null)
+            {
+                return null;
+            }
+            var index = Parent.Statements.IndexOf(this);
+            if(index == Parent.Statements.Count - 1)
+            {
+                return null;
+            }
+            return Parent.Statements[index + 1];
+        }
 
         public STATEMENT_TYPE Type = STATEMENT_TYPE.EMPTY;
 

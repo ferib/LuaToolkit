@@ -10,6 +10,7 @@ namespace LuaToolkit.Ast.Passes
     {
         public override bool RunOnFunction(FunctionDefinitionStatement function)
         {
+            var str = function.Dump();
             for(int i = 0; i < function.StatementList.Statements.Count; ++i)
             {
                 var block = function.StatementList.Statements[i];
@@ -58,18 +59,76 @@ namespace LuaToolkit.Ast.Passes
                 block.Statements.Remove(jumpStatementOrErr.Value);
                 return true;
             }
-            // The jmp inside the ifbody is to jump out of it
-            var index = block.Parent.Statements.IndexOf(block);
-            block.Parent.Insert(index + 1, ifBodyJmp.Value.Statement);
-            ifBody.Value.Statements.Remove(ifBodyJmp.Value);
-            
-            // Also process the else block
-            // RunOnBlock(jumpStatement.Value);
-            //if the ifbody ends with a jmp `jumpStatement` is the next statement in the if chain
-            var ifElse = new IfElseStatement(ifOrErr.Value.Expression, ifOrErr.Value.Statement, jumpStatementOrErr.Value.Statement);
-            block.Statements.Remove(jumpStatementOrErr.Value);
-            block.Statements[ifIndex] = ifElse;
-            return true;
+            // Parse if chain.
+            List<IfStatement> ifChain = new List<IfStatement>();
+            Statement currentIf = ifOrErr.Value;
+            Statement elseOrNextBlock = null;
+            while (currentIf != null && currentIf.Type == STATEMENT_TYPE.IF)
+            {
+                ifChain.Add(Convertor<IfStatement>.Convert(currentIf).Value);
+                var nextJmpOrErr = Convertor<JumpStatement>.Convert(currentIf.GetNextStatement());
+                if (nextJmpOrErr.HasError())
+                {
+                    break;
+                }
+                var nextJmp = nextJmpOrErr.Value;
+                var jmpNextBlock = Convertor<StatementList>.Convert(nextJmp.Statement).Value;
+                var tempIf = GetIfStatement(jmpNextBlock).Value;
+                // Remove the jump from the if body
+                currentIf.Parent.Statements.Remove(nextJmp);
+                currentIf = tempIf;
+                // If the last if is null, this means we have an else block.
+                if(currentIf == null)
+                {
+                    elseOrNextBlock = jmpNextBlock;
+                }
+                // if there is not next if, currentIf is null.
+            }
+            bool hasElse = true;
+            Statement nextBlock = null;
+            foreach(var ifStatement in ifChain)
+            {
+                var ifStBody = Convertor<StatementList>.Convert(ifStatement.Statement).Value;
+                // Get the last jmp of the if body.
+                var jmpOrErr = GetJmpStatement(ifStBody);
+
+                if(jmpOrErr.HasError())
+                {
+                    // If the last if does not end with a jmp, that means there is no else
+                    if(ifChain.IndexOf(ifStatement) == ifChain.Count-1)
+                    {
+                        hasElse = false;
+                        break;
+                    }
+                }
+                Debug.Assert(!jmpOrErr.HasError(), "Every if has to be followed by a jmp");
+                var jmp = jmpOrErr.Value;
+                if(nextBlock == null )
+                {
+                    nextBlock = jmp.Statement;
+                }
+                Debug.Assert(nextBlock == jmp.Statement, "Every if in the if chain has to jump to the same block");
+                // Remove all the jmps from the if statement, this is the else.
+                ifStBody.Statements.Remove(jmp);
+
+            }
+            if(hasElse)
+            {
+                var elseIfList = new ElseIfElseStatement(ifChain, elseOrNextBlock);
+                block.Statements.Insert(ifIndex, elseIfList);
+                block.Statements.Remove(ifOrErr.Value);
+                block.Statements.Insert(ifIndex + 1, nextBlock);
+                return true;
+            } else
+            {
+                Debug.Assert(elseOrNextBlock == nextBlock, 
+                    "If there is no else block, the potential else should be the next");
+                var elseIfList = new ElseIfStatement(ifChain);
+                block.Statements.Insert(ifIndex, elseIfList);
+                block.Statements.Remove(ifOrErr.Value);
+                block.Statements.Insert(ifIndex+1, nextBlock);
+                return true;
+            }
         }
 
         public Expected<IfStatement> GetIfStatement(StatementList block)
@@ -97,7 +156,7 @@ namespace LuaToolkit.Ast.Passes
                 }
                 return ifOrErr;
             }
-            return new Expected<JumpStatement>("Block does not contain if");
+            return new Expected<JumpStatement>("Block does not contain jmp");
         }
     }
 }

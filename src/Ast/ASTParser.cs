@@ -8,8 +8,33 @@ using System.Text;
 
 namespace LuaToolkit.Ast
 {
+    public class StatementCache
+    {
+        public StatementList Get(LuaScriptBlock block)
+        {
+            if (cache.TryGetValue(block, out var result))
+            {
+                return result;
+            }
+            return null;
+        }
+
+        public void Add(LuaScriptBlock block, StatementList list)
+        {
+            if (cache.ContainsKey(block))
+            {
+                Debug.Assert(false, "Block is already in cache");
+            }
+            cache[block] = list;
+        }
+
+        Dictionary<LuaScriptBlock, StatementList> cache =
+            new Dictionary<LuaScriptBlock, StatementList>();
+    }
+
     public class ASTParser
     {
+        static public StatementCache Cache = new StatementCache();
         static public FunctionDefinitionStatement Parse(LuaScriptFunction function)
         {
             var name = function.Name;
@@ -29,11 +54,17 @@ namespace LuaToolkit.Ast
 
         static public StatementList Parse(LuaScriptBlock block)
         {
-            var statements = new StatementList();
+            StatementList statements = Cache.Get(block);
+            if(statements != null)
+            {
+                return statements;
+            }
+            statements = new StatementList();
             foreach (var line in block.Lines)
             {
                 statements.Add(Parse(line));
             }
+            Cache.Add(block, statements);
             return statements;
         }
 

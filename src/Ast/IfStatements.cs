@@ -99,20 +99,22 @@ namespace LuaToolkit.Ast
 
     public class ElseIfStatement : Statement
     {
-        public ElseIfStatement(Expression expr, Statement statement)
-        {
-            ElseIfStatements = new List<IfStatement>
-            {
-                new IfStatement(expr, statement)
-            };
-        }
-
         public ElseIfStatement(IfStatement ifStatement)
         {
             ElseIfStatements = new List<IfStatement>
             {
                 ifStatement
             };
+            Type = STATEMENT_TYPE.ELSEIF;
+        }
+        public ElseIfStatement(Expression expr, Statement statement) : 
+            this(new IfStatement(expr, statement))
+        {}
+
+        public ElseIfStatement(List<IfStatement> ifStatements)
+        {
+            ElseIfStatements = ifStatements;
+            Type = STATEMENT_TYPE.ELSEIF;
         }
 
         public void AddStatement(Expression expr, Statement statement)
@@ -160,39 +162,36 @@ namespace LuaToolkit.Ast
 
     public class ElseIfElseStatement : Statement
     {
-        public ElseIfElseStatement(Expression expr, Statement statement)
-        {
-            ElseIfStatements = new List<IfStatement>
-            {
-                new IfStatement(expr, statement)
-            };
-        }
-
         public ElseIfElseStatement(IfStatement ifStatement)
         {
             ElseIfStatements = new List<IfStatement>
             {
                 ifStatement
             };
+            Type = STATEMENT_TYPE.ELSEIF_ELSE;
         }
 
-        public ElseIfElseStatement(Expression expr, Statement statement, Statement elseStatment)
+        public ElseIfElseStatement(Expression expr, Statement statement) 
+            : this(new IfStatement(expr, statement))
+        { }
+
+        public ElseIfElseStatement(IfStatement ifStatement, Statement elseStatment) :
+            this(ifStatement)
         {
-            ElseIfStatements = new List<IfStatement>
-            {
-                new IfStatement(expr, statement)
-            };
             ElseStatement = elseStatment;
         }
 
-        public ElseIfElseStatement(IfStatement ifStatement, Statement elseStatment)
+        public ElseIfElseStatement(Expression expr, Statement statement, Statement elseStatment) : 
+            this(new IfStatement(expr, statement), elseStatment)
+        { }
+
+        public ElseIfElseStatement(List<IfStatement> ifStatements, Statement elseStatment)
         {
-            ElseIfStatements = new List<IfStatement>
-            {
-                ifStatement
-            };
-            ElseStatement = elseStatment;
+            ElseIfStatements = ifStatements;
+            ElseStatement = elseStatment; 
+            Type = STATEMENT_TYPE.ELSEIF_ELSE;
         }
+
 
         public void AddStatement(Expression expr, Statement statement)
         {

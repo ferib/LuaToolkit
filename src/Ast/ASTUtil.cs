@@ -9,6 +9,10 @@ namespace LuaToolkit.Ast
     {
         static public Expected<T> Convert(Statement statement)
         {
+            if(statement == null)
+            {
+                return new Expected<T>("Cannot convert nullptr");
+            }
             if(typeof(T) == statement.GetType())
             {
                 return statement as T;
