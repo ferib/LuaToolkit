@@ -67,6 +67,55 @@ namespace Tests
         }
 
         [Fact]
+        public void TestArithmetic()
+        {
+            var expectedAddStr = "x = y + z" + StringUtil.NewLineChar;
+            var var1 = new Variable("x", TypeCreator.CreateInt(0));
+            var var2 = new Variable("y", TypeCreator.CreateInt(10));
+            var var3 = new Variable("z", TypeCreator.CreateInt(5));
+            var assign = new AssignStatement(var1, new AddExpression(var2, var3));
+            assign.Execute();
+            
+            Assert.Equal(15, var1.Content.Int);
+            Assert.Equal(expectedAddStr, assign.Dump());
+
+            var expectedSubStr = "x = y - z" + StringUtil.NewLineChar;
+            assign = new AssignStatement(var1, new SubExpression(var2, var3));
+            assign.Execute();
+
+            Assert.Equal(5, var1.Content.Int);
+            Assert.Equal(expectedSubStr, assign.Dump());
+
+            var expectedMulStr = "x = y * z" + StringUtil.NewLineChar;
+            assign = new AssignStatement(var1, new MulExpression(var2, var3));
+            assign.Execute();
+
+            Assert.Equal(50, var1.Content.Int);
+            Assert.Equal(expectedMulStr, assign.Dump());
+
+            var expectedDivStr = "x = y / z" + StringUtil.NewLineChar;
+            assign = new AssignStatement(var1, new DivExpression(var2, var3));
+            assign.Execute();
+
+            Assert.Equal(2, var1.Content.Int);
+            Assert.Equal(expectedDivStr, assign.Dump());
+
+            var expectedPowStr = "x = y ^ z" + StringUtil.NewLineChar;
+            assign = new AssignStatement(var1, new PowExpression(var2, var3));
+            assign.Execute();
+
+            Assert.Equal(100000, var1.Content.Int);
+            Assert.Equal(expectedPowStr, assign.Dump());
+
+            var expectedNegStr = "x = -y" + StringUtil.NewLineChar;
+            assign = new AssignStatement(var1, new NegationExpression(var2));
+            assign.Execute();
+
+            Assert.Equal(-10, var1.Content.Int);
+            Assert.Equal(expectedNegStr, assign.Dump());
+        }
+
+        [Fact]
         public void TestIf()
         {
             var expectedStr =   "if x != y then" + StringUtil.NewLineChar +
@@ -218,6 +267,30 @@ namespace Tests
             Assert.False(equalExpr.Execute().Bool);
 
             var str = elseIfElseStatement.Dump();
+            Assert.Equal(str, expectedStr);
+        }
+
+        [Fact]
+        public void TestForLoop()
+        {
+            var expectedStr = "for x, y, z do" + StringUtil.NewLineChar +
+                                    "a = 1" + StringUtil.NewLineChar +
+                              "end" + StringUtil.NewLineChar;
+
+            var var1 = new Variable("x", TypeCreator.CreateInt(1));
+            var var2 = new Variable("y", TypeCreator.CreateInt(10));
+            var var3 = new Variable("z", TypeCreator.CreateInt(2));
+
+            var var4 = new Variable("a", TypeCreator.CreateInt(0));
+            var assignStatment = new  AssignStatement(var4, new Constant(TypeCreator.CreateInt(1)));
+
+            var forLoop = new ForStatment(var1, var2, var3, assignStatment);
+
+            Assert.True(var4.Content.Int == 0);
+            forLoop.Execute();
+            Assert.True(var4.Content.Int == 1);
+
+            var str = forLoop.Dump();
             Assert.Equal(str, expectedStr);
         }
     }

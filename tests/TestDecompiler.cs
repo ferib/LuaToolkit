@@ -706,9 +706,10 @@ end -- x
                 new LuaInstruction(LuaOpcode.LOADK)         { A=2, Bx=-1 },     // var2 = 1
                 new LuaInstruction(LuaOpcode.FORPREP)       { A=0, B=3 },       // for 
                                                                                 // loop:
-                new LuaInstruction(LuaOpcode.GETGLOBAL)     { A=4, Bx=-3 },     // var4 = _G["print"]
-                new LuaInstruction(LuaOpcode.MOVE)          { A=5, B=3 },       // var5 = var3
-                new LuaInstruction(LuaOpcode.CALL)          { A=4, B=2, C=1 },  // var2 = var4()
+                //new LuaInstruction(LuaOpcode.GETGLOBAL)     { A=4, Bx=-3 },     // var4 = _G["print"]
+                //new LuaInstruction(LuaOpcode.MOVE)          { A=5, B=3 },       // var5 = var3
+                //new LuaInstruction(LuaOpcode.CALL)          { A=4, B=2, C=1 },  // var2 = var4()
+                new LuaInstruction(LuaOpcode.LOADK)         { A=5, Bx=-1 },
                 new LuaInstruction(LuaOpcode.FORLOOP)       { A=0, Bx=-4 },     // goto loop
                 new LuaInstruction(LuaOpcode.RETURN)        { A=0, B=1 },       // return
                                                                                 // --end
@@ -736,13 +737,48 @@ end -- x
         }
 
         [Fact]
+        public void TestAdd()
+        {
+            // var0 = 1
+            // var1 = 6 + var0
+            // return var1
+            LuaCFile luacin = new LuaCFile(new byte[0]);
+            luacin.Function = new LuaFunction() { ArgsCount = 0 };
+
+            luacin.Function.Instructions.AddRange(new LuaInstruction[]
+            {
+                new LuaInstruction(LuaOpcode.LOADK)         { A=0, Bx=-1 },     // var0 = 1
+                new LuaInstruction(LuaOpcode.ADD)           { A=1, Bx=-2, C=0 }, // var1 = var0 + 6
+                new LuaInstruction(LuaOpcode.RETURN)        { A=1, B=2 },       // return var2
+                new LuaInstruction(LuaOpcode.RETURN)        { A=0, B=1 },       // return
+                                                                                // --end
+            });
+            luacin.Function.Constants.Add(new NumberConstant(1));
+            luacin.Function.Constants.Add(new NumberConstant(6));
+
+            // Encode test
+            LuaEncoder luaEncoder_x = new LuaEncoder(luacin);
+            byte[] filebuffer = luaEncoder_x.SaveFile();
+
+            // Decode and decompile
+            LuaDecoder decoder = new LuaDecoder(new LuaCFile(filebuffer));
+            LuaDecompiler decompiler = new LuaDecompiler(decoder);
+
+            string test = decompiler.Decompile(false);
+            test = test.Replace(" ", "");
+            //Console.WriteLine(test);
+
+            Assert.True(test.Contains($"var1=6+var0"),
+                "Decompiler failed parsing add");
+        }
+
+        [Fact]
         public void test2()
         {
             LuaCFile f = new LuaCFile(File.ReadAllBytes("C:\\Users\\sande\\Downloads\\dumped_lua.luac"));
             LuaDecoder d = new LuaDecoder(f);
             LuaDecompiler dec = new LuaDecompiler(d);
             string test = dec.Decompile();
-
         }
     }
 }

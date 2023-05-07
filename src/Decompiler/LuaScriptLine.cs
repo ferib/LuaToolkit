@@ -142,9 +142,9 @@ namespace LuaToolkit.Decompiler
                     // TODO fix, multiline?
                     break;
                 case LuaOpcode.ADD: // NOTE these can be both variables and constants!
-                    this.Op1 = WriteIndex(Instr.A);
-                    this.Op2 = $" = {WriteConstant(Instr.B)}";
-                    this.Op3 = $" + {WriteConstant(Instr.C)}";
+                    //this.Op1 = WriteIndex(Instr.A);
+                    //this.Op2 = $" = {WriteConstant(Instr.B)}";
+                    //this.Op3 = $" + {WriteConstant(Instr.C)}";
                     break;
                 case LuaOpcode.SUB:
                     this.Op1 = WriteIndex(Instr.A);

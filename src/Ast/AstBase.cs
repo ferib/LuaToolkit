@@ -13,13 +13,15 @@ namespace LuaToolkit.Ast
 {
     public enum STATEMENT_TYPE
     {
-        EMPTY, ASSIGN, IF, IF_ELSE, ELSEIF, ELSEIF_ELSE, FUNCTION_DEF, LIST, JMP, FUNCTION, RETURN
+        EMPTY, ASSIGN, IF, IF_ELSE, ELSEIF, ELSEIF_ELSE, FUNCTION_DEF, LIST, JMP, FUNCTION, RETURN,
+        FOR
     }
 
     public enum EXPRESSION_TYPE
     {
         EMPTY, CONST, VAR, NOT, OR, AND, EQ, NOT_EQ, LESS_THAN, LESS_OR_EQUAL, 
-        BIGGER_THAN, BIGGER_OR_EQUAL
+        BIGGER_THAN, BIGGER_OR_EQUAL,
+        ADD, SUB, MUL, DIV, POW, NEG
     }
 
     public enum VAL_TYPE
@@ -230,6 +232,149 @@ namespace LuaToolkit.Ast
                 case VAL_TYPE.NIL:
                 default:
                     Debug.Assert(false, "Type: '" + Type.ToString() + "' Not supported");
+                    return result;
+            }
+            return result;
+        }
+
+        public static AstType operator+(AstType first, AstType second)
+        {
+            Debug.Assert(first.Type == second.Type, "Adding values from different types");
+            AstType result = new AstType();
+            switch (first.Type)
+            {
+                case VAL_TYPE.INT:
+                    result.Set(first.Int + second.Int);
+                    break;
+                case VAL_TYPE.DOUBLE:
+                    result.Set(first.Double + second.Double);
+                    break;
+                case VAL_TYPE.CHAR:
+                    result.Set(first.Char + second.Char);
+                    break;
+                case VAL_TYPE.BOOL:
+                case VAL_TYPE.NIL:
+                default:
+                    Debug.Assert(false, "Type: '" + first.Type.ToString() + "' Not supported");
+                    return result;
+            }
+            return result;
+        }
+
+        public static AstType operator -(AstType first, AstType second)
+        {
+            Debug.Assert(first.Type == second.Type, "Subtracting values from different types");
+            AstType result = new AstType();
+            switch (first.Type)
+            {
+                case VAL_TYPE.INT:
+                    result.Set(first.Int - second.Int);
+                    break;
+                case VAL_TYPE.DOUBLE:
+                    result.Set(first.Double - second.Double);
+                    break;
+                case VAL_TYPE.CHAR:
+                    result.Set(first.Char - second.Char);
+                    break;
+                case VAL_TYPE.BOOL:
+                case VAL_TYPE.NIL:
+                default:
+                    Debug.Assert(false, "Type: '" + first.Type.ToString() + "' Not supported");
+                    return result;
+            }
+            return result;
+        }
+
+        public static AstType operator -(AstType val)
+        {
+            AstType result = new AstType();
+            switch (val.Type)
+            {
+                case VAL_TYPE.INT:
+                    result.Set(-val.Int);
+                    break;
+                case VAL_TYPE.DOUBLE:
+                    result.Set(-val.Double);
+                    break;
+                case VAL_TYPE.CHAR:
+                    result.Set(-val.Char);
+                    break;
+                case VAL_TYPE.BOOL:
+                case VAL_TYPE.NIL:
+                default:
+                    Debug.Assert(false, "Type: '" + val.Type.ToString() + "' Not supported");
+                    return result;
+            }
+            return result;
+        }
+
+        public static AstType operator *(AstType first, AstType second)
+        {
+            Debug.Assert(first.Type == second.Type, "Subtracting values from different types");
+            AstType result = new AstType();
+            switch (first.Type)
+            {
+                case VAL_TYPE.INT:
+                    result.Set(first.Int * second.Int);
+                    break;
+                case VAL_TYPE.DOUBLE:
+                    result.Set(first.Double * second.Double);
+                    break;
+                case VAL_TYPE.CHAR:
+                    result.Set(first.Char * second.Char);
+                    break;
+                case VAL_TYPE.BOOL:
+                case VAL_TYPE.NIL:
+                default:
+                    Debug.Assert(false, "Type: '" + first.Type.ToString() + "' Not supported");
+                    return result;
+            }
+            return result;
+        }
+
+        public static AstType operator /(AstType first, AstType second)
+        {
+            Debug.Assert(first.Type == second.Type, "Subtracting values from different types");
+            AstType result = new AstType();
+            switch (first.Type)
+            {
+                case VAL_TYPE.INT:
+                    result.Set(first.Int / second.Int);
+                    break;
+                case VAL_TYPE.DOUBLE:
+                    result.Set(first.Double / second.Double);
+                    break;
+                case VAL_TYPE.CHAR:
+                    result.Set(first.Char / second.Char);
+                    break;
+                case VAL_TYPE.BOOL:
+                case VAL_TYPE.NIL:
+                default:
+                    Debug.Assert(false, "Type: '" + first.Type.ToString() + "' Not supported");
+                    return result;
+            }
+            return result;
+        }
+
+        public static AstType Power(AstType first, AstType second)
+        {
+            Debug.Assert(first.Type == second.Type, "Subtracting values from different types");
+            AstType result = new AstType();
+            switch (first.Type)
+            {
+                case VAL_TYPE.INT:
+                    result.Set(Convert.ToInt32( Math.Pow(first.Int, second.Int)));
+                    break;
+                case VAL_TYPE.DOUBLE:
+                    result.Set(Math.Pow(first.Double, second.Double));
+                    break;
+                case VAL_TYPE.CHAR:
+                    result.Set(Convert.ToChar( Math.Pow(first.Char, second.Char)));
+                    break;
+                case VAL_TYPE.BOOL:
+                case VAL_TYPE.NIL:
+                default:
+                    Debug.Assert(false, "Type: '" + first.Type.ToString() + "' Not supported");
                     return result;
             }
             return result;

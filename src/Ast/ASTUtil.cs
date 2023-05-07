@@ -27,4 +27,27 @@ namespace LuaToolkit.Ast
             return typeof(T) == statement.GetType();
         }
     }
+
+    public class ExpressionCovertor<T> where T : Expression
+    {
+        static public Expected<T> Convert(Expression expr)
+        {
+            if (expr == null)
+            {
+                return new Expected<T>("Cannot convert nullptr");
+            }
+            if (typeof(T) == expr.GetType())
+            {
+                return expr as T;
+            }
+
+            return new Expected<T>("Cannot convert " +
+                expr.GetType().ToString() + " to " + typeof(T));
+        }
+
+        static public bool IsType(Expression expr)
+        {
+            return typeof(T) == expr.GetType();
+        }
+    }
 }

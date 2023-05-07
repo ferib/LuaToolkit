@@ -88,6 +88,15 @@ namespace LuaToolkit.Ast
                     // Remove the block from the function, to avoid parsing it twice.
                     func.Blocks.Remove(line.JumpsTo);
                     return new JumpStatement(Parse(line.JumpsTo));
+                case LuaOpcode.FORPREP:
+                case LuaOpcode.FORLOOP:
+                    return ParseFor(line);
+                case LuaOpcode.ADD:
+                case LuaOpcode.SUB:
+                case LuaOpcode.MUL:
+                case LuaOpcode.DIV:
+                case LuaOpcode.POW:
+                    return ParseArithmetic(line);
 
                 default:
                     Debug.Assert(false, "Opcode '" + line.Instr.OpCode.ToString() + "' Not supported yet.");
@@ -141,13 +150,6 @@ namespace LuaToolkit.Ast
             line.Block.ScriptFunction.Blocks.Remove(line.Block.JumpsNextBlock);
             var expr = ParseConditionExpression(line);
             return new IfStatement(expr, ifBody);
-            // if Jumps to block has a jump it is an else
-            // if(line.Block.JumpsNextBlock.JumpsToBlock != null)
-            // {
-            //    var elseBlock = Parse(line.Block.JumpsToBlock);
-            //    return new IfElseStatment(expr, ifBody, elseBlock);
-            //}
-            //return new EmptyStatement();
         }
 
         static public Expression ParseConditionExpression(LuaScriptLine line)
@@ -225,6 +227,43 @@ namespace LuaToolkit.Ast
             }
             return new ReturnStatement(exprs);
 
+        }
+
+        static public ForStatment ParseFor(LuaScriptLine line)
+        {
+            return new ForStatment();
+        }
+
+        static public AssignStatement ParseArithmetic(LuaScriptLine line)
+        {
+            var varOrErr = ExpressionCovertor<Variable>.Convert(ParseExpression(line, line.Instr.A));
+            if (varOrErr.HasError())
+            {
+                Debug.Print("Arithmetic not assigning to var: " + varOrErr.GetError());
+                Debug.Assert(false);
+            }
+            Expression lhs = ParseExpression(line, line.Instr.B);
+            Expression rhs = ParseExpression(line, line.Instr.C);
+            Expression arithExpr = null;
+            switch (line.Instr.OpCode)
+            {
+                case LuaOpcode.ADD:
+                    arithExpr = new AddExpression(lhs, rhs);
+                    break;
+                case LuaOpcode.SUB:
+                    arithExpr = new SubExpression(lhs, rhs);
+                    break;
+                case LuaOpcode.MUL:
+                    arithExpr = new MulExpression(lhs, rhs);
+                    break;
+                case LuaOpcode.DIV:
+                    arithExpr = new DivExpression(lhs, rhs);
+                    break;
+                case LuaOpcode.POW:
+                    arithExpr = new PowExpression(lhs, rhs);
+                    break;
+            }
+            return new AssignStatement(varOrErr.Value, arithExpr);
         }
     }
 }

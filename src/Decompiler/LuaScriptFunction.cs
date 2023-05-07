@@ -504,16 +504,25 @@ namespace LuaToolkit.Decompiler
 
                 LuaScriptBlock splitBlock = new LuaScriptBlock(v, this.Decoder, this.Func);
                 for (int j = v - this.Blocks[k].StartAddress; j < this.Blocks[k].Lines.Count; j++)
+                {
                     splitBlock.Lines.Add(this.Blocks[k].Lines[j]); // copy from old to new
+                    // UGLY
+                    this.Blocks[k].Lines[j].Block = splitBlock;
+                }
+
 
                 // delete old lines
                 if (splitBlock.Lines.Count > 0)
+                {
                     this.Blocks[k].Lines.RemoveRange(v - this.Blocks[k].StartAddress, splitBlock.Lines.Count);
+                }
 
                 this.Blocks.Insert(k + 1, splitBlock); // insert new block after modified one
                                                        // update BlockSplitLines indexing
                 for (int j = i + 1; j < BlockSplitLines.Count; j++)
+                {
                     BlockSplitLines[j] = new KeyValuePair<int, int>(BlockSplitLines[j].Key + 1, BlockSplitLines[j].Value); // offset remaining blocks
+                }
             }
 
             // fix JumpsTo and JumpsNext ?
