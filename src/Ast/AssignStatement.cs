@@ -1,6 +1,7 @@
 ﻿using LuaToolkit.Util;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 
 namespace LuaToolkit.Ast
@@ -9,14 +10,52 @@ namespace LuaToolkit.Ast
     {
         public AssignStatement(Variable var, Expression expression)
         {
-            this.Var = var;
+            Var = var;
             Expression = expression;
             Type = STATEMENT_TYPE.ASSIGN;
         }
+
+        public AssignStatement(Global glob, Expression expression)
+        {
+            Global = glob;
+            Expression = expression;
+            Type = STATEMENT_TYPE.ASSIGN;
+        }
+        public AssignStatement(List<Variable> varlist, Expression expression)
+        {
+            VarList = varlist;
+            Expression = expression;
+            Type = STATEMENT_TYPE.ASSIGN;
+        }
+
         public override string Dump()
         {
             string result = "";
-            result += Var.Dump() + " = " + Expression.Dump() + StringUtil.NewLineChar;
+            if(Var != null)
+            {
+                result += Var.Dump();
+            } 
+            else if(Global != null)
+            {
+                result += Global.Dump();
+            }
+            else if(VarList != null)
+            {
+                foreach(var var in VarList)
+                {
+                    result += var.Dump();
+                    if(VarList.IndexOf(var) != VarList.Count -1)
+                    {
+                        result += ", ";
+                    }
+                }
+            }
+            else
+            {
+                Debug.Assert(false, "AssignStatement needs var/varlist or global");
+            }
+            result += " = " + Expression.Dump() + StringUtil.NewLineChar;
+
             return result;
         }
 
@@ -27,6 +66,8 @@ namespace LuaToolkit.Ast
         }
 
         public Variable Var;
+        public Global Global;
+        public List<Variable> VarList;
 
         public Expression Expression;
     }

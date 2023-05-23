@@ -21,7 +21,9 @@ namespace LuaToolkit.Ast
     {
         EMPTY, CONST, VAR, NOT, OR, AND, EQ, NOT_EQ, LESS_THAN, LESS_OR_EQUAL, 
         BIGGER_THAN, BIGGER_OR_EQUAL,
-        ADD, SUB, MUL, DIV, POW, NEG
+        ADD, SUB, MUL, DIV, POW, NEG,
+        GLOBAL,
+        FUNC_CALL,
     }
 
     public enum VAL_TYPE
@@ -356,6 +358,30 @@ namespace LuaToolkit.Ast
             return result;
         }
 
+        public static AstType operator %(AstType first, AstType second)
+        {
+            Debug.Assert(first.Type == second.Type, "Subtracting values from different types");
+            AstType result = new AstType();
+            switch (first.Type)
+            {
+                case VAL_TYPE.INT:
+                    result.Set(first.Int % second.Int);
+                    break;
+                case VAL_TYPE.DOUBLE:
+                    result.Set(first.Double % second.Double);
+                    break;
+                case VAL_TYPE.CHAR:
+                    result.Set(first.Char % second.Char);
+                    break;
+                case VAL_TYPE.BOOL:
+                case VAL_TYPE.NIL:
+                default:
+                    Debug.Assert(false, "Type: '" + first.Type.ToString() + "' Not supported");
+                    return result;
+            }
+            return result;
+        }
+
         public static AstType Power(AstType first, AstType second)
         {
             Debug.Assert(first.Type == second.Type, "Subtracting values from different types");
@@ -560,6 +586,33 @@ namespace LuaToolkit.Ast
 
         public string Name;
         public AstType Content;
+    }
+
+    public class Global : Expression
+    {
+        public Global(Constant index)
+        {
+            Index = index;
+            Type = EXPRESSION_TYPE.GLOBAL;
+        }
+
+        public override string Dump()
+        {
+            string result = "";
+            result += "_G[";
+            result += Index.Dump();
+            result += "]";
+            return result;
+        }
+
+        public override AstType Execute()
+        {
+            // TODO Wrong implementation
+            // Should return value in global array.
+            return Index.Execute();
+        }
+
+        public Constant Index;
     }
 
     public class Constant : Expression

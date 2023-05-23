@@ -108,6 +108,32 @@ namespace LuaToolkit.Ast
         Expression Rhs;
     }
 
+    public class ModExpression : Expression
+    {
+        public ModExpression(Expression lhs, Expression rhs)
+        {
+            Lhs = lhs;
+            Rhs = rhs;
+            Type = EXPRESSION_TYPE.DIV;
+        }
+        public override string Dump()
+        {
+            string result = "";
+            result += Lhs.Dump();
+            result += " / ";
+            result += Rhs.Dump();
+            return result;
+        }
+
+        public override AstType Execute()
+        {
+            return Lhs.Execute() % Rhs.Execute();
+        }
+
+        Expression Lhs;
+        Expression Rhs;
+    }
+
     public class PowExpression : Expression
     {
         public PowExpression(Expression lhs, Expression rhs)

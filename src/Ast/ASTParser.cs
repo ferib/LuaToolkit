@@ -77,6 +77,12 @@ namespace LuaToolkit.Ast
                      return ParseLoad(line);
                 case LuaOpcode.LOADNIL:
                     return ParseLoadNil(line);
+                case LuaOpcode.MOVE:
+                    return ParseMove(line);
+                case LuaOpcode.GETGLOBAL:
+                    return ParseGlobalGet(line);
+                case LuaOpcode.SETGLOBAL:
+                    return ParseGlobalSet(line);
                 case LuaOpcode.EQ:
                 case LuaOpcode.LT:
                 case LuaOpcode.LE:
@@ -96,8 +102,13 @@ namespace LuaToolkit.Ast
                 case LuaOpcode.MUL:
                 case LuaOpcode.DIV:
                 case LuaOpcode.POW:
+                case LuaOpcode.MOD:
                     return ParseArithmetic(line);
-
+                case LuaOpcode.UNM:
+                case LuaOpcode.NOT:
+                    return ParseSingleExprArithmetic(line);
+                case LuaOpcode.CALL:
+                    return ParseCall(line);
                 default:
                     Debug.Assert(false, "Opcode '" + line.Instr.OpCode.ToString() + "' Not supported yet.");
                     return new EmptyStatement(); ;
@@ -259,11 +270,137 @@ namespace LuaToolkit.Ast
                 case LuaOpcode.DIV:
                     arithExpr = new DivExpression(lhs, rhs);
                     break;
+                case LuaOpcode.MOD:
+                    arithExpr = new ModExpression(lhs, rhs);
+                    break;
                 case LuaOpcode.POW:
                     arithExpr = new PowExpression(lhs, rhs);
                     break;
             }
             return new AssignStatement(varOrErr.Value, arithExpr);
+        }
+
+        static public AssignStatement ParseSingleExprArithmetic(LuaScriptLine line)
+        {
+            var varOrErr = ExpressionCovertor<Variable>.Convert(ParseExpression(line, line.Instr.A));
+            if (varOrErr.HasError())
+            {
+                Debug.Print("Arithmetic not assigning to var: " + varOrErr.GetError());
+                Debug.Assert(false);
+            }
+            Expression expr = ParseExpression(line, line.Instr.B);
+            Expression arithExpr = null;
+            switch (line.Instr.OpCode)
+            {
+                case LuaOpcode.UNM:
+                    arithExpr = new NegationExpression(expr);
+                    break;
+                case LuaOpcode.NOT:
+                    arithExpr = new NotExpression(expr);
+                    break;
+                case LuaOpcode.LEN:
+                    // arithExpr = new MulExpression(lhs, rhs);
+                    break;
+
+            }
+            return new AssignStatement(varOrErr.Value, arithExpr);
+        }
+        static public AssignStatement ParseMove(LuaScriptLine line)
+        {
+            var lhsVarOrErr = ExpressionCovertor<Variable>.Convert(ParseExpression(line, line.Instr.A));
+            if (lhsVarOrErr.HasError())
+            {
+                Debug.Print("Move can only by used on vars: " + lhsVarOrErr.GetError());
+                Debug.Assert(false);
+            }
+
+            var rhsVarOrErr = ExpressionCovertor<Variable>.Convert(ParseExpression(line, line.Instr.B));
+            if (rhsVarOrErr.HasError())
+            {
+                Debug.Print("Move can only by used on vars: " + rhsVarOrErr.GetError());
+                Debug.Assert(false);
+            }
+            return new AssignStatement(lhsVarOrErr.Value, rhsVarOrErr.Value);
+        }
+
+        static public Global ParseGlobal(LuaScriptLine line, int val)
+        {
+            if(val < line.Func.Constants.Count)
+            {
+                return new Global(CreateConstant(line.Func.Constants[val]));
+            }
+            // SHould not be needed, can be removed if constants are fixed.
+            return new Global(new Constant(TypeCreator.CreateInt(val)));
+        }
+
+        static public AssignStatement ParseGlobalGet(LuaScriptLine line)
+        {
+            var varOrErr = ExpressionCovertor<Variable>.Convert(ParseExpression(line, line.Instr.A));
+            if (varOrErr.HasError())
+            {
+                Debug.Print("Move can only by used on vars: " + varOrErr.GetError());
+                Debug.Assert(false);
+            }
+            var globalExpr = ParseGlobal(line, line.Instr.Bx);
+            return new AssignStatement(varOrErr.Value, globalExpr);
+        }
+
+        static public AssignStatement ParseGlobalSet(LuaScriptLine line)
+        {
+            var varOrErr = ExpressionCovertor<Variable>.Convert(ParseExpression(line, line.Instr.A));
+            if (varOrErr.HasError())
+            {
+                Debug.Print("Move can only by used on vars: " + varOrErr.GetError());
+                Debug.Assert(false);
+            }
+            var globalExpr = ParseGlobal(line, line.Instr.Bx);
+            return new AssignStatement(globalExpr, varOrErr.Value);
+        }
+
+        static public AssignStatement ParseCall(LuaScriptLine line)
+        {
+            // TODO: there is something off here?
+            // Function returns
+            List<Variable> vars = new List<Variable>();
+            if (line.Instr.C == 0)
+            {
+                // top set to last_result+1
+            }
+            else if (line.Instr.C == 1)
+            {
+                // no return values saved
+            }
+            else // 2 or more, multiple returns
+            {   
+                for (int i = line.Instr.A; i < line.Instr.A + line.Instr.C - 1; i++)
+                {
+                    vars.Add(new Variable("var" + i));
+                }
+            }
+
+            // Function Name
+            //this.Op2 = $"var{Instr.A}"; // func name only (used lateron)
+            string funcName = "var{" + line.Instr.A + "}";
+            
+            // Function Args
+            var arguments = new List<string>();
+            if (line.Instr.B == 0)
+            {
+                for (int i = line.Instr.A; i < line.Instr.B; i++)
+                {
+                    arguments.Add($"var{i + 1}");
+                }
+            }
+            else
+            {
+                for (int i = line.Instr.A; i < line.Instr.A + line.Instr.B - 1; i++)
+                {
+                    arguments.Add($"var{i + 1}");
+                }
+            }
+            var callExpr = new CallExpression(funcName, arguments);
+
+            return new AssignStatement(vars, callExpr);
         }
     }
 }

@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Xml.Linq;
@@ -125,6 +126,47 @@ namespace LuaToolkit.Ast
         }
         public List<Expression> Exprs;
 
+    }
+
+    public class CallExpression : Expression
+    {
+        public CallExpression(string name)
+        {
+            Name = name;
+            Type = EXPRESSION_TYPE.FUNC_CALL;
+        }
+
+        public CallExpression(string name, List<string> args)
+        {
+            Name = name;
+            Arguments = args;
+            Type = EXPRESSION_TYPE.FUNC_CALL;
+        }
+
+        public override string Dump()
+        {
+            string result = "";
+            result += Name + "(";
+            foreach(var arg in Arguments)
+            {
+                result += arg;
+                if(Arguments.IndexOf(arg) != Arguments.Count - 1)
+                {
+                    result += ", ";
+                }
+            }
+            result += ")" + StringUtil.NewLineChar;
+
+            return result;
+        }
+
+        public override AstType Execute()
+        {
+            return TypeCreator.CreateNil();
+        }
+
+        string Name;
+        List<string> Arguments;
     }
 
 
