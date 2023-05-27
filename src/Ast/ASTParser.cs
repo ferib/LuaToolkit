@@ -60,9 +60,9 @@ namespace LuaToolkit.Ast
                 return statements;
             }
             statements = new StatementList();
-            foreach (var line in block.Lines)
+            for (var line = 0; line < block.Lines.Count; ++line)
             {
-                statements.Add(Parse(line));
+                statements.Add(Parse(block.Lines[line]));
             }
             Cache.Add(block, statements);
             return statements;
@@ -73,8 +73,9 @@ namespace LuaToolkit.Ast
             switch (line.Instr.OpCode)
             {
                 case LuaOpcode.LOADK:
+                    return ParseLoad(line);
                 case LuaOpcode.LOADBOOL:
-                     return ParseLoad(line);
+                    return ParseLoadBool(line);
                 case LuaOpcode.LOADNIL:
                     return ParseLoadNil(line);
                 case LuaOpcode.MOVE:
@@ -86,7 +87,10 @@ namespace LuaToolkit.Ast
                 case LuaOpcode.EQ:
                 case LuaOpcode.LT:
                 case LuaOpcode.LE:
+                case LuaOpcode.TEST:
                     return ParseCondition(line);
+                case LuaOpcode.TESTSET:
+                    return ParseTestSet(line);
                 case LuaOpcode.RETURN:
                     return ParseReturn(line);
                 case LuaOpcode.JMP:
@@ -107,6 +111,9 @@ namespace LuaToolkit.Ast
                 case LuaOpcode.UNM:
                 case LuaOpcode.NOT:
                     return ParseSingleExprArithmetic(line);
+                // TODO fix constants with strings
+                // case LuaOpcode.LEN
+                // case LuaOpcode.CONCAT
                 case LuaOpcode.CALL:
                     return ParseCall(line);
                 default:
@@ -146,11 +153,11 @@ namespace LuaToolkit.Ast
             return statements;
         }
 
-        static public Statement ParseBool(LuaScriptLine line)
+        static public Statement ParseLoadBool(LuaScriptLine line)
         {
-            var VarName = line.Op1;
+            var VarName = "var" + line.Instr.A;
             var Variable = new Variable(VarName);
-            var Constant = new Constant(TypeCreator.CreateBool(line.Instr.B != 0));
+            var Constant = new Constant(TypeCreator.CreateBool(line.Instr.B == 1));
             return new AssignStatement(Variable, Constant);
         }
 
@@ -163,8 +170,87 @@ namespace LuaToolkit.Ast
             return new IfStatement(expr, ifBody);
         }
 
+        /// <summary>
+        ///  TESTSET has the following patern
+        ///     
+        ///     LOADBOOL	0 1 0	
+        ///     LOADBOOL	1 0 0	
+        ///     TESTSET	    2 0 1	
+        ///     JMP	
+        ///     MOVE	    2 1
+        ///     
+        /// </summary>
+        /// <param name="line"></param>
+        /// <returns></returns>
+        static public AssignStatement ParseTestSet(LuaScriptLine line)
+        {
+            // Probably does not work correctly, I think this can be chained.
+            var varOrErr = ExpressionCovertor<Variable>.Convert(ParseExpression(line, line.Instr.A));
+            if (varOrErr.HasError())
+            {
+                Debug.Print("TestSet not assigning to var: " + varOrErr.GetError());
+                Debug.Assert(false);
+            }
+
+            var lhs = ParseExpression(line, line.Instr.B);
+            var lineIndex = line.Block.Lines.IndexOf(line);
+            // Test SET should always be followed by a JUMP
+            // We don't need it to decompile, we will remove it.
+            var jmpLine = line.Block.Lines[lineIndex+1];
+            Debug.Assert(jmpLine.Instr.OpCode == LuaOpcode.JMP);
+
+            // After the jump is a move which is the assignment of the second var.
+            var moveBlock = line.Block.JumpsNextBlock;
+            Debug.Assert(moveBlock.Lines.Count == 1, "There should only by 1 instruction in this move block (the move)");
+            var moveLine = moveBlock.Lines[0];
+            
+            Debug.Assert(moveLine.Instr.OpCode == LuaOpcode.MOVE);
+
+            var rhs = ParseExpression(moveLine, moveLine.Instr.B);
+
+            // Delete everything that we don't need.
+            line.Block.Lines.Remove(jmpLine);
+
+            moveBlock.Lines.Remove(moveLine);
+            if(moveBlock.Lines.Count == 0)
+            {
+                // We should always enter this if, but to be sure, lets not remove something that we did not decompile.
+                line.Block.ScriptFunction.Blocks.Remove(moveBlock);
+                line.Block.JumpsNextBlock = null;
+                line.Block.JumpsNext = -1;
+            }
+
+            // If the TESTSET C == 1 we have an or if C == 0 we have an and.
+            if(line.Instr.C == 1)
+            {
+                return new AssignStatement(varOrErr.Value, new OrExpression(lhs, rhs));
+            } 
+            else if (line.Instr.C == 0)
+            {
+                return new AssignStatement(varOrErr.Value, new AndExpression(lhs, rhs));
+            }
+            else
+            {
+                Debug.Assert(false, "Defuck is happening");
+                return new AssignStatement(varOrErr.Value, new EmptyExpression());
+            }
+            
+        }
+
         static public Expression ParseConditionExpression(LuaScriptLine line)
         {
+            // Test Expression compares the value (boolean) in A with the Value in C.
+            // If they not match the next instruction is skipped.
+            if(line.Instr.OpCode == LuaOpcode.TEST)
+            {
+                var expr = ParseExpression(line, line.Instr.A);
+                if(line.Instr.C == 1)
+                {
+                    return new NotExpression(expr);
+                }
+                return new TestExpression(expr);
+            }
+
             var leftExpr = ParseExpression(line, line.Instr.B);
             var rightExpr = ParseExpression(line, line.Instr.C);
             

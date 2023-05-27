@@ -265,4 +265,27 @@ namespace LuaToolkit.Ast
         Expression Expr1;
         Expression Expr2;
     }
+
+    public class TestExpression : Expression
+    {
+        public TestExpression(Expression expr)
+        {
+            Expr = expr;
+            Type = EXPRESSION_TYPE.TEST;
+        }
+
+        public override string Dump()
+        {
+            string result = "";
+            result = Expr.Dump();
+            return result;
+        }
+
+        public override AstType Execute()
+        {
+            return Expr.Execute();
+        }
+
+        Expression Expr;
+    }
 }

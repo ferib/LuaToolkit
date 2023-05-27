@@ -2,6 +2,7 @@
 using Microsoft.VisualStudio.TestPlatform.ObjectModel.Utilities;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -292,6 +293,41 @@ namespace Tests
 
             var str = forLoop.Dump();
             Assert.Equal(str, expectedStr);
+        }
+
+        [Fact]
+        public void TestStrLen()
+        {
+            var expectedStr = "res = #str" + StringUtil.NewLineChar;
+            var str = "Vertridge";
+            var strVar = new Variable("str", TypeCreator.CreateString(str));
+            var resVar = new Variable("res", TypeCreator.CreateInt(0));
+            var assignStatment = new AssignStatement(resVar, new LenExpression(strVar));
+
+            assignStatment.Execute();
+            Assert.Equal(str.Length, resVar.Content.Int);
+
+            var dump = assignStatment.Dump();
+            Assert.Equal(expectedStr, dump);
+        }
+
+        [Fact]
+        public void TestStrConcat()
+        {
+            var expectedStr = "res = str1 .. str2" + StringUtil.NewLineChar;
+            var str1 = "Vertridge";
+            var str2 = "Is Awesome";
+            var str1Var = new Variable("str1", TypeCreator.CreateString(str1));
+            var str2Var = new Variable("str2", TypeCreator.CreateString(str2));
+            var resVar = new Variable("res", TypeCreator.CreateString(""));
+            var assignStatement = new AssignStatement(resVar, new ConcatExpression(str1Var, str2Var));
+
+            assignStatement.Execute();
+            Assert.Equal(str1 + str2, resVar.Content.String);
+
+            var dump = assignStatement.Dump();
+            Assert.Equal(expectedStr, dump);
+
         }
     }
 }

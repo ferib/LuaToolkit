@@ -20,16 +20,19 @@ namespace LuaToolkit.Ast
     public enum EXPRESSION_TYPE
     {
         EMPTY, CONST, VAR, NOT, OR, AND, EQ, NOT_EQ, LESS_THAN, LESS_OR_EQUAL, 
-        BIGGER_THAN, BIGGER_OR_EQUAL,
+        BIGGER_THAN, BIGGER_OR_EQUAL, TEST,
         ADD, SUB, MUL, DIV, POW, NEG,
         GLOBAL,
         FUNC_CALL,
+        LEN, CONCAT
     }
 
     public enum VAL_TYPE
     {
         NIL, INT, DOUBLE, CHAR, STRING, BOOL
     }
+
+    
 
     [System.Runtime.InteropServices.StructLayout(LayoutKind.Explicit)]
     public struct AstType
@@ -38,8 +41,11 @@ namespace LuaToolkit.Ast
         {
             Assigned = false;
             Nil = false;
+            IsString = false;
             Int = 0;
         }
+
+        public static List<string> StringList = new List<string>();
 
         [FieldOffset(0)]
         public bool Assigned;
@@ -48,27 +54,43 @@ namespace LuaToolkit.Ast
         public bool Nil;
 
         [FieldOffset(2)]
+        public bool IsString;
+
+        [FieldOffset(3)]
         public VAL_TYPE Type;
 
-        [FieldOffset(6)]
+        [FieldOffset(7)]
         public int Int;
 
-        [FieldOffset(6)]
+        [FieldOffset(7)]
         public double Double;
 
-        [FieldOffset(6)]
+        [FieldOffset(7)]
         public char Char;
 
-        [FieldOffset(6)]
+        [FieldOffset(7)]
         public bool Bool;
 
-        // [FieldOffset(15)]
-        // public string String;
+        [FieldOffset(8)]
+        public int StringIndex;
+
+        public string String
+        {
+            get
+            {
+                return StringList[StringIndex];
+            }
+            set
+            {
+                StringList[StringIndex] = value;
+            }
+        }
 
         public void Set(bool val)
         {
             Assigned = true;
             Nil = false;
+            IsString = false;
             Bool = val;
             Type = VAL_TYPE.BOOL;
         }
@@ -77,6 +99,7 @@ namespace LuaToolkit.Ast
         {
             Assigned = true;
             Nil = false;
+            IsString = false;
             Int = val;
             Type = VAL_TYPE.INT;
         }
@@ -85,6 +108,7 @@ namespace LuaToolkit.Ast
         {
             Assigned = true;
             Nil = false;
+            IsString = false;
             Double = val;
             Type = VAL_TYPE.DOUBLE;
         }
@@ -92,6 +116,7 @@ namespace LuaToolkit.Ast
         {
             Assigned = true;
             Nil = false;
+            IsString = false;
             Char = val;
             Type = VAL_TYPE.CHAR;
         }
@@ -99,13 +124,16 @@ namespace LuaToolkit.Ast
         {
             Assigned = true;
             Nil = false;
-            // String = val;
+            IsString = true;
+            StringList.Add(val);
+            StringIndex = StringList.Count - 1;
             Type = VAL_TYPE.STRING;
         }
         public void SetNil()
         {
             Assigned = true;
             Nil = true;
+            IsString = false;
             Type = VAL_TYPE.NIL;
         }
 
@@ -126,6 +154,9 @@ namespace LuaToolkit.Ast
                     break;
                 case VAL_TYPE.BOOL:
                     result.Set(Bool == second.Bool);
+                    break;
+                case VAL_TYPE.STRING:
+                    result.Set(String == second.String);
                     break;
                 case VAL_TYPE.NIL:
                 default:
