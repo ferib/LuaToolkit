@@ -966,6 +966,246 @@ end -- x
                 "Decompiler failed parsing TESTSET");
         }
 
+        [Fact]
+        public void TestTable()
+        {
+            LuaCFile luacin = new LuaCFile(new byte[0]);
+            luacin.Function = new LuaFunction() { ArgsCount = 0 };
+
+            luacin.Function.Instructions.AddRange(new LuaInstruction[]
+            {
+                new LuaInstruction(LuaOpcode.NEWTABLE)          { A = 0, B = 0, C = 0 },  // var0 = {}
+                new LuaInstruction(LuaOpcode.LOADK)             { A = 1, B = -1, C = 0 },  // var1 = 1
+                new LuaInstruction(LuaOpcode.LOADK)             { A = 2, B = -2, C = 0 },  // var2 = 5
+                new LuaInstruction(LuaOpcode.SETTABLE)          { A = 0, B = 1, C = 2 },   // var0[var1] = var2
+                new LuaInstruction(LuaOpcode.GETTABLE)          { A = 3, B = 0, C = 2 },  // var3 = var0[var2]
+                new LuaInstruction(LuaOpcode.RETURN)            { A=0, B=1 },       // 
+            });
+            luacin.Function.Constants.Add(new NumberConstant(1));
+            luacin.Function.Constants.Add(new NumberConstant(5));
+
+            // Encode test
+            LuaEncoder luaEncoder_x = new LuaEncoder(luacin);
+            byte[] filebuffer = luaEncoder_x.SaveFile();
+
+            // Decode and decompile
+            LuaDecoder decoder = new LuaDecoder(new LuaCFile(filebuffer));
+            LuaDecompiler decompiler = new LuaDecompiler(decoder);
+
+            string test = decompiler.Decompile(false);
+            test = test.Replace(" ", "");
+
+            Assert.True(test.Contains("var0={}"),
+                "Decompiler failed parsing NEWTABLE");
+            Assert.True(test.Contains("var0[var1]=var2"),
+                "Decompiler failed parsing SETTABLE");
+            Assert.True(test.Contains("var3=var0[var2]"),
+                "Decompiler failed parsing GETTABLE");
+        }
+
+        [Fact]
+        public void TestSetList()
+        {
+            LuaCFile luacin = new LuaCFile(new byte[0]);
+            luacin.Function = new LuaFunction() { ArgsCount = 0 };
+
+            luacin.Function.Instructions.AddRange(new LuaInstruction[]
+            {
+                
+                new LuaInstruction(LuaOpcode.LOADK)             { A = 0, B = -1, C = 0 },  // var0 = 1
+                new LuaInstruction(LuaOpcode.LOADK)             { A = 1, B = -1, C = 0 },  // var1 = 1
+                new LuaInstruction(LuaOpcode.NEWTABLE)          { A = 2, B = 2, C = 0 },   // var2 = {}
+                new LuaInstruction(LuaOpcode.MOVE)              { A = 3, B = 0, C = 0 },   // var3 = var0
+                new LuaInstruction(LuaOpcode.MOVE)              { A = 4, B = 1, C = 0 },   // var4 = var1
+                new LuaInstruction(LuaOpcode.SETLIST)           { A = 2, B = 2, C = 1 },   // var2 = { var3, var4 }
+                new LuaInstruction(LuaOpcode.RETURN)            { A=0, B=1 },       // 
+            });
+            luacin.Function.Constants.Add(new NumberConstant(1));
+
+
+            // Encode test
+            LuaEncoder luaEncoder_x = new LuaEncoder(luacin);
+            byte[] filebuffer = luaEncoder_x.SaveFile();
+
+            // Decode and decompile
+            LuaDecoder decoder = new LuaDecoder(new LuaCFile(filebuffer));
+            LuaDecompiler decompiler = new LuaDecompiler(decoder);
+
+            string test = decompiler.Decompile(false);
+            test = test.Replace(" ", "");
+
+            Assert.True(test.Contains("var2={var3,var4}"),
+                "Decompiler failed parsing SETLIST");
+        }
+
+        [Fact]
+        public void TestUpvals()
+        {
+            LuaCFile luacin = new LuaCFile(new byte[0]);
+            luacin.Function = new LuaFunction() { ArgsCount = 0 };
+
+            luacin.Function.Instructions.AddRange(new LuaInstruction[]
+            {
+                new LuaInstruction(LuaOpcode.GETUPVAL)          { A = 0, B = 0, C = 0 },  // var0 = upval0
+                new LuaInstruction(LuaOpcode.LOADK)             { A = 1, B = -1, C = 0 },  // var1 = 2
+                new LuaInstruction(LuaOpcode.SETUPVAL)          { A = 1, B = 0, C = 0 },   // upval0 = var1
+                new LuaInstruction(LuaOpcode.RETURN)            { A=0, B=1 },       // 
+            });
+            luacin.Function.Constants.Add(new NumberConstant(2));
+            // Decoding Upvalues does not work correctly
+            luacin.Function.Upvalues.Add(new NumberConstant(1));
+            
+
+            // Encode test
+            LuaEncoder luaEncoder_x = new LuaEncoder(luacin);
+            byte[] filebuffer = luaEncoder_x.SaveFile();
+
+            // Decode and decompile
+            LuaDecoder decoder = new LuaDecoder(new LuaCFile(filebuffer));
+            LuaDecompiler decompiler = new LuaDecompiler(decoder);
+
+            string test = decompiler.Decompile(false);
+            test = test.Replace(" ", "");
+
+            Assert.True(test.Contains("var0=upval0"),
+                "Decompiler failed parsing GETUPVAL");
+            Assert.True(test.Contains("upval0=var1"),
+                "Decompiler failed parsing SETUPVAL");
+        }
+
+        [Fact]
+        public void TestVarArg()
+        {
+            LuaCFile luacin = new LuaCFile(new byte[0]);
+            luacin.Function = new LuaFunction() { ArgsCount = 0 };
+
+            luacin.Function.Instructions.AddRange(new LuaInstruction[]
+            {
+                new LuaInstruction(LuaOpcode.VARARG)            { A = 1, B = 3 },  // var1, var2 = ..
+                new LuaInstruction(LuaOpcode.RETURN)            { A=0, B=1 },       // 
+            });
+
+
+            // Encode test
+            LuaEncoder luaEncoder_x = new LuaEncoder(luacin);
+            byte[] filebuffer = luaEncoder_x.SaveFile();
+
+            // Decode and decompile
+            LuaDecoder decoder = new LuaDecoder(new LuaCFile(filebuffer));
+            LuaDecompiler decompiler = new LuaDecompiler(decoder);
+
+            string test = decompiler.Decompile(false);
+            test = test.Replace(" ", "");
+
+            Assert.True(test.Contains("var1,var2=..."),
+                "Decompiler failed parsing VARARG");
+            Assert.True(test.Contains("CRoot(...)"),
+                "Decompiler failed parsing VARARG");
+        }
+
+        [Fact]
+        public void TestTailCall()
+        {
+            LuaCFile luacin = new LuaCFile(new byte[0]);
+            luacin.Function = new LuaFunction() { ArgsCount = 0 };
+
+            luacin.Function.Instructions.AddRange(new LuaInstruction[]
+            {
+                new LuaInstruction(LuaOpcode.TAILCALL)            { A = 0, B = 1, C = 0 },  // return var0()
+                new LuaInstruction(LuaOpcode.RETURN)            { A=0, B=0 },       // 
+                new LuaInstruction(LuaOpcode.RETURN)            { A=0, B=1 },       // 
+            });
+
+
+            // Encode test
+            LuaEncoder luaEncoder_x = new LuaEncoder(luacin);
+            byte[] filebuffer = luaEncoder_x.SaveFile();
+
+            // Decode and decompile
+            LuaDecoder decoder = new LuaDecoder(new LuaCFile(filebuffer));
+            LuaDecompiler decompiler = new LuaDecompiler(decoder);
+
+            string test = decompiler.Decompile(false);
+            test = test.Replace(" ", "");
+
+            Assert.True(test.Contains("returnvar0()"),
+                "Decompiler failed parsing TailCall");
+        }
+
+        [Fact]
+        public void TestClosure ()
+        {
+            LuaCFile luacin = new LuaCFile(new byte[0]);
+            luacin.Function = new LuaFunction() { ArgsCount = 0 };
+
+            luacin.Function.Instructions.AddRange(new LuaInstruction[]
+            {
+                new LuaInstruction(LuaOpcode.CLOSURE)            { A = 0, Bx = 0 },  // var0 = 
+                new LuaInstruction(LuaOpcode.RETURN)            { A=0, B=0 },       // 
+                new LuaInstruction(LuaOpcode.RETURN)            { A=0, B=1 },       // 
+            });
+
+            var callee = new LuaFunction() { ArgsCount = 0 };
+            callee.Name = "Callee";
+            callee.Instructions.AddRange(new LuaInstruction[]
+            {
+                new LuaInstruction(LuaOpcode.LOADK)            { A = 1, Bx = -1 },  // var0 = 
+                new LuaInstruction(LuaOpcode.RETURN)            { A=0, B=0 },       // 
+                new LuaInstruction(LuaOpcode.RETURN)            { A=0, B=1 },       // 
+            });
+            callee.Constants.Add(new NumberConstant(1));
+
+            luacin.Function.Functions.Add(callee);
+
+
+            // Encode test
+            LuaEncoder luaEncoder_x = new LuaEncoder(luacin);
+            byte[] filebuffer = luaEncoder_x.SaveFile();
+
+            // Decode and decompile
+            LuaDecoder decoder = new LuaDecoder(new LuaCFile(filebuffer));
+            LuaDecompiler decompiler = new LuaDecompiler(decoder);
+
+            string test = decompiler.Decompile(false);
+            test = test.Replace(" ", "");
+
+            Assert.True(test.Contains("var0=\"CRoot_0\""),
+                "Decompiler failed parsing TailCall");
+        }
+
+        [Fact]
+        public void TestSelf()
+        {
+            //	local var0
+            //  var0:func()
+
+            LuaCFile luacin = new LuaCFile(new byte[0]);
+            luacin.Function = new LuaFunction() { ArgsCount = 0 };
+
+            luacin.Function.Instructions.AddRange(new LuaInstruction[]
+            {
+                new LuaInstruction(LuaOpcode.SELF)            { A = 1, B = 0, C = -1 }, 
+                new LuaInstruction(LuaOpcode.CALL)            { A = 1, B = 2, C = 1 },       // 
+                new LuaInstruction(LuaOpcode.RETURN)           { A=0, B=1 },       // 
+            });
+
+            luacin.Function.Constants.Add(new StringConstant("func"));
+
+            // Encode test
+            LuaEncoder luaEncoder_x = new LuaEncoder(luacin);
+            byte[] filebuffer = luaEncoder_x.SaveFile();
+
+            // Decode and decompile
+            LuaDecoder decoder = new LuaDecoder(new LuaCFile(filebuffer));
+            LuaDecompiler decompiler = new LuaDecompiler(decoder);
+
+            string test = decompiler.Decompile(false);
+            test = test.Replace(" ", "");
+
+            // Test fails because constants don't work.
+            Assert.True(test.Contains("var1=var0[\"bar\"])"),
+                "Decompiler failed parsing SELF");
+        }
 
         [Fact]
         public void test2()

@@ -60,12 +60,19 @@ namespace LuaToolkit.Ast
         {
             Name = name;
             StatementList = statements;
+            VarArg = false;
             Type = STATEMENT_TYPE.FUNCTION_DEF;
         }
         public override string Dump()
         {
             string result = "";
-            result += "function " + Name + "()" + StringUtil.NewLineChar;
+            result += "function " + Name + "( ";
+            // Todo arguments
+            if(VarArg)
+            {
+                result += "...";
+            }
+            result += " )" + StringUtil.NewLineChar;
             result += StatementList.Dump();
             result += "end" + StringUtil.NewLineChar;
             return result;
@@ -77,6 +84,7 @@ namespace LuaToolkit.Ast
             return new AstType();
         }
 
+        public bool VarArg;
         public string Name;
         public StatementList StatementList;
     }
@@ -155,7 +163,7 @@ namespace LuaToolkit.Ast
                     result += ", ";
                 }
             }
-            result += ")" + StringUtil.NewLineChar;
+            result += ")";
 
             return result;
         }
@@ -167,6 +175,24 @@ namespace LuaToolkit.Ast
 
         string Name;
         List<string> Arguments;
+    }
+
+    public class VarArg : Expression
+    {
+        public VarArg()
+        {
+            Type = EXPRESSION_TYPE.VAR_ARG;
+        }
+        public override string Dump()
+        {
+            return "...";
+        }
+
+        public override AstType Execute()
+        {
+            // Todo execution of vararg
+            return TypeCreator.CreateNil();
+        }
     }
 
 

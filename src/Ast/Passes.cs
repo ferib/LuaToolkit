@@ -10,6 +10,7 @@ namespace LuaToolkit.Ast
         public RunPasses()
         {
             mPassManger = new PassManager();
+            mPassManger.AddPass(new VarArgPropegation());
             mPassManger.AddPass(new ParseJmpPass());
         }
 

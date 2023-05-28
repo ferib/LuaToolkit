@@ -22,9 +22,11 @@ namespace LuaToolkit.Ast
         EMPTY, CONST, VAR, NOT, OR, AND, EQ, NOT_EQ, LESS_THAN, LESS_OR_EQUAL, 
         BIGGER_THAN, BIGGER_OR_EQUAL, TEST,
         ADD, SUB, MUL, DIV, POW, NEG,
-        GLOBAL,
+        GLOBAL, VAR_ARG,
         FUNC_CALL,
-        LEN, CONCAT
+        LEN, CONCAT,
+        TABLE_NEW, TABLE_GET, TABLE_SET, LIST_SET,
+        UP_VALUE,
     }
 
     public enum VAL_TYPE
@@ -670,6 +672,8 @@ namespace LuaToolkit.Ast
                 case VAL_TYPE.NIL:
                     //Debug.Assert(false, "Cannot create a constant of void type");
                     return "nil";
+                case VAL_TYPE.STRING:
+                    return "\"" + Content.String + "\"";
                 default:
                     Debug.Assert(false, "Unsupported Constant type '" 
                         + Content.Type.ToString() + "'");
@@ -705,4 +709,18 @@ public class JumpStatement : Statement
     }
 
     public Statement Statement;
+}
+
+public class CloseStatement : Statement
+{
+    public override string Dump()
+    {
+        return "CLOSE" + StringUtil.NewLineChar;
+    }
+
+    public override AstType Execute()
+    {
+        // Should probably do more.
+        return TypeCreator.CreateNil();
+    }
 }

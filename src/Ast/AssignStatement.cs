@@ -28,6 +28,20 @@ namespace LuaToolkit.Ast
             Type = STATEMENT_TYPE.ASSIGN;
         }
 
+        public AssignStatement(SetTableExpression setTable, Expression expression)
+        {
+            SetTable = setTable;
+            Expression = expression;
+            Type = STATEMENT_TYPE.ASSIGN;
+        }
+
+        public AssignStatement(Upvalue upval, Expression expression)
+        {
+            Upvalue = upval;
+            Expression = expression;
+            Type = STATEMENT_TYPE.ASSIGN;
+        }
+
         public override string Dump()
         {
             string result = "";
@@ -50,6 +64,14 @@ namespace LuaToolkit.Ast
                     }
                 }
             }
+            else if (SetTable != null)
+            {
+                result += SetTable.Dump();
+            }
+            else if (Upvalue != null)
+            {
+                result += Upvalue.Dump();
+            }
             else
             {
                 Debug.Assert(false, "AssignStatement needs var/varlist or global");
@@ -61,6 +83,7 @@ namespace LuaToolkit.Ast
 
         public override AstType Execute()
         {
+            // Todo add support for all types.
             Var.Content = Expression.Execute();
             return TypeCreator.CreateBool(Var.Content.Assigned);
         }
@@ -68,6 +91,8 @@ namespace LuaToolkit.Ast
         public Variable Var;
         public Global Global;
         public List<Variable> VarList;
+        public SetTableExpression SetTable;
+        public Upvalue Upvalue;
 
         public Expression Expression;
     }
