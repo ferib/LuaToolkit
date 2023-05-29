@@ -38,7 +38,9 @@ namespace LuaToolkit.Disassembler
             }
 
             // general settings
+            // LuaFormat being used, 0 == official format.
             this.File.Format = GetByte();
+            // 1 == little endian
             this.File.BigEndian = GetByte() == 0;
             this.File.IntSize = GetByte();
             this.File.SizeTSize = GetByte();
@@ -54,6 +56,8 @@ namespace LuaToolkit.Disassembler
         {
             LuaFunction Function = new LuaFunction();
 
+            // First is the length of the string.
+            // Followed by the source file name.
             Function.Name = GetString();     // Function name
             Function.FirstLineNr = GetInt();   // First line // 4 or 8?
             Function.LastLineNr = GetInt();    // Last line // 4 or 8?
@@ -139,6 +143,8 @@ namespace LuaToolkit.Disassembler
             return functions;
         }
 
+        // TODO Should be a map that links pc to line number.
+        // i is the pc and int the line number.
         private List<int> ReadDebugLines()
         {
             List<int> debuglines = new List<int>();
@@ -163,6 +169,7 @@ namespace LuaToolkit.Disassembler
 
         private List<string> ReadDebugUpvalues()
         {
+            // Upvals are a list of strings that refer to a local var from the parent.
             List<string> upvalues = new List<string>();
             int count = GetInt();
             for (int i = 0; i < count; i++)

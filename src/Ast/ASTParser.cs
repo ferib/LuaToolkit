@@ -663,8 +663,8 @@ namespace LuaToolkit.Ast
 
         static public Upvalue ParseUpvalue(LuaScriptLine line, int val)
         {
-            var constant = line.Func.Upvalues[val];
-            return new Upvalue("upval" + val, CreateConstant(constant).Content);
+            var upvalName = line.Func.DebugUpvalues[val];
+            return new Upvalue(upvalName);
         }
 
         static public AssignStatement ParseGetUpval(LuaScriptLine line)

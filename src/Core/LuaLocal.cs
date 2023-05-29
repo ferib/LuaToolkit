@@ -28,7 +28,9 @@ namespace LuaToolkit
 		public LuaLocal(string name, int scopeStart, int scopeEnd)
 		{
 			Name = name;
+			// start pc
 			ScopeStart = scopeStart;
+			// end pc
 			ScopeEnd = scopeEnd;
 		}
 	}

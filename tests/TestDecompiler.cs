@@ -1046,15 +1046,14 @@ end -- x
 
             luacin.Function.Instructions.AddRange(new LuaInstruction[]
             {
-                new LuaInstruction(LuaOpcode.GETUPVAL)          { A = 0, B = 0, C = 0 },  // var0 = upval0
+                new LuaInstruction(LuaOpcode.GETUPVAL)          { A = 0, B = 0, C = 0 },  // var0 = upval
                 new LuaInstruction(LuaOpcode.LOADK)             { A = 1, B = -1, C = 0 },  // var1 = 2
-                new LuaInstruction(LuaOpcode.SETUPVAL)          { A = 1, B = 0, C = 0 },   // upval0 = var1
+                new LuaInstruction(LuaOpcode.SETUPVAL)          { A = 1, B = 0, C = 0 },   // upval = var1
                 new LuaInstruction(LuaOpcode.RETURN)            { A=0, B=1 },       // 
             });
             luacin.Function.Constants.Add(new NumberConstant(2));
-            // Decoding Upvalues does not work correctly
-            luacin.Function.Upvalues.Add(new NumberConstant(1));
-            
+            luacin.Function.DebugUpvalues.Add("upval");
+
 
             // Encode test
             LuaEncoder luaEncoder_x = new LuaEncoder(luacin);
@@ -1067,9 +1066,9 @@ end -- x
             string test = decompiler.Decompile(false);
             test = test.Replace(" ", "");
 
-            Assert.True(test.Contains("var0=upval0"),
+            Assert.True(test.Contains("var0=upval"),
                 "Decompiler failed parsing GETUPVAL");
-            Assert.True(test.Contains("upval0=var1"),
+            Assert.True(test.Contains("upval=var1"),
                 "Decompiler failed parsing SETUPVAL");
         }
 
@@ -1210,7 +1209,7 @@ end -- x
         [Fact]
         public void test2()
         {
-            LuaCFile f = new LuaCFile(File.ReadAllBytes("C:\\Users\\sande\\Downloads\\dumped_lua.luac"));
+            LuaCFile f = new LuaCFile(File.ReadAllBytes("C:\\Users\\ruben\\Downloads\\output.luac"));
             LuaDecoder d = new LuaDecoder(f);
             LuaDecompiler dec = new LuaDecompiler(d);
             string test = dec.Decompile();
