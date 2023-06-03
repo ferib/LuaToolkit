@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq.Expressions;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace LuaToolkit.Ast
@@ -110,10 +111,10 @@ namespace LuaToolkit.Ast
                     return ParseArithmetic(line);
                 case LuaOpcode.UNM:
                 case LuaOpcode.NOT:
+                case LuaOpcode.LEN:
                     return ParseSingleExprArithmetic(line);
-                // TODO fix constants with strings
-                // case LuaOpcode.LEN
-                // case LuaOpcode.CONCAT
+                case LuaOpcode.CONCAT:
+                    return ParseConcat(line);
                 case LuaOpcode.CALL:
                     return ParseCall(line);
                 case LuaOpcode.TAILCALL:
@@ -144,21 +145,24 @@ namespace LuaToolkit.Ast
             }
         }
 
+
+
         // TODO Fix parsing of assigned value
         static public Statement ParseLoad(LuaScriptLine line)
         {
-            var VarName = line.Op1;
+            var VarName = "var" + line.Instr.A;
             var Variable = new Variable(VarName);
-            var constIndex = line.Instr.Bx;
-
+            
+            bool isConstant;
+            var index = LuaScriptLine.ToIndex18(line.Instr.Bx, out isConstant);
             Constant constant;
-            if(constIndex > line.Func.Constants.Count)
+            if(index > line.Func.Constants.Count - 1)
             {
                 constant = new Constant(TypeCreator.CreateInt(line.Instr.Bx));
                 
             } else
             {
-                constant = CreateConstant(line.Func.Constants[constIndex]);
+                constant = CreateConstant(line.Func.Constants[index]);
             }
             
             return new AssignStatement(Variable, constant);
@@ -291,7 +295,7 @@ namespace LuaToolkit.Ast
 
         static public Expression ParseExpression(LuaScriptLine line, int val)
         {
-            var index = LuaScriptLine.ToIndex(val, out bool isConsant);
+            var index = LuaScriptLine.ToIndex9(val, out bool isConsant);
             if (isConsant)
             {
                 var constant = line.Func.Constants[index];
@@ -316,6 +320,9 @@ namespace LuaToolkit.Ast
                 case LuaType.Number:
                     var intConst = constant as NumberConstant;
                     return new Constant(TypeCreator.CreateDouble(intConst.Value));
+                case LuaType.String:
+                    var stringConst = constant as StringConstant;
+                    return new Constant(TypeCreator.CreateString(stringConst.Value));
                 default:
                     Debug.Assert(false, "Type not supported");
                     return new Constant(new AstType());
@@ -407,7 +414,7 @@ namespace LuaToolkit.Ast
                     arithExpr = new NotExpression(expr);
                     break;
                 case LuaOpcode.LEN:
-                    // arithExpr = new MulExpression(lhs, rhs);
+                    arithExpr = new LenExpression(expr);
                     break;
 
             }
@@ -691,5 +698,21 @@ namespace LuaToolkit.Ast
             return new AssignStatement(upval, varOrErr.Value);
         }
 
+        static public AssignStatement ParseConcat(LuaScriptLine line)
+        {
+            var varOrErr = ExpressionCovertor<Variable>.Convert(ParseExpression(line, line.Instr.A));
+            if (varOrErr.HasError())
+            {
+                Debug.Print("SetList can only by used on vars: " + varOrErr.GetError());
+                Debug.Assert(false);
+            }
+            var exprs = new List<Expression>();
+            for (int i = line.Instr.B; i <= line.Instr.C; ++i)
+            {
+                exprs.Add(ParseExpression(line, i)); 
+            }
+
+            return new AssignStatement(varOrErr.Value, new ConcatExpression(exprs));
+        }
     }
 }

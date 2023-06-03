@@ -975,8 +975,9 @@ end -- x
             luacin.Function.Instructions.AddRange(new LuaInstruction[]
             {
                 new LuaInstruction(LuaOpcode.NEWTABLE)          { A = 0, B = 0, C = 0 },  // var0 = {}
-                new LuaInstruction(LuaOpcode.LOADK)             { A = 1, B = -1, C = 0 },  // var1 = 1
-                new LuaInstruction(LuaOpcode.LOADK)             { A = 2, B = -2, C = 0 },  // var2 = 5
+                new LuaInstruction(LuaOpcode.LOADK)             { A = 1, Bx = -1 },  // var1 = 1
+                new LuaInstruction(LuaOpcode.LOADK)             { A = 2, Bx = -2 },  // var2 = 5
+                new LuaInstruction(LuaOpcode.LOADK)             { A = 2, B = -5, C = 0 },  // var2 = 5
                 new LuaInstruction(LuaOpcode.SETTABLE)          { A = 0, B = 1, C = 2 },   // var0[var1] = var2
                 new LuaInstruction(LuaOpcode.GETTABLE)          { A = 3, B = 0, C = 2 },  // var3 = var0[var2]
                 new LuaInstruction(LuaOpcode.RETURN)            { A=0, B=1 },       // 
@@ -1012,8 +1013,8 @@ end -- x
             luacin.Function.Instructions.AddRange(new LuaInstruction[]
             {
                 
-                new LuaInstruction(LuaOpcode.LOADK)             { A = 0, B = -1, C = 0 },  // var0 = 1
-                new LuaInstruction(LuaOpcode.LOADK)             { A = 1, B = -1, C = 0 },  // var1 = 1
+                new LuaInstruction(LuaOpcode.LOADK)             { A = 0, Bx = -1 },  // var0 = 1
+                new LuaInstruction(LuaOpcode.LOADK)             { A = 1, Bx = -1 },  // var1 = 1
                 new LuaInstruction(LuaOpcode.NEWTABLE)          { A = 2, B = 2, C = 0 },   // var2 = {}
                 new LuaInstruction(LuaOpcode.MOVE)              { A = 3, B = 0, C = 0 },   // var3 = var0
                 new LuaInstruction(LuaOpcode.MOVE)              { A = 4, B = 1, C = 0 },   // var4 = var1
@@ -1047,7 +1048,7 @@ end -- x
             luacin.Function.Instructions.AddRange(new LuaInstruction[]
             {
                 new LuaInstruction(LuaOpcode.GETUPVAL)          { A = 0, B = 0, C = 0 },  // var0 = upval
-                new LuaInstruction(LuaOpcode.LOADK)             { A = 1, B = -1, C = 0 },  // var1 = 2
+                new LuaInstruction(LuaOpcode.LOADK)             { A = 1, Bx = -1 },  // var1 = 2
                 new LuaInstruction(LuaOpcode.SETUPVAL)          { A = 1, B = 0, C = 0 },   // upval = var1
                 new LuaInstruction(LuaOpcode.RETURN)            { A=0, B=1 },       // 
             });
@@ -1185,7 +1186,7 @@ end -- x
             {
                 new LuaInstruction(LuaOpcode.SELF)            { A = 1, B = 0, C = -1 }, 
                 new LuaInstruction(LuaOpcode.CALL)            { A = 1, B = 2, C = 1 },       // 
-                new LuaInstruction(LuaOpcode.RETURN)           { A=0, B=1 },       // 
+                new LuaInstruction(LuaOpcode.RETURN)          { A=0, B=1 },       // 
             });
 
             luacin.Function.Constants.Add(new StringConstant("func"));
@@ -1204,6 +1205,79 @@ end -- x
             // Test fails because constants don't work.
             Assert.True(test.Contains("var1=var0[\"bar\"])"),
                 "Decompiler failed parsing SELF");
+        }
+
+        [Fact]
+        public void TestLen()
+        {
+            //	local var0 = "test"
+            //  local var1 = #var0
+
+            LuaCFile luacin = new LuaCFile(new byte[0]);
+            luacin.Function = new LuaFunction() { ArgsCount = 0 };
+
+            luacin.Function.Instructions.AddRange(new LuaInstruction[]
+            {
+                new LuaInstruction(LuaOpcode.LOADK)            { A = 0, Bx = -1 }, // local var0 = "test"
+                new LuaInstruction(LuaOpcode.LEN)              { A = 1, B = 0 },   // local var1 = #var0 
+                new LuaInstruction(LuaOpcode.RETURN)           { A=0, B=1 },       // 
+            });
+
+            luacin.Function.Constants.Add(new StringConstant("test"));
+
+            // Encode test
+            LuaEncoder luaEncoder_x = new LuaEncoder(luacin);
+            byte[] filebuffer = luaEncoder_x.SaveFile();
+
+            // Decode and decompile
+            LuaDecoder decoder = new LuaDecoder(new LuaCFile(filebuffer));
+            LuaDecompiler decompiler = new LuaDecompiler(decoder);
+
+            string test = decompiler.Decompile(false);
+            test = test.Replace(" ", "");
+
+            Assert.True(test.Contains("var0=\"test\""),
+                "Decompiler failed parsing LOADK with string");
+            Assert.True(test.Contains("var1=#var0"),
+                "Decompiler failed parsing LEN");
+        }
+
+        [Fact]
+        public void TestConcat()
+        {
+            //	local var0 = "test"
+            //  local var1 = "2"
+            //  local var4 = var2 .. var3
+
+            LuaCFile luacin = new LuaCFile(new byte[0]);
+            luacin.Function = new LuaFunction() { ArgsCount = 0 };
+
+            luacin.Function.Instructions.AddRange(new LuaInstruction[]
+            {
+                new LuaInstruction(LuaOpcode.LOADK)            { A = 0, Bx = -1 }, // local var0 = "test"
+                new LuaInstruction(LuaOpcode.LOADK)            { A = 1, Bx = -2 }, // local var1 = "2"
+                new LuaInstruction(LuaOpcode.MOVE)             { A = 2, B = 0 },  // local var2 = var0
+                new LuaInstruction(LuaOpcode.MOVE)             { A = 3, B = 1 },  // local var3 = var1
+                new LuaInstruction(LuaOpcode.CONCAT)           { A = 2, B = 2, C = 3 },   // local var1 = #var0 
+                new LuaInstruction(LuaOpcode.RETURN)           { A=0, B=1 },       // 
+            });
+
+            luacin.Function.Constants.Add(new StringConstant("test"));
+            luacin.Function.Constants.Add(new StringConstant("2"));
+
+            // Encode test
+            LuaEncoder luaEncoder_x = new LuaEncoder(luacin);
+            byte[] filebuffer = luaEncoder_x.SaveFile();
+
+            // Decode and decompile
+            LuaDecoder decoder = new LuaDecoder(new LuaCFile(filebuffer));
+            LuaDecompiler decompiler = new LuaDecompiler(decoder);
+
+            string test = decompiler.Decompile(false);
+            test = test.Replace(" ", "");
+
+            Assert.True(test.Contains("var2=var2..var3"),
+                "Decompiler failed parsing CONCAT");
         }
 
         [Fact]

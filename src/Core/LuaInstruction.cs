@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Reflection.Emit;
+using System.Runtime.InteropServices;
 
 namespace LuaToolkit
 {
@@ -17,6 +18,16 @@ namespace LuaToolkit
         {
             get;
             private set;
+        }
+
+        private uint MASK1(int n, int p)
+        {
+            return ((~((~(uint)0) << n)) << p);
+        }
+
+        private uint MASK0(int n, int p)
+        {
+            return (~MASK1(n, p));
         }
 
         public int A
@@ -55,18 +66,43 @@ namespace LuaToolkit
             }
         }
 
+        [StructLayout(LayoutKind.Explicit)]
+        struct IntConverter
+        {
+            [FieldOffset(0)]
+            public short Short;
+            [FieldOffset(0)]
+            public ushort Ushort;
+            [FieldOffset(0)]
+            public int Int;
+            [FieldOffset(0)]
+            public uint Uint;
+        }
+
+
         public int Bx
         {
             //get { return ((B << 9) & 0x000FFE00 | C) & 0x3FFFF; }
-            get { return ((B << 9) & 0xFFE00 | C) & 0x3FFFF; }
+          //   get { return ((B << 9) & 0xFFE00 | C) & 0x3FFFF; }
+            get
+            {
+                uint temp = (uint)((Data) >> 14) & (uint)MASK1(18, 0);
+                var conv = new IntConverter { Uint = temp };
+                return conv.Int;
+                // return (int)((Data >> /* POS_A */ 6 + /* SIZE_A */ 8) & ((~((~(uint)0) << /* SIXE_B */ 18)) << 0));
+            }
             set 
-            { 
-                int b = (value >> 9); // TODO: verift that this gets rid of the first 9 bits?
-                int c = (value & ~0xFFE00); // TODO: verify that this gets rid of the last 9 bits?
+            {
+                Data = (((Data) & MASK0(18, 14)) | (((uint)value << 14) & MASK1(18, 14)));
+
+                //Data = ((Data) & ~((~((~(uint)0) << 18)) << 14)) |
+                //    (((uint)(value) << 14) & ((~((~(uint)0) << /* SIXE_B */ 18)) << 14));
+                // int b = (value >> 9); // TODO: verift that this gets rid of the first 9 bits?
+                // int c = (value & ~0xFFE00); // TODO: verify that this gets rid of the last 9 bits?
                 //UpdateData();
                 //Data = ((Data & ~0xFF800000)   | ((b >> 23) & 0x1FF));
-                B = b;
-                C = c;
+                // B = b;
+                // C = c;
                 
                 // TODO?
                 //Data = (uint)((Data & ~0x007FC000) | ((c & 0x1FF) << 14));

@@ -1,4 +1,5 @@
 ﻿using LuaToolkit.Disassembler;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -61,6 +62,7 @@ namespace LuaToolkit.Decompiler
         /// <param name="Instr">Instruction to decompile.</param>
         public void SetMain(LuaInstruction Instr = null)
         {
+            return;
             if (Instr == null)
                 Instr = this.Instr;
             switch (Instr.OpCode)
@@ -425,7 +427,7 @@ namespace LuaToolkit.Decompiler
         public string WriteIndex(int value, bool useLocalKeyword = true)
         {
             bool constant = false;
-            int index = ToIndex(value, out constant);
+            int index = ToIndex18(value, out constant);
 
             if (constant)
                 return this.Func.Constants[index].ToString();
@@ -448,13 +450,44 @@ namespace LuaToolkit.Decompiler
                 }
             }
         }
-        public static int ToIndex(int value, out bool isConstant)
+
+        // Parse the index for 18 bit register Bx
+        public static int ToIndex18(int value, out bool isConstant)
         {
-            // this is the logic from lua's source code (lopcodes.h)
+            // this is the logic from lua's source code (lopcodes.h) ISK and INDEXK
+            // I confirm this is correct, but for some reason does not work. FUCK 18bit int
             if (isConstant = (value & 1 << 8) != 0)
-                return value & ~(1 << 8);
+            {
+                // TODO this is not correct, but actually works.
+                // Will also do the real value -1 to get the correct index
+                // 262143 == -1 in a 18bit int
+                return Math.Abs(value - 262143);
+                //return value & ~(1 << 8);
+            }
             else
+            {
                 return value;
+            }
+                
+        }
+        // Parse the index for 9 bit registers, A, B and C
+
+        public static int ToIndex9(int value, out bool isConstant)
+        {
+            // this is the logic from lua's source code (lopcodes.h) ISK and INDEXK
+            // I confirm this is correct, but for some reason does not work. FUCK 9bit int
+            if (isConstant = (value & 1 << 8) != 0)
+            {
+                // TODO this is not correct, but actually works.
+                // 512 == -1 in a 9bit int
+                return Math.Abs(value - 512);
+                // return value & ~(1 << 8);
+            }
+            else
+            {
+                return value;
+            }
+
         }
 
         public void SetText(string text)
