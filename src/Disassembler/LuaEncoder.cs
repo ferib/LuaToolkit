@@ -43,7 +43,7 @@ namespace LuaToolkit.Disassembler
             SetByte(this.File.Integral);
         }
 
-        public void EncodeFunctionblock(LuaFunction Function)
+        public void EncodeFunctionblock(Function Function)
         {
             SetString(Function.Name);
             SetInt(Function.FirstLineNr);
@@ -51,7 +51,7 @@ namespace LuaToolkit.Disassembler
 
             SetByte(Function.UpvaluesCount);
             SetByte(Function.ArgsCount);
-            SetByte((byte)Function.Vargs);
+            SetByte((byte)Function.VarArg);
             SetByte(Function.MaxStackSize);
 
             // Encode instructions
@@ -67,13 +67,13 @@ namespace LuaToolkit.Disassembler
             WriteDebugLines(Function.DebugLines);
 
             // Encode debuginfo: Locals
-            WriteDebugLocals(Function.DebugLocals);
+            WriteDebugLocals(Function.Locals);
 
             // Encode debuginfo: Upvalues
-            WriteDebugUpvals(Function.DebugUpvalues);
+            WriteDebugUpvals(Function.Upvals);
         }
 
-        public void WriteInstructions(List<LuaInstruction> Instructions)
+        public void WriteInstructions(List<Instruction> Instructions)
         {
             SetInt(Instructions.Count);
             for (int i = 0; i < Instructions.Count; i++)
@@ -82,7 +82,7 @@ namespace LuaToolkit.Disassembler
             }
         }
 
-        public void WriteConstants(List<LuaConstant> Constants)
+        public void WriteConstants(List<ByteConstant> Constants)
         {
             SetInt(Constants.Count);
             for (int i = 0; i < Constants.Count; i++)
@@ -94,25 +94,25 @@ namespace LuaToolkit.Disassembler
                     case LuaType.Nil:
                         break;
                     case LuaType.Bool:
-                        var val = (BoolConstant)Constants[i];
+                        var val = (BoolByteConstant)Constants[i];
                         if (val.Value)
                             SetByte(1);
                         else
                             SetByte(0);
                         break;
                     case LuaType.Number:
-                        var num = (NumberConstant)Constants[i];
+                        var num = (NumberByteConstant)Constants[i];
                         SetFloat2(num.Value);
                         break;
                     case LuaType.String:
-                        var str = (StringConstant)Constants[i];
+                        var str = (StringByteConstant)Constants[i];
                         SetString(str.Value);
                         break;
                 }
             }
         }
 
-        public void WriteFunctions(List<LuaFunction> Functions)
+        public void WriteFunctions(List<Function> Functions)
         {
             SetInt(Functions.Count);
             for (int i = 0; i < Functions.Count; i++)
@@ -130,7 +130,7 @@ namespace LuaToolkit.Disassembler
             }
         }
 
-        public void WriteDebugLocals(List<LuaLocal> Locals)
+        public void WriteDebugLocals(List<Local> Locals)
         {
             SetInt(Locals.Count);
             for (int i = 0; i < Locals.Count; i++)

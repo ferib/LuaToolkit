@@ -84,10 +84,11 @@ namespace LuaToolkit.Decompiler
         }
         public LuaFunction GetParentFunction()
         {
-            if (this.Decoder.File.Function == this.Func)
-                return null; // we root already
+            return null;
+            //if (this.Decoder.File.Function == this.Func)
+            //    return null; // we root already
 
-            return FindParentFunction(this.Decoder.File.Function);
+            //return FindParentFunction(this.Decoder.File.Function);
         }
         public string GetConstant(int index, LuaFunction targetFunc = null)
         {
@@ -405,8 +406,8 @@ namespace LuaToolkit.Decompiler
             // NOTE: recursive, always nice to stackoverflow
 
             // check if any the functions matches us
-            if (search == null)
-                search = this.Decoder.File.Function;
+            //if (search == null)
+                //search = this.Decoder.File.Function;
 
             var target = search.Functions.FindIndex(x => x.ScriptFunction == this);
             if (target != -1)

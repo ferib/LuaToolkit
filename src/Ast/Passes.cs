@@ -11,7 +11,7 @@ namespace LuaToolkit.Ast
         {
             mPassManger = new PassManager();
             mPassManger.AddPass(new VarArgPropegation());
-            mPassManger.AddPass(new ParseJmpPass());
+            // mPassManger.AddPass(new ParseJmpPass());
         }
 
         public bool Run(FunctionDefinitionStatement func)

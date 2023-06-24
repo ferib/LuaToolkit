@@ -6,6 +6,57 @@ using System.Text;
 
 namespace LuaToolkit.Ast.Passes
 {
+
+    // Patterns
+    // for e in list do:
+    // 1 LOADNIL // Setup
+    // 2 JMP 4 // JMP to forloop setup
+    // 3 ... // for body
+    // 4 TFORLOOP ; Test if for loop should continue and set vars
+    // 5 JMP 3 ; jump to for body
+    //
+    // for var=e1, e2, e2 do
+    // 1 FORPREP
+    // 2 ... // for body
+    // 3 FORLOOP
+    //
+    // while expr do
+    // 1 TEST
+    // 2 JMP 5 // End while loop
+    // 3 ... //while body
+    // 4 JMP 1 // Loop again
+    //
+    // repeat until
+    // 1 ... // repeat body
+    // 2 TEST // Test if loop should end
+    // 3 JMP 1 // loop again
+    //
+    // if
+    // 1 TEST // Check if
+    // 2 JMP 4 // Jump out of if
+    // 3 ...  // if body
+    // 4      // if end
+    //
+    // if else
+    // 1 TEST // Check if
+    // 2 JMP 5 // Jump to else
+    // 3 ...  // if body
+    // 4 JMP 6 // skip else
+    // 5 ...  // else body
+    // 6      // if end
+    //
+    // if elsif else
+    // 1 TEST // Check if
+    // 2 JMP 5 // Jump to elseif
+    // 3 ...  // if body
+    // 4 JMP 10 // skip to end
+    // 5 TEST   // Check if
+    // 6 JMP 9 // Jump to else
+    // 7 ...  // elseif body
+    // 8 JMP 10 // skip else
+    // 9 ...  // else body
+    // 10      // if end
+
     public class ParseJmpPass : BaseFunctionPass
     {
         public override bool RunOnFunction(FunctionDefinitionStatement function)
@@ -160,3 +211,5 @@ namespace LuaToolkit.Ast.Passes
         }
     }
 }
+
+

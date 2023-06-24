@@ -129,20 +129,20 @@ namespace LuaToolkit.Ast
 
         public override string Dump()
         {
-            string result = "";
+            StringBuilder sb = new StringBuilder();
             foreach (var ifStatement in ElseIfStatements)
             {
-                result += "if ";
-                result += ifStatement.Expression.Dump();
-                result += " then" + StringUtil.NewLineChar;
-                result += ifStatement.Statement.Dump();
+                sb.Append("if ");
+                sb.Append(ifStatement.Expression.Dump());
+                sb.AppendLine(" then");
+                sb.Append(ifStatement.Statement.Dump());
                 if (ElseIfStatements.IndexOf(ifStatement) != ElseIfStatements.Count - 1)
                 {
-                    result += "else ";
+                    sb.Append("else ");
                 }
             }
-            result += "end" + StringUtil.NewLineChar;
-            return result;
+            sb.AppendLine("end");
+            return sb.ToString();
         }
 
         public override AstType Execute()

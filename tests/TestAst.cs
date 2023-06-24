@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
+using Constant = LuaToolkit.Ast.Constant;
 
 namespace Tests
 {
@@ -274,18 +275,19 @@ namespace Tests
         [Fact]
         public void TestForLoop()
         {
-            var expectedStr = "for x, y, z do" + StringUtil.NewLineChar +
+            var expectedStr = "for i=x, y, z do" + StringUtil.NewLineChar +
                                     "a = 1" + StringUtil.NewLineChar +
                               "end" + StringUtil.NewLineChar;
 
             var var1 = new Variable("x", TypeCreator.CreateInt(1));
             var var2 = new Variable("y", TypeCreator.CreateInt(10));
             var var3 = new Variable("z", TypeCreator.CreateInt(2));
+            var var4 = new Variable("i", TypeCreator.CreateInt(2));
 
-            var var4 = new Variable("a", TypeCreator.CreateInt(0));
-            var assignStatment = new  AssignStatement(var4, new Constant(TypeCreator.CreateInt(1)));
+            var var5 = new Variable("a", TypeCreator.CreateInt(0));
+            var assignStatment = new  AssignStatement(var5, new Constant(TypeCreator.CreateInt(1)));
 
-            var forLoop = new ForStatment(var1, var2, var3, assignStatment);
+            var forLoop = new ForStatement(var4, var1, var2, var3, assignStatment);
 
             Assert.True(var4.Content.Int == 0);
             forLoop.Execute();
@@ -328,6 +330,25 @@ namespace Tests
             var dump = assignStatement.Dump();
             Assert.Equal(expectedStr, dump);
 
+        }
+
+        [Fact]
+        public void TestWhile()
+        {
+            var expectedStr = "while a < b do" + StringUtil.NewLineChar +
+                              "a = a + 1" + StringUtil.NewLineChar +
+                              "end" + StringUtil.NewLineChar;
+            var Var1 = new Variable("a", TypeCreator.CreateInt(0));
+            var Var2 = new Variable("b", TypeCreator.CreateInt(3));
+            var compare = new LessThanExpression(Var1, Var2);
+            var add = new AssignStatement(Var1, new AddExpression(Var1, 
+                new Constant(TypeCreator.CreateInt(1))));
+            var whileStat = new WhileStatement(compare, add);
+            whileStat.Execute();
+            Assert.Equal(3, Var1.Content.Int);
+
+            var dump = whileStat.Dump();
+            Assert.Equal(expectedStr, dump);
         }
     }
 }

@@ -5,25 +5,20 @@ using System.Text;
 
 namespace LuaToolkit.Ast
 {
-    public class ForStatment : Statement
+    public class ForStatement : Statement
     {
-        public ForStatment()
+        public ForStatement()
         {
             Type = STATEMENT_TYPE.FOR;
         }
 
-        public ForStatment(Expression initialVal, Expression limit, Expression step, Statement body)
+        public ForStatement(Expression loopVar, Expression initialVal,
+            Expression limit, Expression step, Statement body) : base()
         {
+            LoopVariable = loopVar;
             InitialVal = initialVal;
             Limit = limit;
             Step = step;
-            Body = body;
-        }
-
-        public ForStatment(Expression initialVal, Expression limit, Statement body)
-        {
-            InitialVal = initialVal;
-            Limit = limit;
             Body = body;
         }
 
@@ -31,6 +26,8 @@ namespace LuaToolkit.Ast
         {
             string result = "";
             result += "for ";
+            result += LoopVariable.Dump();
+            result += " = ";
             result += InitialVal.Dump();
             result += ", ";
             result += Limit.Dump();
@@ -46,7 +43,7 @@ namespace LuaToolkit.Ast
             return result;
         }
 
-        // TODO currently only for loops met ints are supported
+        // TODO currently only for loops with ints are supported
         public override AstType Execute()
         {
             var init = InitialVal.Execute();
@@ -59,9 +56,48 @@ namespace LuaToolkit.Ast
             return new AstType();
         }
 
+        public Expression LoopVariable;
         public Expression InitialVal;
         public Expression Limit;
         public Expression Step;
         public Statement Body;
+    }
+
+    public class TForStatement : Statement
+    {
+        public TForStatement(List<Expression> loopVars, 
+            Expression iteratorFunction, Statement body) 
+        {
+            LoopVariables = loopVars;
+            IteratorFunction = iteratorFunction;
+            Body = body;
+        }
+        public override string Dump()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("for ");
+            foreach(var expr in LoopVariables)
+            {
+                sb.Append(expr.Dump());
+                if(LoopVariables.IndexOf(expr) < LoopVariables.Count - 1)
+                {
+                    sb.Append(", ");
+                }
+            }
+            sb.Append(" in ").Append(IteratorFunction.Dump()).AppendLine(" do ");
+            sb.Append(Body.Dump());
+            sb.AppendLine("end");
+            return sb.ToString();
+        }
+
+        public override AstType Execute()
+        {
+            // TODO implement
+            return new AstType();
+        }
+
+        List<Expression> LoopVariables;
+        Expression IteratorFunction;
+        Statement Body;
     }
 }

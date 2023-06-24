@@ -1,4 +1,6 @@
-﻿namespace LuaToolkit
+﻿using LuaToolkit.Disassembler;
+
+namespace LuaToolkit
 {
     public class LuaCFile
     {
@@ -16,7 +18,7 @@
         public byte Integral = 0;
 
         public byte[] Buffer;
-        public LuaFunction Function;
+        public Function Function;
 
         public LuaCFile(byte[] buffer)
         {

@@ -15,7 +15,7 @@ namespace LuaToolkit.Ast.Passes
                 var res = Convertor<StatementList>.Convert(block);
                 if (res.HasError())
                 {
-                    Debug.Assert(false, "Every block should be a statement list");
+                    // Debug.Assert(false, "Every block should be a statement list");
                     continue;
                 }
                 // If we found 1 VarArg expression we can return.

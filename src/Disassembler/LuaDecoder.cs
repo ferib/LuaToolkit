@@ -17,7 +17,10 @@ namespace LuaToolkit.Disassembler
             this.Index = 0;
 
             if (ReadHeader())
+            {
                 this.File.Function = DecodeFunctionblock(); // init the Lua stuff
+            }
+
         }
 
         // check if input is as expected
@@ -52,62 +55,60 @@ namespace LuaToolkit.Disassembler
         }
 
         // decode the metadata and what not from the LuaC file
-        private LuaFunction DecodeFunctionblock()
+        private Function DecodeFunctionblock()
         {
-            LuaFunction Function = new LuaFunction();
+            Function function = new Function();
 
             // First is the length of the string.
             // Followed by the source file name.
-            Function.Name = GetString();     // Function name
-            Function.FirstLineNr = GetInt();   // First line // 4 or 8?
-            Function.LastLineNr = GetInt();    // Last line // 4 or 8?
+            function.Name = GetString();     // Function name
+            function.FirstLineNr = GetInt();   // First line // 4 or 8?
+            function.LastLineNr = GetInt();    // Last line // 4 or 8?
 
-            if (Function.Name != "")
-                Function.Name = Function.Name.Substring(0, Function.Name.Length - 1);
+            if (function.Name != "")
+                function.Name = function.Name.Substring(0, function.Name.Length - 1);
 
             // point around
-            Function.UpvaluesCount = GetByte();
-            Function.ArgsCount = GetByte();
-            Function.Vargs = (VarArg)GetByte();
-            Function.MaxStackSize = GetByte();
+            function.UpvaluesCount = GetByte();
+            function.ArgsCount = GetByte();
+            function.VarArg = (VarArg)GetByte();
+            function.MaxStackSize = GetByte();
 
             // Decode instructions
-            Function.Instructions = ReadInstructions();
+            
+            ReadInstructions(function);
 
             // Decode constants
-            Function.Constants = ReadConstants();
+            ReadConstants(function);
 
             // Decode functions
-            Function.Functions = ReadFunctions();
+            ReadFunctions(function);
 
             // Decode debuginfo: Line Numbers
-            Function.DebugLines = ReadDebugLines();
+            ReadDebugLines(function);
 
             // Decode debuginfo: Locals
-            Function.DebugLocals = ReadDebugLocals();
+            ReadDebugLocals(function);
 
             // Decode debuginfo: Upvalues
-            Function.DebugUpvalues = ReadDebugUpvalues();
+            ReadUpvalues(function);
 
-            return Function;
+            return function;
         }
 
-        private List<LuaInstruction> ReadInstructions()
+        private void ReadInstructions(Function func)
         {
-            List<LuaInstruction> Instructions = new List<LuaInstruction>();
             int count = GetInt(); // 4 or 8?
             for (int i = 0; i < count; i++)
             {
                 // TODO: handle CLOSURE??
-                LuaInstruction instr = new LuaInstruction(GetUInt());
-                Instructions.Add(instr);
+                Instruction instr = new Instruction(GetUInt(), i + 1);
+                func.AddInstruction(instr);
             }
-            return Instructions;
         }
 
-        private List<LuaConstant> ReadConstants()
+        private void ReadConstants(Function func)
         {
-            List<LuaConstant> Constants = new List<LuaConstant>();
             int count = GetInt();
             for (int i = 0; i < count; i++)
             {
@@ -116,67 +117,58 @@ namespace LuaToolkit.Disassembler
                 switch ((LuaType)type)
                 {
                     case LuaType.Nil:
-                        Constants.Add(new NilConstant());
+                        func.AddConstant(new NilByteConstant());
                         break;
                     case LuaType.Bool:
-                        Constants.Add(new BoolConstant(GetByte() != 0));
+                        func.AddConstant(new BoolByteConstant(GetByte() != 0));
                         break;
                     case LuaType.Number:
-                        Constants.Add(new NumberConstant(GetFloat2()));
+                        func.AddConstant(new NumberByteConstant(GetFloat2()));
                         break;
                     case LuaType.String:
-                        Constants.Add(new StringConstant(GetString()));
+                        func.AddConstant(new StringByteConstant(GetString()));
                         break;
                 }
             }
-            return Constants;
         }
 
-        private List<LuaFunction> ReadFunctions()
+        private void ReadFunctions(Function func)
         {
-            List<LuaFunction> functions = new List<LuaFunction>();
             int count = GetInt();
             for (int i = 0; i < count; i++)
             {
-                functions.Add(DecodeFunctionblock());
+                func.AddFunction(DecodeFunctionblock());
             }
-            return functions;
         }
 
         // TODO Should be a map that links pc to line number.
         // i is the pc and int the line number.
-        private List<int> ReadDebugLines()
+        private void ReadDebugLines(Function func)
         {
-            List<int> debuglines = new List<int>();
             int count = GetInt();
             for (int i = 0; i < count; i++)
             {
-                debuglines.Add(GetInt());
+                func.AddDebugLine(GetInt());
             }
-            return debuglines;
         }
 
-        private List<LuaLocal> ReadDebugLocals()
+        private void ReadDebugLocals(Function func)
         {
-            List<LuaLocal> locals = new List<LuaLocal>();
             int count = GetInt();
             for (int i = 0; i < count; i++)
             {
-                locals.Add(new LuaLocal(GetString(), GetInt(), GetInt()));
+                func.AddLocal(new Local(GetString(), GetInt(), GetInt()));
             }
-            return locals;
         }
 
-        private List<string> ReadDebugUpvalues()
+        private void ReadUpvalues(Function func)
         {
             // Upvals are a list of strings that refer to a local var from the parent.
-            List<string> upvalues = new List<string>();
             int count = GetInt();
             for (int i = 0; i < count; i++)
             {
-                upvalues.Add(GetString()); // Upvalue name
+                func.AddUpval(GetString()); // Upvalue name
             }
-            return upvalues;
         }
 
         // Helpers

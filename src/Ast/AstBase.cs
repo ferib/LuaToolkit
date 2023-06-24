@@ -13,8 +13,9 @@ namespace LuaToolkit.Ast
 {
     public enum STATEMENT_TYPE
     {
-        EMPTY, ASSIGN, IF, IF_ELSE, ELSEIF, ELSEIF_ELSE, FUNCTION_DEF, LIST, JMP, FUNCTION, RETURN,
-        FOR
+        EMPTY, ASSIGN, IF, IF_ELSE, ELSEIF, ELSEIF_ELSE, FUNCTION_DEF, LIST, FUNCTION, RETURN,
+        FOR, WHILE, REPEAT,
+        JMP, CMP
     }
 
     public enum EXPRESSION_TYPE
@@ -692,10 +693,11 @@ namespace LuaToolkit.Ast
 
 public class JumpStatement : Statement
 {
-    public JumpStatement(Statement statement)
+    public JumpStatement(Statement statement, bool jumpForward)
     {
         Statement = statement;
         Type = STATEMENT_TYPE.JMP;
+        JumpForward = jumpForward;
     }
 
     public override string Dump()
@@ -709,6 +711,29 @@ public class JumpStatement : Statement
     }
 
     public Statement Statement;
+    public bool JumpForward;
+}
+
+public class ConditionStatement : Statement
+{
+    public ConditionStatement(Expression expr)
+    {
+        Expr = expr;
+        Type = STATEMENT_TYPE.CMP;
+    }
+    public override string Dump()
+    {
+        string result = "";
+        result += "CMP: " + Expr.Dump();
+        return result;
+    }
+
+    public override AstType Execute()
+    {
+        return Expr.Execute();
+    }
+
+    public Expression Expr;
 }
 
 public class CloseStatement : Statement
