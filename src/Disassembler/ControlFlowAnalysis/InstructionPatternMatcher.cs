@@ -24,6 +24,16 @@ namespace LuaToolkit.Disassembler.ControlFlowAnalysis
 
     public class WhileMatcher : InstructionPatternMatcher
     {
+        public WhileMatcher() { 
+            ConditionMatcher = new ConditionMatcher();
+        }
+
+        public override void Reset()
+        {
+            base.Reset();
+            ConditionMatcher.Reset();
+            ConditionEnd = null;
+        }
         // Pattern:
         // 1 Condition (TEST/LT/LE/EQ)
         // 2 JMP 5
@@ -32,7 +42,7 @@ namespace LuaToolkit.Disassembler.ControlFlowAnalysis
         public override bool MatchBegin(Instruction instruction)
         {
             // While always starts with an if and a JMP to the if.
-            return InstructionUtil.IsCondition(instruction) && 
+            return ConditionMatcher.MatchBegin(instruction) &&
                 instruction.Branchers.Count == 1;
         }
 
@@ -49,11 +59,17 @@ namespace LuaToolkit.Disassembler.ControlFlowAnalysis
                 "The first instruction of the list should be the beginning of the group");
             Debug.Assert(MatchEnd(instructions.Last()),
                 "The last instruction of the list should be the last of the group");
+
+            if(!ConditionMatcher.Match(first, ConditionEnd, 
+                InstructionUtil.GetRange(first, ConditionEnd, instructions)))
+            {
+                return false;
+            }
             if(instructions.Count < 3)
             {
                 return false;
             }
-            var jmpInstruction = instructions[1];
+            var jmpInstruction = InstructionUtil.GetNextInstruction(first);
             if(jmpInstruction.OpCode != LuaOpcode.JMP)
             {
                 // The condition is always followed by a test
@@ -64,6 +80,8 @@ namespace LuaToolkit.Disassembler.ControlFlowAnalysis
 
         public override Instruction FindEnd(Instruction first, List<Instruction> instructions)
         {
+            ConditionEnd = ConditionMatcher.FindEnd(first, instructions);
+            Debug.Assert(ConditionEnd != null, "Failed to find Condition");
             Debug.Assert(first.Branchers.Count == 1,
                 "There has to be an instruction that jumps to the first");
             return first.Branchers[0];
@@ -71,13 +89,18 @@ namespace LuaToolkit.Disassembler.ControlFlowAnalysis
 
         public override InstructionGroup GenerateGroup(Instruction first, Instruction end, List<Instruction> instructions)
         {
-            var conditionInstruction = new List<Instruction> { instructions[0], instructions[1] };
-            var conditionGroup = new InstructionGroup(conditionInstruction);
+            var conditionGroup = ConditionMatcher.GenerateGroup(first, ConditionEnd, 
+                InstructionUtil.GetRange(first, ConditionEnd, instructions));
             var jmpGroup = new InstructionGroup(new List<Instruction>() { end });
             var body = new List<Instruction>();
-            body.AddRange(instructions.GetRange(instructions.IndexOf(first)+2, instructions.Count - 3));
+            var bodyBegin = InstructionUtil.GetNextInstruction(ConditionEnd);
+            var bodyEnd = InstructionUtil.GetPreviousInstruction(end);
+            body.AddRange(InstructionUtil.GetRange(bodyBegin, bodyEnd, instructions));
             return new WhileInstructionGroup(conditionGroup, jmpGroup, body);
         }
+
+        Instruction ConditionEnd;
+        ConditionMatcher ConditionMatcher;
     }
 
     public class ForLoopMatcher : InstructionPatternMatcher
@@ -205,34 +228,49 @@ namespace LuaToolkit.Disassembler.ControlFlowAnalysis
 
     public class RepeatMatcher : InstructionPatternMatcher
     {
+        public RepeatMatcher()
+        {
+            ConditionMatcher = new ConditionMatcher();
+        }
+
+        public override void Reset()
+        {
+            base.Reset();
+            ConditionMatcher.Reset();
+        }
+
         public override Instruction FindEnd(Instruction first, List<Instruction> instructions)
         {
-            // TODO verify that the beginning of a repeat block only has 1 entry point
-            // Pretty sure it is not
-            if(first.Branchers.Count != 1)
+            Instruction last = null;
+            // Search for the last instruction that branches to this one.
+            foreach(var instr in first.Branchers)
+            {
+                if (last == null)
+                {
+                    last = instr;
+                    continue;
+                }
+                if(last.LineNumber < instr.LineNumber)
+                {
+                    last = instr;
+                }
+            }
+            if(last.LineNumber < first.LineNumber)
             {
                 return null;
             }
-            if(first.Branchers[0].LineNumber < first.LineNumber)
-            {
-                return null;
-            }
-            if(!instructions.Contains(first.Branchers[0]))
-            {
-                return null;
-            }
-            return first.Branchers[0];
+            return last;
         }
 
         public override InstructionGroup GenerateGroup(Instruction first, Instruction end, List<Instruction> instructions)
         {
             var entryGroup = new InstructionGroup(new List<Instruction> { first });
 
-            var endIndex = instructions.IndexOf(end);
-            var testIndex = endIndex - 1;
-            var condition = instructions[testIndex];
-            var conditionGroup = new InstructionGroup(new List<Instruction> { condition, end });
-            var body = instructions.GetRange(1, instructions.Count - 3);
+            var conditionBegin = ConditionMatcher.FindBegin(end, instructions);
+            var conditionGroup = ConditionMatcher.GenerateGroup(conditionBegin, end,
+                InstructionUtil.GetRange(conditionBegin, end, instructions));
+            var bodyEnd = InstructionUtil.GetPreviousInstruction(conditionBegin);
+            var body = InstructionUtil.GetRange(first, bodyEnd, instructions);
             return new RepeatGroup(entryGroup, conditionGroup, body);
         }
 
@@ -242,24 +280,24 @@ namespace LuaToolkit.Disassembler.ControlFlowAnalysis
             {
                 return false;
             }
-            var condition = InstructionUtil.GetPreviousInstruction(end);
-            if (!instructions.Contains(condition))
-            {
-                return false;
-            }
-            return InstructionUtil.IsCondition(condition);
+            var condBegin = ConditionMatcher.FindBegin(end, instructions);
+
+            return ConditionMatcher.Match(condBegin, end, 
+                InstructionUtil.GetRange(condBegin, end, instructions));
         }
 
         public override bool MatchBegin(Instruction instruction)
         {
             // Verify if this can be more than 1.
-            return instruction.Branchers.Count == 1;
+            return instruction.Branchers.Count >= 1;
         }
 
         public override bool MatchEnd(Instruction instruction)
         {
             return instruction.OpCode == LuaOpcode.JMP;
         }
+
+        ConditionMatcher ConditionMatcher;
     }
 
     public class IfMatcher : InstructionPatternMatcher
@@ -269,14 +307,24 @@ namespace LuaToolkit.Disassembler.ControlFlowAnalysis
         // 2 JMP 4  jump over body
         // 3 ... (body)
         // 4 ... (next block)
+        public IfMatcher()
+        {
+            ConditionMatcher = new ConditionMatcher();
+        }
+
+        public override void Reset()
+        {
+            base.Reset();
+            ConditionMatcher.Reset();
+        }
         public override Instruction FindEnd(Instruction first, List<Instruction> instructions)
         {
             if(instructions.Count < 3)
             {
                 return null;
             }
-            var conditionIndex = instructions.IndexOf(first);
-            var jmpInstr = instructions[conditionIndex+1];
+            var jmpInstr = ConditionMatcher.FindEnd(first, instructions);
+            // var jmpInstr = InstructionUtil.GetNextInstruction(first);
             var jmpOrErr = InstructionConvertor<JmpInstruction>.Convert(jmpInstr);
             if(jmpOrErr.HasError())
             {
@@ -291,33 +339,36 @@ namespace LuaToolkit.Disassembler.ControlFlowAnalysis
 
         public override InstructionGroup GenerateGroup(Instruction first, Instruction end, List<Instruction> instructions)
         {
-            var conditionInstruction = new List<Instruction> { first, instructions[1] };
-            var conditionGroup = new InstructionGroup(conditionInstruction);
+            var conditionEnd = ConditionMatcher.FindEnd(first, instructions);
+            var conditionGroup = ConditionMatcher.GenerateGroup(first, conditionEnd,
+                InstructionUtil.GetRange(first, conditionEnd, instructions));
+            var lastJump = GroupConvertor<ConditionGroup>.Convert(conditionGroup).Value.FinalJump;
             var body = new List<Instruction>();
             // Skip the condition, everything else should be part of the body.
-            var beginIndex = instructions.IndexOf(first);
-            var endIndex = instructions.IndexOf(end);
-            var begin = beginIndex + 2;
+            var beginBody = InstructionUtil.GetNextInstruction(lastJump);
+            var endBody = end;
             if (end.OpCode != LuaOpcode.JMP)
             {
-                body.AddRange(instructions.GetRange(begin, endIndex - begin + 1));
+                body.AddRange(InstructionUtil.GetRange(beginBody, endBody, instructions));
                 return new IfGroup(conditionGroup, body);
             }
-            --endIndex;
+            endBody = InstructionUtil.GetPreviousInstruction(endBody);
             var jmpGroup = new InstructionGroup(new List<Instruction>{ end });
-            body.AddRange(instructions.GetRange(beginIndex + 2, endIndex - begin + 1));
+            body.AddRange(InstructionUtil.GetRange(beginBody, endBody, instructions));
             return new IfGroup(conditionGroup, jmpGroup, body);
         }
 
         public override bool Match(Instruction first, Instruction end, List<Instruction> instructions)
         {
-            // If we have an end, everything else should be fine.
-            return true;
+            var conditionEnd = ConditionMatcher.FindEnd(first, instructions);
+            return ConditionMatcher.Match(first, conditionEnd, 
+                InstructionUtil.GetRange(first, conditionEnd, instructions));
+
         }
 
         public override bool MatchBegin(Instruction instruction)
         {
-            return InstructionUtil.IsCondition(instruction);
+            return ConditionMatcher.MatchBegin(instruction);
         }
 
         public override bool MatchEnd(Instruction instruction)
@@ -325,6 +376,8 @@ namespace LuaToolkit.Disassembler.ControlFlowAnalysis
             // The end of an if is a normal instruciton, nothing to match.
             return true;
         }
+
+        ConditionMatcher ConditionMatcher;
     }
 
     public class IfChainMatcher : InstructionPatternMatcher
@@ -436,6 +489,89 @@ namespace LuaToolkit.Disassembler.ControlFlowAnalysis
         int IfChainCount = 0;
         bool HasElse = false;
         List<IfBeginEndPair> IfBeginEndCache;
+    }
+
+    public class ConditionMatcher : InstructionPatternMatcher
+    {
+        public override Instruction FindEnd(Instruction first, List<Instruction> instructions)
+        {
+            var begin = first;
+            var end = InstructionUtil.GetNextInstruction(begin);
+            if(end.OpCode != LuaOpcode.JMP)
+            {
+                return null;
+            }
+            var lastValidEnd = end;
+            while (InstructionUtil.IsCondition(begin))
+            {
+                lastValidEnd = end;
+                
+                if(end.OpCode != LuaOpcode.JMP)
+                {
+                    break;
+                }
+                begin = InstructionUtil.GetNextInstruction(end);
+                // It is possible that there is a Get Global inside the condition chain.
+                if (begin.OpCode == LuaOpcode.GETGLOBAL)
+                {
+                    begin = InstructionUtil.GetNextInstruction(begin);
+                }
+                end = InstructionUtil.GetNextInstruction(begin);
+            }
+            return lastValidEnd;
+        }
+
+        public Instruction FindBegin(Instruction last, List<Instruction> instructions)
+        {
+            var begin = InstructionUtil.GetPreviousInstruction(last);
+            var end = last;
+            if (end.OpCode != LuaOpcode.JMP)
+            {
+                return null;
+            }
+            var lastValidBegin = begin;
+            while (InstructionUtil.IsCondition(begin))
+            {
+                lastValidBegin = begin;
+
+                if (end.OpCode != LuaOpcode.JMP)
+                {
+                    break;
+                }
+                begin = InstructionUtil.GetPreviousInstruction(end);
+                // It is possible that there is a Get Global inside the condition chain.
+                if (begin.OpCode == LuaOpcode.GETGLOBAL)
+                {
+                    begin = InstructionUtil.GetPreviousInstruction(begin);
+                }
+                end = InstructionUtil.GetPreviousInstruction(begin);
+            }
+            return lastValidBegin;
+        }
+
+        public override InstructionGroup GenerateGroup(Instruction first, Instruction end, List<Instruction> instructions)
+        {
+            var jmp = InstructionConvertor<JmpInstruction>.Convert(end);
+            Debug.Assert(!jmp.HasError());
+            return new ConditionGroup(jmp.Value, instructions);
+        }
+
+        public override bool Match(Instruction first, Instruction end, List<Instruction> instructions)
+        {
+            return instructions.TrueForAll(instr => InstructionUtil.IsCondition(instr) ||
+            instr.OpCode == LuaOpcode.JMP || instr.OpCode == LuaOpcode.GETGLOBAL);
+        }
+
+        public override bool MatchBegin(Instruction instruction)
+        {
+            return InstructionUtil.IsCondition(instruction);
+        }
+
+        public override bool MatchEnd(Instruction instruction)
+        {
+            // The end of an condition is the last jump.
+            return instruction.OpCode == LuaOpcode.JMP;
+        }
     }
 
     public class InstructionGroupMaker

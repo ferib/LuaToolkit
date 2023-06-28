@@ -140,6 +140,42 @@ namespace Tests
             Assert.True(test.Contains("end"),
                 "Decompiler failed adding end for single if");
         }
+
+        [Fact]
+        public void TestIfOr()
+        {
+            LuaCFile luacin = new LuaCFile(new byte[0]);
+            luacin.Function = new Function() { ArgsCount = 0 };
+
+            luacin.Function.Instructions.AddRange(new Instruction[]
+            {
+                new LoadBoolInstruction(1) { A=0, B=1 },
+                new LoadBoolInstruction(2) { A=1, B=0 },
+                new TestInstruction(3) { A=0, B=0, C=0 }, // if start
+                new JmpInstruction(4) { sBx=2 },
+                new TestInstruction(5) { A=1, B=0, C=1 },
+                new JmpInstruction(6) { sBx=2 },
+                new LoadBoolInstruction(7) { A=0, B=0 },
+                new ReturnInstruction(8) { A=0, B=0 }, // if end
+                new ReturnInstruction(9) { A=0, B=1 }
+            });
+
+            // Encode test
+            LuaEncoder luaEncoder_x = new LuaEncoder(luacin);
+            byte[] filebuffer = luaEncoder_x.SaveFile();
+
+            // Decode and decompile
+            LuaDecoder decoder = new LuaDecoder(new LuaCFile(filebuffer));
+            LuaDecompiler decompiler = new LuaDecompiler(decoder);
+
+            string test = decompiler.Decompile(false);
+            test = test.Replace(" ", "");
+
+            Assert.True(test.Contains($"ifvar0ornotvar1then"),
+                "Decompiler failed parsing single if");
+            Assert.True(test.Contains("end"),
+                "Decompiler failed adding end for single if");
+        }
         #endregion multiif
 
         string input = @"
@@ -293,12 +329,12 @@ end
             string test = decompiler.Decompile(false);
             test = test.Replace(" ", "").Replace("\t", "").Replace("\n", "").Replace("\r", "");
 
-            Assert.True(test.Contains("ifvar1<var0andvar0<var12then"),
+            Assert.True(test.Contains("ifvar1<var0then"),
                 "Decompilation failed on multi-if statement");
-            //Assert.True(test.Contains("elseifvar0==var1then"),
-            //    "Decompiled failed to locate start of if-else statement");
-            //Assert.True(test.Contains("returnvar2end"),
-            //    "Decompiled failed to locate start of if-else statement");
+            Assert.True(test.Contains("ifvar0<var2then"),
+                "Decompiled failed to locate start of if-else statement");
+            Assert.True(test.Contains("returnvar3endend"),
+                "Decompiled failed to locate start of if-else statement");
         }
         [Fact]
         public void TestIfIf2()
@@ -613,6 +649,47 @@ until (a == b)
             Assert.True(test.Contains("untilvar0==var1"),
                 "Decompiler failed adding end repeat");
         }
+
+        [Fact]
+        public void TestRepeatAnd()
+        {
+            LuaCFile luacin = new LuaCFile(new byte[0]);
+            luacin.Function = new Function() { ArgsCount = 0 };
+
+            luacin.Function.Instructions.AddRange(new Instruction[]
+            {
+                new LoadBoolInstruction(1)         { A=0, B=0, C=0 },   // var0 = false
+                new LoadBoolInstruction(2)         { A=1, B=0, C=0 },   // var1 = false
+                                                                        // repeat body
+                new AddInstruction(3)           { A=0, B=0, C=-3 },     // var0 = var0 + 1
+                new TestInstruction(4)          { A=0, B=0, C=0 },      // condition begin
+                new JmpInstruction(5)           { sBx=-3 },             // 
+                new TestInstruction(6)          { A=1, B=0, C=0 },      // 
+                new JmpInstruction(7)           { sBx=-5 },             // condition end
+                new ReturnInstruction(8)        { A=0, B=1 },           // return
+                                                                                // --end
+            });
+            luacin.Function.Constants.Add(new NumberConstant(0));
+            luacin.Function.Constants.Add(new NumberConstant(10));
+            luacin.Function.Constants.Add(new NumberConstant(-1));
+
+
+            // Encode test
+            LuaEncoder luaEncoder_x = new LuaEncoder(luacin);
+            byte[] filebuffer = luaEncoder_x.SaveFile();
+
+            // Decode and decompile
+            LuaDecoder decoder = new LuaDecoder(new LuaCFile(filebuffer));
+            LuaDecompiler decompiler = new LuaDecompiler(decoder);
+
+            string test = decompiler.Decompile(false);
+            test = test.Replace(" ", "");
+
+            Assert.True(test.Contains($"repeat"),
+                "Decompiler failed parsing repeat");
+            Assert.True(test.Contains("untilvar0andvar1"),
+                "Decompiler failed adding end repeat");
+        }
         #endregion
         //
 
@@ -679,9 +756,9 @@ end -- x
             LuaDecompiler decompiler = new LuaDecompiler(decoder);
 
             string test = decompiler.Decompile(true);
-            // test = test.Replace(" ", "").Replace("\t", "").Replace("\n", "").Replace("\r", "");
+            test = test.Replace(" ", "").Replace("\t", "").Replace("\n", "").Replace("\r", "");
 
-            Assert.True(test.Contains($"endreturnvar0endend"),
+            Assert.True(test.Contains($"endendreturnvar0returnend"),
                 "Decompiler failed to find end of shared if + for statement");
 
             // check too many
@@ -763,9 +840,9 @@ end -- x
                 new MoveInstruction(4)           { A=3, B=0 },        // var3 = var0
                 new CallInstruction(5)           { A=2, B=2, C=4 },   // var2()
                 new JmpInstruction(6)            { sBx=3 },           // Jump 10 
-                new LoadKInstruction(7)          { A=8, B= -1 },      // var8 = 0 (loop body)
-                new LoadKInstruction(8)          { A=5, B= -1 },      // var5 = 0 (loop body)
-                new LoadKInstruction(9)          { A=6, B= -1 },      // var6 = . (loop body)
+                new LoadKInstruction(7)          { A=8, Bx=-1 },      // var8 = 0 (loop body)
+                new LoadKInstruction(8)          { A=5, Bx=-1 },      // var5 = 0 (loop body)
+                new LoadKInstruction(9)          { A=6, Bx=-1 },      // var6 = . (loop body)
                 new TForLoopInstruction(10)      { A=2, C=3 },        // 
                 new JmpInstruction(11)           { sBx=-5 },          // Jump 5 
                 new ReturnInstruction(12)        { A=0, B=1 },        // return
@@ -1030,7 +1107,7 @@ end -- x
                 new NewTableInstruction(1)          { A = 0, B = 0, C = 0 },  // var0 = {}
                 new LoadKInstruction(2)             { A = 1, Bx = -1 },  // var1 = 1
                 new LoadKInstruction(3)             { A = 2, Bx = -2 },  // var2 = 5
-                new LoadKInstruction(4)             { A = 2, B = -5, C = 0 },  // var2 = 5
+                new LoadKInstruction(4)             { A = 2, Bx = -5 },  // var2 = 5
                 new SetTableInstruction(5)          { A = 0, B = 1, C = 2 },   // var0[var1] = var2
                 new GetTableInstruction(6)          { A = 3, B = 0, C = 2 },  // var3 = var0[var2]
                 new ReturnInstruction(7)            { A=0, B=1 },       // 
@@ -1369,6 +1446,83 @@ end -- x
             test = test.Replace(" ", "");
 
             Assert.True(test.Contains("whilevar0do"),
+                "Decompiler failed parsing While loop");
+        }
+
+        [Fact]
+        public void TestWhileAndCondition()
+        {
+            //	local var0 = true
+            //  while var0 do
+            //      local var1 = false
+            //  end
+
+            LuaCFile luacin = new LuaCFile(new byte[0]);
+            luacin.Function = new Function() { ArgsCount = 0 };
+
+            luacin.Function.Instructions.AddRange(new Instruction[]
+            {
+                new LoadBoolInstruction(1)            { A = 0, B = 1, C = 0},  // local var0 = true
+                new LoadBoolInstruction(2)            { A = 1, B = 1, C = 0},  // local var1 = true
+                new TestInstruction(3)                { A = 0, B = 0, C = 0 }, // if var0
+                new JmpInstruction(4)                 { sBx = 4 },             // JMP out of loop
+                new TestInstruction(5)                { A = 1, B = 0, C = 0 }, // if var1
+                new JmpInstruction(6)                 { sBx = 2 },             // JMP out of loop
+                new LoadBoolInstruction(7)            { A = 2, B = 0, C = 0 }, // var2 = false
+                new JmpInstruction(8)                 { sBx = -6 },            // while end 
+                new ReturnInstruction(9)              { A=0, B=1 },       // 
+            });
+
+            // Encode test
+            LuaEncoder luaEncoder_x = new LuaEncoder(luacin);
+            byte[] filebuffer = luaEncoder_x.SaveFile();
+
+            // Decode and decompile
+            LuaDecoder decoder = new LuaDecoder(new LuaCFile(filebuffer));
+            LuaDecompiler decompiler = new LuaDecompiler(decoder);
+
+            string test = decompiler.Decompile(false);
+            test = test.Replace(" ", "");
+
+            Assert.True(test.Contains("whilevar0andvar1do"),
+                "Decompiler failed parsing While with and loop");
+        }
+        [Fact]
+        public void TestWhileOrCondition()
+        {
+            //	local var0 = true
+            //  while var0 do
+            //      local var1 = false
+            //  end
+
+            LuaCFile luacin = new LuaCFile(new byte[0]);
+            luacin.Function = new Function() { ArgsCount = 0 };
+
+            luacin.Function.Instructions.AddRange(new Instruction[]
+            {
+                new LoadBoolInstruction(1)            { A = 0, B = 1, C = 0},  // local var0 = true
+                new LoadBoolInstruction(2)            { A = 1, B = 1, C = 0},  // local var1 = true
+                new TestInstruction(3)                { A = 0, B = 0, C = 0 }, // if var0
+                new JmpInstruction(4)                 { sBx = 2 },             // JMP out of loop
+                new TestInstruction(5)                { A = 1, B = 0, C = 0 }, // if var1
+                new JmpInstruction(6)                 { sBx = 2 },             // JMP out of loop
+                new LoadBoolInstruction(7)            { A = 2, B = 0, C = 0 }, // var2 = false
+                new JmpInstruction(8)                 { sBx = -6 },            // while end 
+                new ReturnInstruction(9)              { A=0, B=1 },       // 
+            });
+
+            // Encode test
+            LuaEncoder luaEncoder_x = new LuaEncoder(luacin);
+            byte[] filebuffer = luaEncoder_x.SaveFile();
+
+            // Decode and decompile
+            LuaDecoder decoder = new LuaDecoder(new LuaCFile(filebuffer));
+            LuaDecompiler decompiler = new LuaDecompiler(decoder);
+
+            string test = decompiler.Decompile(false);
+            test = test.Replace(" ", "");
+
+            Assert.True(test.Contains("whilevar0orvar1do"),
                 "Decompiler failed parsing While loop");
         }
 

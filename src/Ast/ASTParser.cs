@@ -1,11 +1,13 @@
 ﻿using LuaToolkit.Decompiler;
 using LuaToolkit.Disassembler;
 using LuaToolkit.Disassembler.ControlFlowAnalysis;
+using LuaToolkit.Util;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Design.Serialization;
 using System.Diagnostics;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -78,6 +80,7 @@ namespace LuaToolkit.Ast
                 case GroupTypes.TFOR_GROUP:
                     return Parse(GroupConvertor<TForLoopGroup>.Convert(group).Value);
                 case GroupTypes.CONDITION_GROUP:
+                    Debug.Assert(false, "Condition Group should always be parsed as part of another group");
                     break;
                 case GroupTypes.IF_CHAIN_GROUP:
                     return Parse(GroupConvertor<IfChainGroup>.Convert(group).Value);
@@ -88,9 +91,55 @@ namespace LuaToolkit.Ast
             return new StatementList();
         }
 
+        static public Expression Parse(ConditionGroup group, Instruction bodyBegin, bool andEscapes = true)
+        {
+            Debug.Assert(InstructionUtil.IsCondition(group.Instructions[0]),
+                "The first instr chould be a condition");
+            Expression Prevexpr = null;
+            bool isAnd = false;
+            // The instruction after the condition, should be the begin of the body
+            foreach(var instr in group.Instructions)
+            {
+                if(instr.OpCode == LuaOpcode.JMP)
+                {
+                    var jmp = InstructionConvertor<JmpInstruction>.Convert(instr).Value;
+                    // Normally an and will jump out of the loop, jump over the body
+                    // For an or, the or will jump to the function body.
+                    isAnd = jmp.Target != bodyBegin;
+
+                    // For some loops this is reverse
+                    // For a repeat until, an and will jump to the body and an or
+                    // will escape it.
+                    if(!andEscapes)
+                    {
+                        isAnd = !isAnd;
+                    }
+                    continue;
+                }
+                var expr = ParseConditionExpression(instr);
+                if (Prevexpr == null)
+                {
+                    Prevexpr = expr;
+                    continue;
+                }
+                if (isAnd)
+                {
+                    Prevexpr = new AndExpression(Prevexpr, expr);
+                } 
+                else
+                {
+                    Prevexpr = new OrExpression(Prevexpr, expr);
+                }
+                
+            }
+            return Prevexpr;
+        }
+
         static public IfStatement Parse(IfGroup group)
         {
-            var condition = ParseCondition(group.Condition);
+            var conditionGroup = GroupConvertor<ConditionGroup>.Convert(group.Condition);
+            Debug.Assert(!conditionGroup.HasError());
+            var condition = Parse(conditionGroup.Value, group.Instructions.First());
             var body = new StatementList();
             if(group.Childeren.Count == 0)
             {
@@ -184,11 +233,15 @@ namespace LuaToolkit.Ast
         static public WhileStatement Parse(WhileInstructionGroup group)
         {
             var body = new StatementList();
+            Instruction firstBodyInstr = group.Instructions.First();
             foreach (var child in group.Childeren)
             {
                 body.Add(Parse(child));
             }
-            var condition = ParseCondition(group.Condition);
+            var conditionGroup = GroupConvertor<ConditionGroup>.Convert(group.Condition);
+            Debug.Assert(!conditionGroup.HasError());
+            var condition = Parse(conditionGroup.Value, firstBodyInstr);
+            //var condition = ParseCondition(group.Condition);
 
             return new WhileStatement(condition, body);
         }
@@ -196,12 +249,14 @@ namespace LuaToolkit.Ast
         static public RepeatStatement Parse(RepeatGroup group)
         {
             var body = new StatementList();
-            body.Add(Parse(group.Entry));
+            // body.Add(Parse(group.Entry));
             foreach (var child in group.Childeren)
             {
                 body.Add(Parse(child));
             }
-            var condition = ParseCondition(group.Condition);
+            var conditionGroup = GroupConvertor<ConditionGroup>.Convert(group.Condition);
+            Debug.Assert(!conditionGroup.HasError());
+            var condition = Parse(conditionGroup.Value, group.Instructions.First(), false);
             return new RepeatStatement(condition, body);
         }
 

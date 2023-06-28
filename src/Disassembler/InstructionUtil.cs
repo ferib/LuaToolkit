@@ -73,5 +73,12 @@ namespace LuaToolkit.Disassembler
         {
             return instr.Function.GetInstructionAtLine(instr.LineNumber + 1);
         }
+
+        static public List<Instruction> GetRange(Instruction first, Instruction end, List<Instruction> instructions)
+        {
+            var firstIndex = instructions.IndexOf(first);
+            var lastIndex = instructions.IndexOf(end);
+            return instructions.GetRange(firstIndex, lastIndex - firstIndex + 1);
+        }
     }
 }

@@ -359,4 +359,17 @@ namespace LuaToolkit.Disassembler.ControlFlowAnalysis
 
         public InstructionGroup ElseGroup;
     }
+
+    public class ConditionGroup : InstructionGroup
+    {
+        public ConditionGroup(JmpInstruction finalJmp, List<Instruction> instructions)
+        {
+            Instructions = instructions;
+            Name = "Condition Group";
+            GroupType = GroupTypes.CONDITION_GROUP;
+            FinalJump = finalJmp;
+        }
+
+        public JmpInstruction FinalJump;
+    }
 }
