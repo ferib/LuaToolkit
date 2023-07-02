@@ -17,14 +17,14 @@ namespace LuaToolkit.Ast
             StatementList = statements;
             Type = STATEMENT_TYPE.FUNCTION;
         }
-        public override string Dump()
+        public override string Dump(string linePrefix="")
         {
             Debug.Assert(false, "A function definition should never be dumped");
-            string result = "";
-            result += "function " + Name + "()" + StringUtil.NewLineChar;
-            result += StatementList.Dump();
-            result += "end";
-            return result;
+            StringBuilder sb = new StringBuilder();
+            sb.Append(linePrefix).Append("function ").Append(Name).Append("()").AppendLine();
+            sb.Append(StatementList.Dump(linePrefix + "\t"));
+            sb.Append(linePrefix).Append("end");
+            return sb.ToString();
         }
 
         public override AstType Execute()
@@ -63,19 +63,19 @@ namespace LuaToolkit.Ast
             VarArg = false;
             Type = STATEMENT_TYPE.FUNCTION_DEF;
         }
-        public override string Dump()
+        public override string Dump(string linePrefix = "")
         {
-            string result = "";
-            result += "function " + Name + "( ";
+            StringBuilder sb = new StringBuilder();
+            sb.Append(linePrefix).Append("function ").Append(Name).Append("(");
             // Todo arguments
             if(VarArg)
             {
-                result += "...";
+                sb.Append("...");
             }
-            result += " )" + StringUtil.NewLineChar;
-            result += StatementList.Dump();
-            result += "end" + StringUtil.NewLineChar;
-            return result;
+            sb.Append(")").AppendLine();
+            sb.Append(StatementList.Dump(linePrefix + "\t"));
+            sb.Append("end").AppendLine();
+            return sb.ToString();
         }
 
         public override AstType Execute()
@@ -107,19 +107,20 @@ namespace LuaToolkit.Ast
             Exprs.AddRange(exprs);
         }
 
-        public override string Dump()
+        public override string Dump(string linePredix="")
         {
-            string result = "return ";
+            StringBuilder sb = new StringBuilder();
+            sb.Append(linePredix).Append("return ");
             for(int i = 0; i < Exprs.Count; i++)
             {
-                result += Exprs[i].Dump();
+                sb.Append(Exprs[i].Dump());
                 if(i < Exprs.Count - 1)
                 {
-                    result += ", ";
+                    sb.Append(", ");
                 }
             }
-            result += StringUtil.NewLineChar;
-            return result;
+            sb.AppendLine();
+            return sb.ToString();
         }
 
         public override AstType Execute()

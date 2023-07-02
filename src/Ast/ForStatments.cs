@@ -22,25 +22,20 @@ namespace LuaToolkit.Ast
             Body = body;
         }
 
-        public override string Dump()
+        public override string Dump(string linePrefix = "")
         {
-            string result = "";
-            result += "for ";
-            result += LoopVariable.Dump();
-            result += " = ";
-            result += InitialVal.Dump();
-            result += ", ";
-            result += Limit.Dump();
-            if(Step != null)
+            StringBuilder sb = new StringBuilder();
+            sb.Append(linePrefix).Append("for ").Append(LoopVariable.Dump())
+                .Append(" = ").Append(InitialVal.Dump()).Append(", ")
+                .Append(Limit.Dump());
+            if (Step != null)
             {
-                result += ", ";
-                result += Step.Dump();
+                sb.Append(", ").Append(Step.Dump());
             }
-            result += " do" + StringUtil.NewLineChar;
-            result += Body.Dump();
-            result += "end" + StringUtil.NewLineChar;
-
-            return result;
+            sb.Append(" do").AppendLine();
+            sb.Append(Body.Dump(linePrefix + "\t"));
+            sb.Append(linePrefix).Append("end").AppendLine();
+            return sb.ToString();
         }
 
         // TODO currently only for loops with ints are supported
@@ -72,10 +67,10 @@ namespace LuaToolkit.Ast
             IteratorFunction = iteratorFunction;
             Body = body;
         }
-        public override string Dump()
+        public override string Dump(string linePrefix = "")
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("for ");
+            sb.Append(linePrefix).Append("for ");
             foreach(var expr in LoopVariables)
             {
                 sb.Append(expr.Dump());
@@ -85,8 +80,8 @@ namespace LuaToolkit.Ast
                 }
             }
             sb.Append(" in ").Append(IteratorFunction.Dump()).AppendLine(" do ");
-            sb.Append(Body.Dump());
-            sb.AppendLine("end");
+            sb.Append(Body.Dump(linePrefix + "\t"));
+            sb.Append(linePrefix).AppendLine("end");
             return sb.ToString();
         }
 

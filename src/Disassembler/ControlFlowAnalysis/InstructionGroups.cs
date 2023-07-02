@@ -8,7 +8,8 @@ namespace LuaToolkit.Disassembler.ControlFlowAnalysis
     public enum GroupTypes
     {
         INSTRUCTION_GROUP, WHILE_GROUP, REPEAT_GROUP, FOR_GROUP, TFOR_GROUP,
-        CONDITION_GROUP, IF_GROUP, IF_CHAIN_GROUP, ELSE_GROUP
+        CONDITION_GROUP, IF_GROUP, IF_CHAIN_GROUP, ELSE_GROUP,
+        TESTSET_GROUP
     }
 
 
@@ -371,5 +372,31 @@ namespace LuaToolkit.Disassembler.ControlFlowAnalysis
         }
 
         public JmpInstruction FinalJump;
+    }
+
+    public class TestSetGroup : InstructionGroup
+    {
+        public TestSetGroup(InstructionGroup condition, InstructionGroup end)
+        {
+            Condition = condition;
+            Condition.Parent = this;
+            End = end;
+            End.Parent = this;
+            End.Name = "Test Set Group End";
+            Name = "Test Set Group";
+            GroupType = GroupTypes.TESTSET_GROUP;
+        }
+
+        public override string Dump()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("TestSet Group Begin: ");
+            sb.Append(Condition.Dump());
+            sb.AppendLine("IfChain End");
+            return sb.ToString();
+        }
+
+        public InstructionGroup Condition;
+        public InstructionGroup End;
     }
 }

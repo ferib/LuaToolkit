@@ -14,7 +14,7 @@ namespace LuaToolkit.Ast
     public enum STATEMENT_TYPE
     {
         EMPTY, ASSIGN, IF, IF_ELSE, ELSEIF, ELSEIF_ELSE, FUNCTION_DEF, LIST, FUNCTION, RETURN,
-        FOR, WHILE, REPEAT,
+        FOR, WHILE, REPEAT, EXPR,
         JMP, CMP
     }
 
@@ -483,7 +483,7 @@ namespace LuaToolkit.Ast
 
     public abstract class Statement
     {
-        public abstract string Dump();
+        public abstract string Dump(string linePrefix="");
 
         public abstract AstType Execute();
 
@@ -515,12 +515,35 @@ namespace LuaToolkit.Ast
         public EXPRESSION_TYPE Type = EXPRESSION_TYPE.EMPTY;
     }
 
+    public class ExpressionStatement : Statement
+    {
+        public ExpressionStatement(Expression expr)
+        {
+            Expr = expr;
+            Type = STATEMENT_TYPE.EXPR;
+        }
+        public override string Dump(string linePrefix = "")
+        {
+            var sb = new StringBuilder();
+            sb.Append(linePrefix).Append(Expr.Dump()).AppendLine();
+            return sb.ToString();
+        }
+
+        public override AstType Execute()
+        {
+            return Expr.Execute();
+        }
+        Expression Expr;
+    }
+
     public class EmptyStatement : Statement
     {
-        public override string Dump()
+        public override string Dump(string linePrefix = "")
         {
-            // Debug.Assert(false, "There should never be an empty statement");
-            return "Empty" + StringUtil.NewLineChar;
+            Debug.Assert(false, "There should never be an empty statement");
+            StringBuilder sb = new StringBuilder();
+            sb.Append(linePrefix).AppendLine("Empty");
+            return sb.ToString();
         }
 
         public override AstType Execute()
@@ -534,8 +557,10 @@ namespace LuaToolkit.Ast
     {
         public override string Dump()
         {
-            // Debug.Assert(false, "There should never be an empty expression");
-            return "Empty" + StringUtil.NewLineChar;
+            Debug.Assert(false, "There should never be an empty expression");
+            StringBuilder sb = new StringBuilder();
+            sb.Append("Empty");
+            return sb.ToString();
         }
 
         public override AstType Execute()
@@ -570,14 +595,14 @@ namespace LuaToolkit.Ast
             Statements.Insert(index, statement);
             statement.Parent = this;
         }
-        public override string Dump()
+        public override string Dump(string linePrefix = "")
         {
-            string result = "";
+            StringBuilder sb = new StringBuilder();
             foreach(var statement in Statements)
             {
-                result += statement.Dump();
+                sb.Append(statement.Dump(linePrefix));
             }
-            return result;
+            return sb.ToString();
         }
 
         public override AstType Execute()
@@ -610,7 +635,9 @@ namespace LuaToolkit.Ast
 
         public override string Dump()
         {
-            return Name;
+            StringBuilder builder = new StringBuilder();
+            builder.Append(Name);
+            return builder.ToString();
         }
 
         public override AstType Execute()
@@ -632,11 +659,9 @@ namespace LuaToolkit.Ast
 
         public override string Dump()
         {
-            string result = "";
-            result += "_G[";
-            result += Index.Dump();
-            result += "]";
-            return result;
+            StringBuilder sb = new StringBuilder();
+            sb.Append("_G[").Append(Index.Dump()).Append("]"); ;
+            return sb.ToString();
         }
 
         public override AstType Execute()
@@ -700,9 +725,9 @@ public class JumpStatement : Statement
         JumpForward = jumpForward;
     }
 
-    public override string Dump()
+    public override string Dump(string linePrefix = "")
     {
-        return "Jump '" + Statement.Dump() + "'";
+        return linePrefix + "Jump '" + Statement.Dump() + "'";
     }
 
     public override AstType Execute()
@@ -721,11 +746,11 @@ public class ConditionStatement : Statement
         Expr = expr;
         Type = STATEMENT_TYPE.CMP;
     }
-    public override string Dump()
+    public override string Dump(string linePrefix = "")
     {
-        string result = "";
-        result += "CMP: " + Expr.Dump();
-        return result;
+        StringBuilder sb = new StringBuilder();
+        sb.Append("CMP: ").Append(Expr.Dump());
+        return sb.ToString();
     }
 
     public override AstType Execute()
@@ -738,9 +763,9 @@ public class ConditionStatement : Statement
 
 public class CloseStatement : Statement
 {
-    public override string Dump()
+    public override string Dump(string linePrefix = "")
     {
-        return "CLOSE" + StringUtil.NewLineChar;
+        return linePrefix + "CLOSE" + StringUtil.NewLineChar;
     }
 
     public override AstType Execute()

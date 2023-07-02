@@ -39,9 +39,35 @@ namespace LuaToolkit.Ast
             new Dictionary<Block, StatementList>();
     }
 
+    public class VariableCache
+    {
+        public Variable Get(int index)
+        {
+            if (cache.TryGetValue(index, out var result))
+            {
+                return result;
+            }
+            return null;
+        }
+
+        public void Add(int index, Variable var)
+        {
+            if (cache.ContainsKey(index))
+            {
+                Debug.Assert(false, "Block is already in cache");
+            }
+            cache[index] = var;
+        }
+
+        Dictionary<int, Variable> cache =
+            new Dictionary<int, Variable>();
+    }
+
     public class ASTParser
     {
         static public StatementCache Cache = new StatementCache();
+
+        static public VariableCache VariableCache = new VariableCache();
 
         static public FunctionDefinitionStatement Parse(Function function, InstructionGroup root)
         {
@@ -84,6 +110,8 @@ namespace LuaToolkit.Ast
                     break;
                 case GroupTypes.IF_CHAIN_GROUP:
                     return Parse(GroupConvertor<IfChainGroup>.Convert(group).Value);
+                case GroupTypes.TESTSET_GROUP:
+                    return Parse(GroupConvertor<TestSetGroup>.Convert(group).Value);
                 default:
                     Debug.Assert(false, "Missing Group: " + group.GroupType.ToString());
                     break;
@@ -139,7 +167,17 @@ namespace LuaToolkit.Ast
         {
             var conditionGroup = GroupConvertor<ConditionGroup>.Convert(group.Condition);
             Debug.Assert(!conditionGroup.HasError());
-            var condition = Parse(conditionGroup.Value, group.Instructions.First());
+            Expression condition = null;
+            if(group.Instructions.Count == 0)
+            {
+                condition = Parse(conditionGroup.Value, 
+                    InstructionUtil.GetNextInstruction(conditionGroup.Value.Instructions.Last()));
+            } 
+            else
+            {
+                condition = Parse(conditionGroup.Value, group.Instructions.First());
+            }
+            
             var body = new StatementList();
             if(group.Childeren.Count == 0)
             {
@@ -197,11 +235,13 @@ namespace LuaToolkit.Ast
 
             var forPrepInstr = forPrepInstrOrErr.Value;
 
+            
+            bool init; // unused
             return new ForStatement(
-                        /* Loop Variable*/CreateVariable(forPrepInstr, forPrepInstr.A + 3),
-                        /* Init Value */ CreateVariable(forPrepInstr, forPrepInstr.A),
-                        /* Limit */ CreateVariable(forPrepInstr, forPrepInstr.A + 1),
-                        /* Step */ CreateVariable(forPrepInstr, forPrepInstr.A + 2), 
+                        /* Loop Variable*/CreateVariable(forPrepInstr, forPrepInstr.A + 3, out init),
+                        /* Init Value */ CreateVariable(forPrepInstr, forPrepInstr.A, out init),
+                        /* Limit */ CreateVariable(forPrepInstr, forPrepInstr.A + 1, out init),
+                        /* Step */ CreateVariable(forPrepInstr, forPrepInstr.A + 2, out init), 
                         body);
         }
 
@@ -222,9 +262,10 @@ namespace LuaToolkit.Ast
             var tfor = InstructionConvertor<TForLoopInstruction>.Convert(tforInstr).Value;
 
             List<Expression> vars = new List<Expression>();
+            bool init; // unused
             for(int i = tfor.A + 2; i < tfor.A + 2 + tfor.C; ++i)
             {
-                vars.Add(CreateVariable(tfor, i));
+                vars.Add(CreateVariable(tfor, i, out init));
             }            
 
             return new TForStatement(vars, call, body);
@@ -258,6 +299,53 @@ namespace LuaToolkit.Ast
             Debug.Assert(!conditionGroup.HasError());
             var condition = Parse(conditionGroup.Value, group.Instructions.First(), false);
             return new RepeatStatement(condition, body);
+        }
+
+        static public AssignStatement Parse(TestSetGroup group)
+        {
+            // TODO handle not
+            // Better handling for everything
+            var instructions = group.Condition.Instructions;
+            Expression prevExpr = null;
+            var endInstr = group.End.Instructions[0];
+            bool init;
+            var variable = CreateVariable(endInstr, endInstr.A, out init);
+            bool isAnd = false;
+            foreach(var instr in instructions)
+            {
+                if(instr.OpCode == LuaOpcode.JMP)
+                {
+                    continue;
+                }
+                if(prevExpr == null)
+                {
+                    prevExpr = ParseExpression(instr, instr.B);
+                    // A TestSet chain can start with a TEST, in this case we should always have an and.
+                    isAnd = instr.OpCode == LuaOpcode.TEST || instr.C == 0;
+                    continue;
+                }
+                if (isAnd)
+                {
+                    prevExpr = new AndExpression(prevExpr, ParseExpression(instr, instr.B));
+                } 
+                else
+                {
+                    prevExpr = new OrExpression(prevExpr, ParseExpression(instr, instr.B));
+                }
+                isAnd = instr.C == 0;
+            }
+            if (isAnd)
+            {
+                prevExpr = new AndExpression(prevExpr, ParseExpression(endInstr, endInstr.B));
+            }
+            else
+            {
+                prevExpr = new OrExpression(prevExpr, ParseExpression(endInstr, endInstr.B));
+            }
+
+            var assign = new AssignStatement(variable, prevExpr);
+            assign.Init = init;
+            return assign;
         }
 
         static public Expression ParseCondition(InstructionGroup group)
@@ -314,9 +402,9 @@ namespace LuaToolkit.Ast
                 case LuaOpcode.MOVE:
                     return ParseMove(instr);
                 case LuaOpcode.GETGLOBAL:
-                    return ParseGlobalGet(instr);
+                    return ParseGlobalGet(InstructionConvertor<GetGlobalInstruction>.Convert(instr).Value);
                 case LuaOpcode.SETGLOBAL:
-                    return ParseGlobalSet(instr);
+                    return ParseGlobalSet(InstructionConvertor<SetGlobalInstruction>.Convert(instr).Value);
                 case LuaOpcode.EQ:
                 case LuaOpcode.LT:
                 case LuaOpcode.LE:
@@ -381,8 +469,11 @@ namespace LuaToolkit.Ast
         // TODO Fix parsing of assigned value
         static public Statement ParseLoad(LoadKInstruction instr)
         {
-            var Variable = CreateVariable(instr, instr.A);            
-            return new AssignStatement(Variable, CreateConstant(instr.Constant));
+            bool init;
+            var Variable = CreateVariable(instr, instr.A, out init);
+            var assign = new AssignStatement(Variable, CreateConstant(instr.Constant));
+            assign.Init = init;
+            return assign;
         }
 
         static public Statement ParseLoadNil(Instruction instr)
@@ -398,10 +489,12 @@ namespace LuaToolkit.Ast
 
         static public Statement ParseLoadBool(Instruction instr)
         {
-            var VarName = "var" + instr.A;
-            var Variable = new Variable(VarName);
-            var Constant = new Constant(TypeCreator.CreateBool(instr.B == 1));
-            return new AssignStatement(Variable, Constant);
+            bool init;
+            var variable = CreateVariable(instr, instr.A, out init);
+            var constant = new Constant(TypeCreator.CreateBool(instr.B == 1));
+            var assign = new AssignStatement(variable, constant);
+            assign.Init = init;
+            return assign;
         }
 
         static public Statement ParseCondition(Instruction instr)
@@ -513,9 +606,22 @@ namespace LuaToolkit.Ast
             }
         }
 
-        static public Variable CreateVariable(Instruction instr, int val)
+        static public Variable CreateVariable(Instruction instr, int val, out bool initialisation)
         {
-            return new Variable("var" + val);
+            var variable = VariableCache.Get(val);
+            initialisation = false;
+            if(variable == null)
+            {
+                var name = "var" + val;
+                if(instr.Function.Locals.Count > val)
+                {
+                    name = instr.Function.Locals[val].Name;
+                }
+                variable = new Variable(name);
+                VariableCache.Add(val, variable);
+                initialisation = true;
+            } 
+            return variable;
         }
 
         static public Expression ParseExpression(Instruction instr, int val)
@@ -525,7 +631,8 @@ namespace LuaToolkit.Ast
                 var index = InstructionUtil.RegToConstIndex(val);
                 return CreateConstant(InstructionUtil.GetConstant(instr, index));
             }
-            return new Variable("var" + val);
+            bool init; // unused
+            return CreateVariable(instr, val, out init);
         }
 
         static public Constant CreateConstant(ByteConstant constant)
@@ -661,19 +768,17 @@ namespace LuaToolkit.Ast
             return new Global(new Constant(TypeCreator.CreateInt(val)));
         }
 
-        static public AssignStatement ParseGlobalGet(Instruction instr)
+        static public AssignStatement ParseGlobalGet(GetGlobalInstruction instr)
         {
-            var varOrErr = ExpressionCovertor<Variable>.Convert(ParseExpression(instr, instr.A));
-            if (varOrErr.HasError())
-            {
-                Debug.Print("GlobalGet can only by used on vars: " + varOrErr.GetError());
-                Debug.Assert(false);
-            }
-            var globalExpr = ParseGlobal(instr, instr.Bx);
-            return new AssignStatement(varOrErr.Value, globalExpr);
+            bool init;
+            var variable = CreateVariable(instr, instr.A, out init);
+            var globalExpr = ParseGlobal(instr, instr.ConstIndex);
+            var assign = new AssignStatement(variable, globalExpr);
+            assign.Init = init;
+            return assign;
         }
 
-        static public AssignStatement ParseGlobalSet(Instruction instr)
+        static public AssignStatement ParseGlobalSet(SetGlobalInstruction instr)
         {
             var varOrErr = ExpressionCovertor<Variable>.Convert(ParseExpression(instr, instr.A));
             if (varOrErr.HasError())
@@ -681,7 +786,7 @@ namespace LuaToolkit.Ast
                 Debug.Print("SetGlobal can only by used on vars: " + varOrErr.GetError());
                 Debug.Assert(false);
             }
-            var globalExpr = ParseGlobal(instr, instr.Bx);
+            var globalExpr = ParseGlobal(instr, instr.ConstIndex);
             return new AssignStatement(globalExpr, varOrErr.Value);
         }
 
@@ -691,6 +796,7 @@ namespace LuaToolkit.Ast
             string funcName = "var" + instr.A;
 
             // Function Args
+            // Does not work properly
             var arguments = new List<string>();
             if (instr.B == 0)
             {
@@ -709,7 +815,7 @@ namespace LuaToolkit.Ast
             return new CallExpression(funcName, arguments);
         }
 
-        static public AssignStatement ParseCall(Instruction instr)
+        static public Statement ParseCall(Instruction instr)
         {
             // TODO: there is something off here?
             // Function returns
@@ -726,10 +832,14 @@ namespace LuaToolkit.Ast
             {   
                 for (int i = instr.A; i < instr.A + instr.C - 1; i++)
                 {
-                    vars.Add(new Variable("var" + i));
+                    bool init;
+                    vars.Add(CreateVariable(instr, i, out init));
                 }
             }
-
+            if(vars.Count == 0)
+            {
+                return new ExpressionStatement(ParseCallExpr(instr));
+            }
             return new AssignStatement(vars, ParseCallExpr(instr));
         }
 
@@ -786,7 +896,8 @@ namespace LuaToolkit.Ast
             var vars = new List<Variable>();
             for(int i = instr.A; i < instr.A + instr.B - 1; ++i)
             {
-                vars.Add(new Variable("var" + i));
+                bool init;
+                vars.Add(CreateVariable(instr, i, out init));
             }
             return new AssignStatement(vars, new VarArg());
         }
@@ -814,8 +925,9 @@ namespace LuaToolkit.Ast
                 Debug.Assert(false);
             }
             // TODO Can be a var or a const index
-            var tableIndex = InstructionUtil.RegToConstIndex(instr.C); 
-            var tableGet = new GetTableExpression(new Variable("var" + instr.B), 
+            var tableIndex = InstructionUtil.RegToConstIndex(instr.C);
+            bool init;
+            var tableGet = new GetTableExpression(CreateVariable(instr, instr.B, out init), 
                 CreateConstant(InstructionUtil.GetConstant(instr, tableIndex)));
             statements.Add(new AssignStatement(var2OrErr.Value, tableGet));
             return statements;

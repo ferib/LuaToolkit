@@ -1,4 +1,5 @@
-﻿using System;
+﻿using LuaToolkit.Ast;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
@@ -307,6 +308,40 @@ namespace LuaToolkit.Disassembler
         {
             OpcodeType = OpcodeType.ABx;
         }
+
+        public override string Dump()
+        {
+            var sb = new StringBuilder();
+            sb.Append(base.Dump());
+            sb.Append(" -- ").Append(Constant.Dump());
+            return sb.ToString();
+        }
+
+        public int ConstIndex
+        {
+            get
+            {
+                var index = Bx - MAX_ARG_Bx;
+                return Math.Abs(index);
+            }
+            private set { }
+        }
+
+        public ByteConstant Constant
+        {
+            get
+            {
+                var index = ConstIndex;
+                if (index >= Function.Constants.Count)
+                {
+                    //Debug.Assert(false, "Index " + index +
+                    //" is bigger than the number of constants");
+                    return new NumberByteConstant(index);
+                }
+                return Function.Constants[index];
+            }
+            private set { }
+        }
     }
 
     public class SetGlobalInstruction : Instruction
@@ -319,6 +354,40 @@ namespace LuaToolkit.Disassembler
         public SetGlobalInstruction(uint data, int lineNumber) : base(data, lineNumber)
         {
             OpcodeType = OpcodeType.ABx;
+        }
+
+        public override string Dump()
+        {
+            var sb = new StringBuilder();
+            sb.Append(base.Dump());
+            sb.Append(" -- ").Append(Constant.Dump());
+            return sb.ToString();
+        }
+
+        public int ConstIndex
+        {
+            get
+            {
+                var index = Bx - MAX_ARG_Bx;
+                return Math.Abs(index);
+            }
+            private set { }
+        }
+
+        public ByteConstant Constant
+        {
+            get
+            {
+                var index = ConstIndex;
+                if (index >= Function.Constants.Count)
+                {
+                    //Debug.Assert(false, "Index " + index +
+                    //" is bigger than the number of constants");
+                    return new NumberByteConstant(index);
+                }
+                return Function.Constants[index];
+            }
+            private set { }
         }
     }
 

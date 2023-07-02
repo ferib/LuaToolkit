@@ -121,7 +121,7 @@ namespace Tests
         public void TestIf()
         {
             var expectedStr =   "if x != y then" + StringUtil.NewLineChar +
-                                    "x = y" + StringUtil.NewLineChar +
+                                    "\tx = y" + StringUtil.NewLineChar +
                                 "end" + StringUtil.NewLineChar;
 
             var var1 = new Variable("x", TypeCreator.CreateInt(10));
@@ -148,9 +148,9 @@ namespace Tests
         public void TestIfElse()
         {
             var expectedStr =   "if x != y then" + StringUtil.NewLineChar +
-                                    "x = y" + StringUtil.NewLineChar +
+                                    "\tx = y" + StringUtil.NewLineChar +
                                 "else" + StringUtil.NewLineChar +
-                                    "x = 10" + StringUtil.NewLineChar +
+                                    "\tx = 10" + StringUtil.NewLineChar +
                                 "end" + StringUtil.NewLineChar;
 
             var var1 = new Variable("x", TypeCreator.CreateInt(10));
@@ -184,9 +184,9 @@ namespace Tests
         public void TestElseIf()
         {
             var expectedStr =   "if x != y then" + StringUtil.NewLineChar +
-                                    "x = y" + StringUtil.NewLineChar +
+                                    "\tx = y" + StringUtil.NewLineChar +
                                 "else if x == y then" + StringUtil.NewLineChar +
-                                    "x = 10" + StringUtil.NewLineChar +
+                                    "\tx = 10" + StringUtil.NewLineChar +
                                 "end" + StringUtil.NewLineChar;
 
             var var1 = new Variable("x", TypeCreator.CreateInt(10));
@@ -224,11 +224,11 @@ namespace Tests
         public void TestElseIfElse()
         {
             var expectedStr =   "if x == 10 then" + StringUtil.NewLineChar +
-                                    "x = y" + StringUtil.NewLineChar +
+                                    "\tx = y" + StringUtil.NewLineChar +
                                 "else if x == y then" + StringUtil.NewLineChar +
-                                    "x = 9" + StringUtil.NewLineChar +
+                                    "\tx = 9" + StringUtil.NewLineChar +
                                 "else" + StringUtil.NewLineChar +
-                                    "x = 10" + StringUtil.NewLineChar +
+                                    "\tx = 10" + StringUtil.NewLineChar +
                                 "end" + StringUtil.NewLineChar;
 
             var var1 = new Variable("x", TypeCreator.CreateInt(10));
@@ -275,8 +275,8 @@ namespace Tests
         [Fact]
         public void TestForLoop()
         {
-            var expectedStr = "for i=x, y, z do" + StringUtil.NewLineChar +
-                                    "a = 1" + StringUtil.NewLineChar +
+            var expectedStr = "for i = x, y, z do" + StringUtil.NewLineChar +
+                                    "\ta = 1" + StringUtil.NewLineChar +
                               "end" + StringUtil.NewLineChar;
 
             var var1 = new Variable("x", TypeCreator.CreateInt(1));
@@ -289,9 +289,9 @@ namespace Tests
 
             var forLoop = new ForStatement(var4, var1, var2, var3, assignStatment);
 
-            Assert.True(var4.Content.Int == 0);
+            Assert.True(var5.Content.Int == 0);
             forLoop.Execute();
-            Assert.True(var4.Content.Int == 1);
+            Assert.True(var5.Content.Int == 1);
 
             var str = forLoop.Dump();
             Assert.Equal(str, expectedStr);
@@ -336,7 +336,7 @@ namespace Tests
         public void TestWhile()
         {
             var expectedStr = "while a < b do" + StringUtil.NewLineChar +
-                              "a = a + 1" + StringUtil.NewLineChar +
+                                "\ta = a + 1" + StringUtil.NewLineChar +
                               "end" + StringUtil.NewLineChar;
             var Var1 = new Variable("a", TypeCreator.CreateInt(0));
             var Var2 = new Variable("b", TypeCreator.CreateInt(3));

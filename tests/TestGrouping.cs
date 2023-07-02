@@ -1,4 +1,5 @@
-﻿using LuaToolkit.Disassembler.ControlFlowAnalysis;
+﻿using LuaToolkit.Disassembler;
+using LuaToolkit.Disassembler.ControlFlowAnalysis;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -345,6 +346,108 @@ namespace Tests
             Assert.Contains(instructions[2], repeatGroup.Instructions);
             Assert.Contains(instructions[3], repeatGroup.Condition.Instructions);
             Assert.Contains(instructions[5], repeatGroup.Condition.Instructions);
+        }
+
+        [Fact]
+        public void TestTestSetGroupOr()
+        {
+            var instructions = new List<Instruction>()
+            {
+                new TestSetInstruction(1)         { A=3, B=0, C=1 },
+                new JmpInstruction(2)             { sBx=3 },   
+                new TestSetInstruction(3)         { A=3, B=1, C=1 },
+                new JmpInstruction(4)             { sBx=1 },      
+                new MoveInstruction(5)            { A=3, B=2, C=0 }
+            };
+
+            Function func = new Function();
+            foreach (var instr in instructions)
+            {
+                func.AddInstruction(instr);
+            }
+
+            var matcher = new TestSetMatcher();
+            var begin = instructions[0];
+            var end = instructions.Last();
+
+            Assert.True(matcher.MatchBegin(begin));
+            Assert.Equal(end, matcher.FindEnd(begin, instructions));
+            Assert.True(matcher.Match(begin, end, instructions));
+            var group = matcher.GenerateGroup(begin, end, instructions);
+
+            var testSetGroup = GroupConvertor<TestSetGroup>.Convert(group).Value;
+            Assert.Equal(end, testSetGroup.End.Instructions[0]);
+            Assert.All(testSetGroup.Condition.Instructions, instr => 
+            Assert.True(instr.OpCode == LuaOpcode.TESTSET || instr.OpCode == LuaOpcode.JMP 
+            || instr.OpCode == LuaOpcode.TEST));
+        }
+
+        [Fact]
+        public void TestTestSetGroupAnd()
+        {
+            var instructions = new List<Instruction>()
+            {
+                new TestSetInstruction(1)         { A=3, B=0, C=0 },
+                new JmpInstruction(2)             { sBx=3 },
+                new TestSetInstruction(3)         { A=3, B=1, C=0 },
+                new JmpInstruction(4)             { sBx=1 },
+                new MoveInstruction(5)            { A=3, B=2, C=0 }
+            };
+
+            Function func = new Function();
+            foreach (var instr in instructions)
+            {
+                func.AddInstruction(instr);
+            }
+
+            var matcher = new TestSetMatcher();
+            var begin = instructions[0];
+            var end = instructions.Last();
+
+            Assert.True(matcher.MatchBegin(begin));
+            Assert.Equal(end, matcher.FindEnd(begin, instructions));
+            Assert.True(matcher.Match(begin, end, instructions));
+            var group = matcher.GenerateGroup(begin, end, instructions);
+
+            var testSetGroup = GroupConvertor<TestSetGroup>.Convert(group).Value;
+            Assert.Equal(end, testSetGroup.End.Instructions[0]);
+            Assert.All(testSetGroup.Condition.Instructions, instr =>
+            Assert.True(instr.OpCode == LuaOpcode.TESTSET || instr.OpCode == LuaOpcode.JMP
+            || instr.OpCode == LuaOpcode.TEST));
+        }
+
+        [Fact]
+        public void TestTestSetGroupMix()
+        {
+            var instructions = new List<Instruction>()
+            {
+                new TestInstruction(1)            { A=0, B=0, C=0 },
+                new JmpInstruction(2)             { sBx=2 },
+                new TestSetInstruction(3)         { A=3, B=1, C=1 },
+                new JmpInstruction(4)             { sBx=1 },
+                new MoveInstruction(5)            { A=3, B=2, C=0 }
+            };
+
+            Function func = new Function();
+            foreach (var instr in instructions)
+            {
+                func.AddInstruction(instr);
+            }
+
+            var matcher = new TestSetMatcher();
+            var begin = instructions[0];
+            var end = instructions.Last();
+
+            Assert.True(matcher.MatchBegin(begin));
+            Assert.Equal(end, matcher.FindEnd(begin, instructions));
+            Assert.True(matcher.Match(begin, end, instructions));
+            var group = matcher.GenerateGroup(begin, end, instructions);
+
+            var testSetGroup = GroupConvertor<TestSetGroup>.Convert(group).Value;
+            Assert.Equal(end, testSetGroup.End.Instructions[0]);
+            Assert.All(testSetGroup.Condition.Instructions, instr =>
+            Assert.True(instr.OpCode == LuaOpcode.TESTSET || instr.OpCode == LuaOpcode.JMP
+            || instr.OpCode == LuaOpcode.TEST));
         }
     }
 }

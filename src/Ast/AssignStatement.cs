@@ -42,43 +42,47 @@ namespace LuaToolkit.Ast
             Type = STATEMENT_TYPE.ASSIGN;
         }
 
-        public override string Dump()
+        public override string Dump(string linePrefix = "")
         {
-            string result = "";
+            StringBuilder sb = new StringBuilder();
+            sb.Append(linePrefix);
             if(Var != null)
             {
-                result += Var.Dump();
+                if(Init)
+                {
+                    sb.Append("local ");
+                }
+                sb.Append(Var.Dump());
             } 
             else if(Global != null)
             {
-                result += Global.Dump();
+                sb.Append(Global.Dump());
             }
             else if(VarList != null)
             {
                 foreach(var var in VarList)
                 {
-                    result += var.Dump();
+                    sb.Append(var.Dump());
                     if(VarList.IndexOf(var) != VarList.Count -1)
                     {
-                        result += ", ";
+                        sb.Append(", ");
                     }
                 }
             }
             else if (SetTable != null)
             {
-                result += SetTable.Dump();
+                sb.Append(SetTable.Dump());
             }
             else if (Upvalue != null)
             {
-                result += Upvalue.Dump();
+                sb.Append(Upvalue.Dump());
             }
             else
             {
                 Debug.Assert(false, "AssignStatement needs var/varlist or global");
             }
-            result += " = " + Expression.Dump() + StringUtil.NewLineChar;
-
-            return result;
+            sb.Append(" = ").AppendLine(Expression.Dump());
+            return sb.ToString();
         }
 
         public override AstType Execute()
@@ -95,5 +99,10 @@ namespace LuaToolkit.Ast
         public Upvalue Upvalue;
 
         public Expression Expression;
+        public bool Init
+        {
+            get;
+            set;
+        }
     }
 }

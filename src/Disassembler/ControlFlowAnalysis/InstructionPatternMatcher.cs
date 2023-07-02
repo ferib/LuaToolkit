@@ -1,4 +1,5 @@
 ﻿using LuaToolkit.Ast;
+using LuaToolkit.Util;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -333,7 +334,7 @@ namespace LuaToolkit.Disassembler.ControlFlowAnalysis
             var target = jmpOrErr.Value.Target;
             var bodyEnd = InstructionUtil.GetPreviousInstruction(target);
             Debug.Assert(instructions.Contains(bodyEnd));
-            Debug.Assert(bodyEnd != jmpOrErr.Value, "Emtpy if statement, just dont");
+            // Debug.Assert(bodyEnd != jmpOrErr.Value, "Emtpy if statement, just dont");
             return bodyEnd;
         }
 
@@ -343,7 +344,15 @@ namespace LuaToolkit.Disassembler.ControlFlowAnalysis
             var conditionGroup = ConditionMatcher.GenerateGroup(first, conditionEnd,
                 InstructionUtil.GetRange(first, conditionEnd, instructions));
             var lastJump = GroupConvertor<ConditionGroup>.Convert(conditionGroup).Value.FinalJump;
+            var jmpGroup = new InstructionGroup(new List<Instruction> { end });
+
             var body = new List<Instruction>();
+            // If we jump nowhere that means we have an empty if, it is stupid, but can happen.
+            if (lastJump.sBx == 0)
+            {
+                return new IfGroup(conditionGroup, jmpGroup, body);
+            }
+
             // Skip the condition, everything else should be part of the body.
             var beginBody = InstructionUtil.GetNextInstruction(lastJump);
             var endBody = end;
@@ -353,7 +362,6 @@ namespace LuaToolkit.Disassembler.ControlFlowAnalysis
                 return new IfGroup(conditionGroup, body);
             }
             endBody = InstructionUtil.GetPreviousInstruction(endBody);
-            var jmpGroup = new InstructionGroup(new List<Instruction>{ end });
             body.AddRange(InstructionUtil.GetRange(beginBody, endBody, instructions));
             return new IfGroup(conditionGroup, jmpGroup, body);
         }
@@ -574,6 +582,81 @@ namespace LuaToolkit.Disassembler.ControlFlowAnalysis
         }
     }
 
+    public class TestSetMatcher : InstructionPatternMatcher
+    {
+        // Searches for:
+        // 4	TESTSET	3 0 0	
+        // 5	JMP	3	to pc 9
+        // 6	TESTSET	3 1 0	
+        // 7	JMP	1	to pc 9
+        // 8	MOVE	3 2
+
+        // The first instruction can sometimes be a TEST
+        // 4	TEST	0 0 0	
+        // 5	JMP	2	to pc 8
+        // 6	TESTSET	3 1 1	
+        // 7	JMP	1	to pc 9
+        // 8	MOVE	3 2
+
+        // The last one can sometimes be a not
+        // 4	TEST	0 0 0	
+        // 5	JMP	2	to pc 8
+        // 6	TESTSET	3 1 1	
+        // 7	JMP	1	to pc 9
+        // 8	NOT	3 2
+        public override Instruction FindEnd(Instruction first, List<Instruction> instructions)
+        {
+            var instr = InstructionUtil.GetNextInstruction(first);
+            while(instr.OpCode != LuaOpcode.MOVE && instr.OpCode != LuaOpcode.NOT)
+            {
+                if(instr.OpCode != LuaOpcode.TESTSET && instr.OpCode != LuaOpcode.JMP)
+                {
+                    return null;
+                }
+                if(!instructions.Contains(instr))
+                {
+                    return null;
+                }
+                instr = InstructionUtil.GetNextInstruction(instr);
+            }
+            return instr; 
+        }
+
+        public override InstructionGroup GenerateGroup(Instruction first, Instruction end, List<Instruction> instructions)
+        {
+            var conditionGroup = new InstructionGroup(instructions.GetRange(0, instructions.Count - 1));
+            var endGroup = new InstructionGroup( new List<Instruction>() { end });
+            return new TestSetGroup(conditionGroup, endGroup);
+        }
+
+        public override bool Match(Instruction first, Instruction end, List<Instruction> instructions)
+        {
+            var instr = first;
+            while(instr != end)
+            {
+                // TESTSET is a list of TESTSET and JMP instructions ended by a move.
+                if (instr.OpCode != LuaOpcode.TESTSET && instr.OpCode != LuaOpcode.JMP 
+                    && instr.OpCode != LuaOpcode.MOVE && instr.OpCode != LuaOpcode.NOT && instr.OpCode != LuaOpcode.TEST)
+                {
+                    return false;
+                }
+                instr = InstructionUtil.GetNextInstruction(instr);
+            }
+            
+            return end.OpCode == LuaOpcode.MOVE || end.OpCode == LuaOpcode.NOT;
+        }
+
+        public override bool MatchBegin(Instruction instruction)
+        {
+            return instruction.OpCode == LuaOpcode.TESTSET || instruction.OpCode == LuaOpcode.TEST;
+        }
+
+        public override bool MatchEnd(Instruction instruction)
+        {
+            return instruction.OpCode == LuaOpcode.MOVE || instruction.OpCode == LuaOpcode.NOT;
+        }
+    }
+
     public class InstructionGroupMaker
     {
         public InstructionGroupMaker()
@@ -582,9 +665,9 @@ namespace LuaToolkit.Disassembler.ControlFlowAnalysis
             // Ordered based on how much can be matched wrong.
             mPatternMatchers.Add(new ForLoopMatcher());
             mPatternMatchers.Add(new TForLoopMatcher());
+            mPatternMatchers.Add(new TestSetMatcher());
             mPatternMatchers.Add(new WhileMatcher());
             mPatternMatchers.Add(new RepeatMatcher());
-            // mPatternMatchers.Add(new IfMatcher());
             mPatternMatchers.Add(new IfChainMatcher());
         }
 

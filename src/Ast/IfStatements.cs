@@ -20,20 +20,16 @@ namespace LuaToolkit.Ast
             Expression = expression;
             Type = STATEMENT_TYPE.IF;
         }
-        public override string Dump()
+        public override string Dump(string linePrefix = "")
         {
             // Debug.Assert(Expression != null);
             // Debug.Assert(Statement != null);
-            string result = "";
-            result += "if ";
-            result += Expression.Dump();
-            result += " then" + StringUtil.NewLineChar;
-            if (Statement != null)
-            {
-                result += Statement.Dump();
-            }
-            result += "end" + StringUtil.NewLineChar;
-            return result;
+            StringBuilder sb = new StringBuilder();
+            sb.Append(linePrefix).Append("if ").Append(Expression.Dump())
+                .Append(" then").AppendLine();
+            sb.Append(Statement.Dump(linePrefix + "\t"));
+            sb.Append(linePrefix).Append("end").AppendLine();
+            return sb.ToString();
         }
 
         public override AstType Execute()
@@ -67,20 +63,19 @@ namespace LuaToolkit.Ast
             Expression = expression;
             Type = STATEMENT_TYPE.IF_ELSE;
         }
-        public override string Dump()
+        public override string Dump(string linePrefix = "")
         {
             Debug.Assert(Expression != null, "There should always be an expression");
             Debug.Assert(IfBody != null, "There should always be an if body");
             Debug.Assert(ElseBody != null, "There should always be an else body");
-            string result = "";
-            result += "if ";
-            result += Expression.Dump();
-            result += " then" + StringUtil.NewLineChar;
-            result += IfBody.Dump();
-            result += "else" + StringUtil.NewLineChar;
-            result += ElseBody.Dump();
-            result += "end" + StringUtil.NewLineChar;
-            return result;
+            StringBuilder sb = new StringBuilder();
+            sb.Append(linePrefix).Append("if ").Append(Expression.Dump())
+                .Append(" then").AppendLine();
+            sb.Append(IfBody.Dump(linePrefix + "\t"));
+            sb.Append(linePrefix).Append("else").AppendLine();
+            sb.Append(ElseBody.Dump(linePrefix + "\t"));
+            sb.Append(linePrefix).AppendLine("end");
+            return sb.ToString();
         }
 
         public override AstType Execute()
@@ -127,20 +122,23 @@ namespace LuaToolkit.Ast
             ElseIfStatements.Add(ifStatement);
         }
 
-        public override string Dump()
+        public override string Dump(string linePrefix="")
         {
             StringBuilder sb = new StringBuilder();
+            sb.Append(linePrefix);
             foreach (var ifStatement in ElseIfStatements)
             {
                 sb.Append("if ");
                 sb.Append(ifStatement.Expression.Dump());
                 sb.AppendLine(" then");
-                sb.Append(ifStatement.Statement.Dump());
+                sb.Append(ifStatement.Statement.Dump(linePrefix + "\t"));
                 if (ElseIfStatements.IndexOf(ifStatement) != ElseIfStatements.Count - 1)
                 {
+                    sb.Append(linePrefix);
                     sb.Append("else ");
                 }
             }
+            sb.Append(linePrefix);
             sb.AppendLine("end");
             return sb.ToString();
         }
@@ -203,25 +201,26 @@ namespace LuaToolkit.Ast
             ElseIfStatements.Add(ifStatement);
         }
 
-        public override string Dump()
+        public override string Dump(string linePrefix = "")
         {
-            string result = "";
+            StringBuilder sb = new StringBuilder();
+            sb.Append(linePrefix);
             foreach (var ifStatement in ElseIfStatements)
             {
-                result += "if ";
-                result += ifStatement.Expression.Dump();
-                result += " then" + StringUtil.NewLineChar;
-                result += ifStatement.Statement.Dump() ;
-                result += "else";
+                sb.Append("if ");
+                sb.Append(ifStatement.Expression.Dump());
+                sb.AppendLine(" then");
+                sb.Append(ifStatement.Statement.Dump(linePrefix + "\t"));
                 if (ElseIfStatements.IndexOf(ifStatement) != ElseIfStatements.Count - 1)
                 {
-                    result += " ";
+                    sb.Append(linePrefix);
+                    sb.Append("else ");
                 }
             }
-            result += StringUtil.NewLineChar;
-            result += ElseStatement.Dump();
-            result += "end" + StringUtil.NewLineChar;
-            return result;
+            sb.Append(linePrefix).Append("else").AppendLine();
+            sb.Append(ElseStatement.Dump(linePrefix + "\t"));
+            sb.Append(linePrefix).Append("end").AppendLine();
+            return sb.ToString();
         }
 
         public override AstType Execute()

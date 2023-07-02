@@ -12,13 +12,13 @@ namespace LuaToolkit.Ast
             Condition = condition;
             Body = body;
         }
-        public override string Dump()
+        public override string Dump(string linePrefix = "")
         {
             StringBuilder sb = new StringBuilder();
 
-            sb.Append("while ").Append(Condition.Dump()).AppendLine(" do");
-            sb.Append(Body.Dump());
-            sb.AppendLine("end");
+            sb.Append(linePrefix).Append("while ").Append(Condition.Dump()).AppendLine(" do");
+            sb.Append(Body.Dump(linePrefix + "\t"));
+            sb.Append(linePrefix).AppendLine("end");
             return sb.ToString();
         }
 
@@ -43,13 +43,13 @@ namespace LuaToolkit.Ast
             Condition = condition;
             Body = body;
         }
-        public override string Dump()
+        public override string Dump(string linePrefix = "")
         {
             StringBuilder sb = new StringBuilder();
 
-            sb.AppendLine("repeat");
-            sb.Append(Body.Dump());
-            sb.Append("until ").AppendLine(Condition.Dump());
+            sb.Append(linePrefix).AppendLine("repeat");
+            sb.Append(Body.Dump(linePrefix + "\t"));
+            sb.Append(linePrefix).Append("until ").AppendLine(Condition.Dump());
             return sb.ToString();
         }
 
