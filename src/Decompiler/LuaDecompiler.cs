@@ -4,6 +4,7 @@ using LuaToolkit.Disassembler.ControlFlowAnalysis;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 
 namespace LuaToolkit.Decompiler
 {
@@ -29,6 +30,8 @@ namespace LuaToolkit.Decompiler
             RunPasses passes = new RunPasses();
             var astParser = new ASTParser();
 
+            var sb = new StringBuilder();
+
             foreach (var subFunc in RootFunction.Functions)
             {
                 astParser.Reset();
@@ -44,6 +47,7 @@ namespace LuaToolkit.Decompiler
 
                 var subFuncDecomp = astParser.Parse(RootFunction, subRootGroup);
                 passes.Run(subFuncDecomp);
+                sb.AppendLine(subFuncDecomp.Dump());
             }
 
             var rootGroup = new InstructionGroup();
@@ -58,7 +62,8 @@ namespace LuaToolkit.Decompiler
             astParser.Reset();
             var func = astParser.Parse(RootFunction, rootGroup);
             passes.Run(func);
-            return func.Dump();
+            sb.AppendLine(func.Dump());
+            return sb.ToString();
         }
     }
 }
