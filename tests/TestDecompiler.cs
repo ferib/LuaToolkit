@@ -1564,14 +1564,5 @@ end -- x
                 "Decompiler failed parsing LoadK");
         }
 
-
-        [Fact]
-        public void test2()
-        {
-            LuaCFile f = new LuaCFile(File.ReadAllBytes("C:\\Users\\ruben\\Downloads\\output.luac"));
-            LuaDecoder d = new LuaDecoder(f);
-            LuaDecompiler dec = new LuaDecompiler(d);
-            string test = dec.Decompile();
-        }
     }
 }
