@@ -38,12 +38,13 @@ namespace LuaToolkit.Decompiler
                 var subRootGroup = new InstructionGroup();
                 subRootGroup.Name = "Sub Root Group";
                 groupMaker.Run(subFunc.Instructions, subRootGroup);
-                var subResult = subRootGroup.Dump();
-                
-                using (StreamWriter outputFile = new StreamWriter(Path.Combine(outpath, "GroupDump.txt")))
-                {
-                    outputFile.Write(subResult);
-                }
+
+                // Uncomment to write out debug data
+                // var subResult = subRootGroup.Dump();
+                // using (StreamWriter outputFile = new StreamWriter(Path.Combine(outpath, "GroupDump.txt")))
+                // {
+                //     outputFile.Write(subResult);
+                // }
 
                 var subFuncDecomp = astParser.Parse(RootFunction, subRootGroup);
                 passes.Run(subFuncDecomp);
@@ -53,12 +54,13 @@ namespace LuaToolkit.Decompiler
             var rootGroup = new InstructionGroup();
             rootGroup.Name = "Root Group";
             groupMaker.Run(RootFunction.Instructions, rootGroup);
-            var result = rootGroup.Dump();
 
-            using (StreamWriter outputFile = new StreamWriter(Path.Combine(outpath, "GroupDump.txt")))
-            {
-                outputFile.Write(result);
-            }
+            // Uncomment to write out debug data
+            // var result = rootGroup.Dump();
+            // using (StreamWriter outputFile = new StreamWriter(Path.Combine(outpath, "GroupDump.txt")))
+            // {
+            //    outputFile.Write(result);
+            // }
             astParser.Reset();
             var func = astParser.Parse(RootFunction, rootGroup);
             passes.Run(func);

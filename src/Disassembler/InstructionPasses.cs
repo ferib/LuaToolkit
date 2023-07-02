@@ -14,7 +14,8 @@ namespace LuaToolkit.Disassembler
             mPassManager.AddPass(new ConnectJumpsPass());
             mPassManager.AddPass(new ConnectForPass());
             mPassManager.AddPass(new SplitBlockPass());
-            mPassManager.AddPass(new InstructionDumper());
+            // Uncomment to write out debug data
+            // mPassManager.AddPass(new InstructionDumper());
         }
 
         public bool Run(Function function)
