@@ -17,9 +17,9 @@ namespace LuaToolkit.Disassembler
             mPassManager.AddPass(new InstructionDumper());
         }
 
-        public bool Run(Function functions)
+        public bool Run(Function function)
         {
-            return mPassManager.RunOnFunction(functions);
+            return mPassManager.RunOnFunction(function);
         }
 
         private InstructionPassManager mPassManager;

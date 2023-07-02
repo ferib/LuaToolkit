@@ -17,7 +17,6 @@ namespace LuaToolkit.Decompiler
             this.Decoder = decoder;
         }
 
-
         public string Decompile(bool debugInfo = false)
         {
             RootFunction.Name = "CRoot"; // or maybe main?
@@ -25,19 +24,39 @@ namespace LuaToolkit.Decompiler
             instrPasses.Run(RootFunction);
 
             var groupMaker = new InstructionGroupMaker();
+            var outpath = AppDomain.CurrentDomain.BaseDirectory;
+
+            RunPasses passes = new RunPasses();
+            var astParser = new ASTParser();
+
+            foreach (var subFunc in RootFunction.Functions)
+            {
+                astParser.Reset();
+                var subRootGroup = new InstructionGroup();
+                subRootGroup.Name = "Sub Root Group";
+                groupMaker.Run(subFunc.Instructions, subRootGroup);
+                var subResult = subRootGroup.Dump();
+                
+                using (StreamWriter outputFile = new StreamWriter(Path.Combine(outpath, "GroupDump.txt")))
+                {
+                    outputFile.Write(subResult);
+                }
+
+                var subFuncDecomp = astParser.Parse(RootFunction, subRootGroup);
+                passes.Run(subFuncDecomp);
+            }
+
             var rootGroup = new InstructionGroup();
             rootGroup.Name = "Root Group";
             groupMaker.Run(RootFunction.Instructions, rootGroup);
             var result = rootGroup.Dump();
 
-            var outpath = AppDomain.CurrentDomain.BaseDirectory;
             using (StreamWriter outputFile = new StreamWriter(Path.Combine(outpath, "GroupDump.txt")))
             {
                 outputFile.Write(result);
             }
-
-            var func = ASTParser.Parse(RootFunction, rootGroup);
-            RunPasses passes = new RunPasses();
+            astParser.Reset();
+            var func = astParser.Parse(RootFunction, rootGroup);
             passes.Run(func);
             return func.Dump();
         }
